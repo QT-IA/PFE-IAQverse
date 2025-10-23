@@ -7,15 +7,18 @@
 </head>
 <body>
     <div class="settings-layout">
+
     <!-- Barre latérale -->
     <aside class="sidebar">
+        <div class="header-home">
         <a href="index.html">
-            <img src="/assets/icons/home.png">
+            <img src="/assets/icons/home.png" alt="Home" class="nav-icon">
         </a>
         <h2>Accueil</h2>
+    </div>
         <div class="section-title">
             <img src="/assets/icons/settings.png">
-            <span>IAQverse</span>
+            <h2>IAQverse</h2>
         </div>
         <ul class="menu">
             <li>Compte</li>
@@ -28,20 +31,58 @@
 
     <!-- Contenu principal -->
     <main class="settings-content">
-        <h1>Paramètres</h1>
 
-        details class="settings-section">
-            <summary>👤 Vous</summary>
+        <header>
+        <h1>Paramètres</h1>
+        <button class="info-btn" onclick="openModal()">
+            <img src="/assets/icons/info.png">
+            </button>
+
+            <div id="infoModal" class="modal">
+            <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>À propos de cette page</h2>
+            <p>Cette interface des paramètres vous permet de modifier vos réglages afin de les adapter pour une meilleure utilisation.</p>
+            <ul>
+                <li>Gestion des informations du compte</li>
+                <li>Gestion de l'affichage</li>
+                <li>Gestions de vos coordonnées, celles de votre assurance,...</li>
+                <li>Ajout et suppression des salles</li>
+                <li>Contactez nous</li>
+            </ul>
+            </div>
+            </div>
+        </header>
+
+        <script>
+        function openModal() {
+        document.getElementById("infoModal").style.display = "block";
+        }
+
+        function closeModal() {
+        document.getElementById("infoModal").style.display = "none";
+        }
+
+        window.onclick = function(event) {
+        const modal = document.getElementById("infoModal");
+        if (event.target === modal) {
+            modal.style.display = "none";
+        }
+        }
+        </script>
+
+        <details class="settings-section">
+            <summary>Vous</summary>
             <p>Nom, prénom, adresse e-mail, préférences utilisateur…</p>
         </details>
 
         <details class="settings-section">
-            <summary>🛡️ Votre assurance</summary>
+            <summary>Votre assurance</summary>
             <p>Informations sur votre couverture, numéro de contrat, etc.</p>
         </details>
 
         <details class="settings-section">
-            <summary>🏢 Votre syndicat</summary>
+            <summary>Votre syndicat</summary>
             <p>Détails sur votre affiliation, interlocuteur, statut…</p>
         </details>
     </main>
