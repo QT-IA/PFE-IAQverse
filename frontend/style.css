@@ -272,7 +272,7 @@ header h1 {
 }
 
 .menu .active {
-    color: #e74c3c;
+    color: #f4f6f8;
     font-weight: bold;
 }
 
@@ -302,6 +302,12 @@ header h1 {
     box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
+.settings-section img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+}
+
 .settings-section summary {
     font-weight: bold;
     font-size: 18px;
@@ -311,4 +317,12 @@ header h1 {
 .section-body {
     padding: 15px 20px;
     font-size: 15px;
+}
+
+.section {
+    display: none;
+}
+
+.section.active {
+    display: block;
 }

@@ -21,11 +21,11 @@
             <h2>IAQverse</h2>
         </div>
         <ul class="menu">
-            <li>Compte</li>
-            <li>Affichage</li>
-            <li class="active">Coordonnées</li>
-            <li>Salle</li>
-            <li>Contact</li>
+            <li class="active" onclick="showSection('compte')">Compte</li>
+            <li onclick="showSection('affichage')">Affichage</li>
+            <li onclick="showSection('coordonnées')">Coordonnées</li>
+            <li onclick="showSection('salle')">Salle</li>
+            <li onclick="showSection('contact')">Contact</li>
         </ul>
     </aside>
 
@@ -71,21 +71,81 @@
         }
         </script>
 
-        <details class="settings-section">
-            <summary>Vous</summary>
-            <p>Nom, prénom, adresse e-mail, préférences utilisateur…</p>
-        </details>
+        <!-- Section du compte -->
+        <div id="compte" class="active section">
+            <details class="settings-section">
+                <summary>Vous</summary>
+                <p>Nom, prénom, adresse e-mail, préférences utilisateur…</p>
+            </details>
 
-        <details class="settings-section">
-            <summary>Votre assurance</summary>
-            <p>Informations sur votre couverture, numéro de contrat, etc.</p>
-        </details>
+            <details class="settings-section">
+                <summary>Votre assurance</summary>
+                <p>Informations sur votre couverture, numéro de contrat, etc.</p>
+            </details>
 
-        <details class="settings-section">
-            <summary>Votre syndicat</summary>
-            <p>Détails sur votre affiliation, interlocuteur, statut…</p>
-        </details>
+            <details class="settings-section">
+                <summary>Votre syndicat</summary>
+                <p>Détails sur votre affiliation, interlocuteur, statut…</p>
+            </details>
+        </div>
+
+        <!-- Section de l'affichage -->
+        <div id="affichage" class="section">
+            <details class="settings-section">
+                <summary>Mode</summary>
+                <p>Mode clair ou Mode sombre</p>
+            </details>
+        </div>
+
+        <!-- Section des coordonnées -->
+        <div id="coordonnées" class="section">
+            <details class="settings-section">
+                <summary>Lieu</summary>
+                <p>Rue, Code Postal…</p>
+            </details>
+        </div>
+
+        <!-- Section des salles -->
+        <div id="salle" class="section">
+            <details class="settings-section">
+                <summary>Pièces</summary>
+                <p>Choisissez vos pièces…</p>
+            </details>
+        </div>
+
+        <!-- Section des salles -->
+        <div id="contact" class="section">
+            <details class="settings-section">
+                <summary>Nous contacter</summary>
+                <p>Téléphone, Lieux…</p>
+            </details>
+        </div>
     </main>
+
+    <script>
+    function showSection(id) {
+    // Masquer toutes les sections
+    document.querySelectorAll('.section').forEach(section => {
+        section.classList.remove('active');
+    });
+
+    // Afficher celle qui correspond
+    const target = document.getElementById(id);
+    if (target) {
+        target.classList.add('active');
+    }
+
+    document.querySelectorAll('.menu li').forEach(item => {
+    item.classList.remove('active');
+    });
+
+    const activeItem = [...document.querySelectorAll('.menu li')]
+        .find(li => li.textContent.trim().toLowerCase() === id);
+    if (activeItem) {
+        activeItem.classList.add('active');
+    }
+    }
+    </script>
     </div>
 </body>
 </html>
