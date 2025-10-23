@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>IAQverse</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+    <h1>Digital Twin</h1>
+    <button class="info-btn" onclick="openModal()">
+        <img src="/assets/icons/info.png">
+    </button>
+
+    <div id="infoModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2>À propos de cette page</h2>
+        <p>Cette interface Digital Twin vous permet de visualiser les alertes de qualité de l'air intérieur en temps réel.</p>
+        <ul>
+            <li>Le tableau à gauche montre les actions recommandées.</li>
+            <li>La visualisation indique les zones concernées dans la pièce.</li>
+            <li>Les détails au centre expliquent les causes des alertes.</li>
+        </ul>
+    </div>
+    </div>
+    </header>
+
+    <script>
+        function openModal() {
+            document.getElementById("infoModal").style.display = "block";
+        }
+
+        function closeModal() {
+            document.getElementById("infoModal").style.display = "none";
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById("infoModal");
+            if (event.target === modal) {
+                modal.style.display = "none";
+            }
+        }
+    </script>
+
+    <main class="twin-layout">
+    <!-- Colonne gauche : Tableau d'actions -->
+    <section class="actions-panel">
+        <h2>Actions</h2>
+        <table class="actions-table">
+            <thead>
+                <tr>
+                    <th>État</th>
+                    <th>Sujet</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="alert-red" onclick="showDetails('Fenêtre')">
+                    <td>🔴</td>
+                    <td>Fenêtre</td>
+                    <td>Fermer</td>
+                </tr>
+                <tr class="alert-green" onclick="showDetails('Tableau')">
+                    <td>🟢</td>
+                    <td>Tableau</td>
+                    <td>Dépoussiérer</td>
+                </tr>
+                <tr class="alert-green" onclick="showDetails('Sol')">
+                    <td>🟢</td>
+                    <td>Sol</td>
+                    <td>Dépoussiérer</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Détails dynamiques -->
+        <div id="details-panel" class="details-panel hidden">
+            <h3>Détails</h3>
+            <ul id="details-list"></ul>
+        </div>
+    </section>
+
+    <script>
+    function showDetails(sujet) {
+        const panel = document.getElementById("details-panel");
+        const list = document.getElementById("details-list");
+        panel.classList.remove("hidden");
+        list.innerHTML = "";
+
+        if (sujet === "Fenêtre") {
+            list.innerHTML = `
+            <li>Taux anormal de CO₂ au niveau de la fenêtre</li>
+            <li>Forte concentration de PM2.5</li>
+            `;
+        } else if (sujet === "Tableau") {
+            list.innerHTML = `<li>Légère accumulation de poussière détectée</li>`;
+        } else if (sujet === "Sol") {
+            list.innerHTML = `<li>Sol propre, aucune alerte détectée</li>`;
+        }
+    }
+    </script>
+
+    <!-- Colonne droite : Visualisation pièce -->
+    <section class="room-panel">
+        <h2>Visualisation</h2>
+        <div class="room-visual">
+            <div class="alert-point" style="top: 20%; left: 30%;">Fenêtre 🔴</div>
+            <div class="alert-point" style="top: 60%; left: 50%;">Tableau 🔴</div>
+            <div class="room-label">2 Alertes</div>
+        </div>
+    </section>
+    </main>
+
+    <footer class="nav-bar">
+    <div class="nav-left">
+        <a href="index.html">
+            <img src="/assets/icons/home.png">
+        </a>
+        <a href="digital-twin.html">
+            <img src="/assets/icons/digital-twin.png">
+        </a>
+    </div>
+
+    <div class="nav-center">
+        <span class="brand">IAQverse</span>
+    </div>
+
+    <div class="nav-right">
+        <a href="settings.html">
+            <img src="/assets/icons/settings.png">
+        </a>
+    </div>
+    </footer>
+
+    <script src="charts.js"></script>
+</body>
+</html>
