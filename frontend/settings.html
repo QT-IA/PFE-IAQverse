@@ -7,44 +7,145 @@
 </head>
 <body>
     <div class="settings-layout">
+
     <!-- Barre latérale -->
     <aside class="sidebar">
+        <div class="header-home">
         <a href="index.html">
-            <img src="/assets/icons/home.png">
+            <img src="/assets/icons/home.png" alt="Home" class="nav-icon">
         </a>
         <h2>Accueil</h2>
+    </div>
         <div class="section-title">
             <img src="/assets/icons/settings.png">
-            <span>IAQverse</span>
+            <h2>IAQverse</h2>
         </div>
         <ul class="menu">
-            <li>Compte</li>
-            <li>Affichage</li>
-            <li class="active">Coordonnées</li>
-            <li>Salle</li>
-            <li>Contact</li>
+            <li class="active" onclick="showSection('compte')">Compte</li>
+            <li onclick="showSection('affichage')">Affichage</li>
+            <li onclick="showSection('coordonnées')">Coordonnées</li>
+            <li onclick="showSection('salle')">Salle</li>
+            <li onclick="showSection('contact')">Contact</li>
         </ul>
     </aside>
 
     <!-- Contenu principal -->
     <main class="settings-content">
+
+        <header>
         <h1>Paramètres</h1>
+        <button class="info-btn" onclick="openModal()">
+            <img src="/assets/icons/info.png">
+            </button>
 
-        details class="settings-section">
-            <summary>👤 Vous</summary>
-            <p>Nom, prénom, adresse e-mail, préférences utilisateur…</p>
-        </details>
+            <div id="infoModal" class="modal">
+            <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>À propos de cette page</h2>
+            <p>Cette interface des paramètres vous permet de modifier vos réglages afin de les adapter pour une meilleure utilisation.</p>
+            <ul>
+                <li>Gestion des informations du compte</li>
+                <li>Gestion de l'affichage</li>
+                <li>Gestions de vos coordonnées, celles de votre assurance,...</li>
+                <li>Ajout et suppression des salles</li>
+                <li>Contactez nous</li>
+            </ul>
+            </div>
+            </div>
+        </header>
 
-        <details class="settings-section">
-            <summary>🛡️ Votre assurance</summary>
-            <p>Informations sur votre couverture, numéro de contrat, etc.</p>
-        </details>
+        <script>
+        function openModal() {
+        document.getElementById("infoModal").style.display = "block";
+        }
 
-        <details class="settings-section">
-            <summary>🏢 Votre syndicat</summary>
-            <p>Détails sur votre affiliation, interlocuteur, statut…</p>
-        </details>
+        function closeModal() {
+        document.getElementById("infoModal").style.display = "none";
+        }
+
+        window.onclick = function(event) {
+        const modal = document.getElementById("infoModal");
+        if (event.target === modal) {
+            modal.style.display = "none";
+        }
+        }
+        </script>
+
+        <!-- Section du compte -->
+        <div id="compte" class="active section">
+            <details class="settings-section">
+                <summary>Vous</summary>
+                <p>Nom, prénom, adresse e-mail, préférences utilisateur…</p>
+            </details>
+
+            <details class="settings-section">
+                <summary>Votre assurance</summary>
+                <p>Informations sur votre couverture, numéro de contrat, etc.</p>
+            </details>
+
+            <details class="settings-section">
+                <summary>Votre syndicat</summary>
+                <p>Détails sur votre affiliation, interlocuteur, statut…</p>
+            </details>
+        </div>
+
+        <!-- Section de l'affichage -->
+        <div id="affichage" class="section">
+            <details class="settings-section">
+                <summary>Mode</summary>
+                <p>Mode clair ou Mode sombre</p>
+            </details>
+        </div>
+
+        <!-- Section des coordonnées -->
+        <div id="coordonnées" class="section">
+            <details class="settings-section">
+                <summary>Lieu</summary>
+                <p>Rue, Code Postal…</p>
+            </details>
+        </div>
+
+        <!-- Section des salles -->
+        <div id="salle" class="section">
+            <details class="settings-section">
+                <summary>Pièces</summary>
+                <p>Choisissez vos pièces…</p>
+            </details>
+        </div>
+
+        <!-- Section des salles -->
+        <div id="contact" class="section">
+            <details class="settings-section">
+                <summary>Nous contacter</summary>
+                <p>Téléphone, Lieux…</p>
+            </details>
+        </div>
     </main>
+
+    <script>
+    function showSection(id) {
+    // Masquer toutes les sections
+    document.querySelectorAll('.section').forEach(section => {
+        section.classList.remove('active');
+    });
+
+    // Afficher celle qui correspond
+    const target = document.getElementById(id);
+    if (target) {
+        target.classList.add('active');
+    }
+
+    document.querySelectorAll('.menu li').forEach(item => {
+    item.classList.remove('active');
+    });
+
+    const activeItem = [...document.querySelectorAll('.menu li')]
+        .find(li => li.textContent.trim().toLowerCase() === id);
+    if (activeItem) {
+        activeItem.classList.add('active');
+    }
+    }
+    </script>
     </div>
 </body>
 </html>
