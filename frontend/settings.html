@@ -23,8 +23,8 @@
         <ul class="menu">
             <li class="active" onclick="showSection('compte')">Compte</li>
             <li onclick="showSection('affichage')">Affichage</li>
-            <li onclick="showSection('coordonnées')">Coordonnées</li>
-            <li onclick="showSection('salle')">Salle</li>
+            <li onclick="showSection('notifications')">Notifications</li>
+            <li onclick="showSection('lieux')">Lieux</li>
             <li onclick="showSection('contact')">Contact</li>
         </ul>
     </aside>
@@ -45,8 +45,8 @@
             <p>Cette interface des paramètres vous permet de modifier vos réglages afin de les adapter pour une meilleure utilisation.</p>
             <ul>
                 <li>Gestion des informations du compte</li>
-                <li>Gestion de l'affichage</li>
-                <li>Gestions de vos coordonnées, celles de votre assurance,...</li>
+                <li>Gestion de l'affichage et de la langue</li>
+                <li>Gestions de vos notifications</li>
                 <li>Ajout et suppression des salles</li>
                 <li>Contactez nous</li>
             </ul>
@@ -75,17 +75,35 @@
         <div id="compte" class="active section">
             <details class="settings-section">
                 <summary>Vous</summary>
-                <p>Nom, prénom, adresse e-mail, préférences utilisateur…</p>
+                <div class="details-content">
+                <p>Nom</p>
+                <p>Prénom</p>
+                <p>Date de naissance</p>
+                <p>Email</p>
+                <p>Téléphone</p>
+                <p>Adresse postale</p>
+                <p>Photo de profil ou avatar</p>
+                </div>
             </details>
 
             <details class="settings-section">
                 <summary>Votre assurance</summary>
-                <p>Informations sur votre couverture, numéro de contrat, etc.</p>
+                <div class="details-content">
+                <p>Nom</p>
+                <p>Email</p>
+                <p>Téléphone</p>
+                <p>Adresse Postale</p>
+                </div>
             </details>
 
             <details class="settings-section">
                 <summary>Votre syndicat</summary>
-                <p>Détails sur votre affiliation, interlocuteur, statut…</p>
+                <div class="details-content">
+                <p>Nom</p>
+                <p>Email</p>
+                <p>Téléphone</p>
+                <p>Adresse Postale</p>
+                </div>
             </details>
         </div>
 
@@ -93,31 +111,61 @@
         <div id="affichage" class="section">
             <details class="settings-section">
                 <summary>Mode</summary>
+                <div class="details-content">
                 <p>Mode clair ou Mode sombre</p>
+                </div>
             </details>
-        </div>
 
-        <!-- Section des coordonnées -->
-        <div id="coordonnées" class="section">
             <details class="settings-section">
-                <summary>Lieu</summary>
-                <p>Rue, Code Postal…</p>
+                <summary>Langue & Localisation</summary>
+                <div class="details-content">
+                <p>Langue</p>
+                <p>Localisation</p>
+                </div>
             </details>
         </div>
 
-        <!-- Section des salles -->
-        <div id="salle" class="section">
+        <!-- Section des notifications -->
+        <div id="notifications" class="section">
             <details class="settings-section">
-                <summary>Pièces</summary>
-                <p>Choisissez vos pièces…</p>
+                <summary>Technologies</summary>
+                <div class="details-content">
+                <p>Email</p>
+                <p>SMS</p>
+                <p>Push</p>
+                </div>
+            </details>
+
+            <details class="settings-section">
+                <summary>Type</summary>
+                <div class="details-content">
+                <p>Alertes</p>
+                <p>Rappels</p>
+                <p>Newsletters</p>
+                </div>
             </details>
         </div>
 
-        <!-- Section des salles -->
+        <!-- Section des lieux -->
+        <div id="lieux" class="section">
+            <details class="settings-section">
+                <summary>Enseigne</summary>
+                <div class="details-content">
+                <p>Choisissez votre enseigne</p>
+                <p>Choisissez vos pièces</p>
+                </div>
+            </details>
+        </div>
+
+        <!-- Section des contacts -->
         <div id="contact" class="section">
             <details class="settings-section">
                 <summary>Nous contacter</summary>
-                <p>Téléphone, Lieux…</p>
+                <div class="details-content">
+                <p>Email</p>
+                <p>Téléphone</p>
+                <p>Adresse Postale</p>
+                </div>
             </details>
         </div>
     </main>
@@ -145,6 +193,22 @@
         activeItem.classList.add('active');
     }
     }
+    </script>
+
+    <script>
+        document.querySelectorAll('.section').forEach(section => {
+        section.querySelectorAll('.settings-section').forEach(details => {
+            details.addEventListener('toggle', function () {
+            if (details.open) {
+                section.querySelectorAll('.settings-section').forEach(other => {
+                if (other !== details) {
+                    other.removeAttribute('open');
+                }
+                });
+            }
+            });
+        });
+        });
     </script>
     </div>
 </body>

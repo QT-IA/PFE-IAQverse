@@ -358,3 +358,18 @@ header h1 {
 .section.active {
     display: block;
 }
+
+.details-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+}
+
+details[open] .details-content {
+    max-height: 500px;
+}
+
+details[close] .details-content {
+    max-height: 0;
+}
+
