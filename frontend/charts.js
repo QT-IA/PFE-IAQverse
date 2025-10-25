@@ -59,6 +59,8 @@ function initEmptyCharts() {
     ],
     Object.assign(makeCommonLayout("Température & Humidité", "Température (°C)"), {
       yaxis2: { title: "Humidité (%)", overlaying: "y", side: "right" },
+      // legend at the bottom of the graph
+      legend: { orientation: "h", y: -0.2 },
     }),
     config
   );
@@ -138,6 +140,7 @@ function updateChartsWithData(data) {
     traces.comfort,
     Object.assign(makeCommonLayout("Température & Humidité", "Température (°C)"), {
       yaxis2: { title: "Humidité (%)", overlaying: "y", side: "right" },
+      legend: { orientation: "h", x: 0.5, xanchor: "center", y: -0.5, yanchor: "bottom" }
     }),
     config
   );
