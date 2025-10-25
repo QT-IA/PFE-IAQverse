@@ -150,13 +150,18 @@ def receive_iaq(data: IAQData):
 
 # Endpoint qui renvoie toutes les données IAQ — filtrage côté serveur avec pandas
 @app.get("/iaq/all")
-def get_all_iaq(start: Optional[str] = None, end: Optional[str] = None):
+def get_all_iaq(start: Optional[str] = None, end: Optional[str] = None, step: str = "5min"):
     """
     Retourne les données IAQ. Paramètres optionnels:
     - start : début de l'intervalle (format ISO ou tout format accepté par pandas.to_datetime)
     - end   : fin de l'intervalle
-    Filtrage sécurisé côté serveur.
+    - step  : "5min" (par défaut), "daily", "weekly" (renvoie les moyennes sur ces périodes)
     """
+    step_l = (step or "5min").lower()
+    freq_map = {"5min": "5T", "daily": "D", "weekly": "W"}
+    if step_l not in freq_map:
+        raise HTTPException(status_code=400, detail=f"Paramètre 'step' invalide. Valeurs acceptées: {', '.join(freq_map.keys())}")
+
     try:
         start_ts = pd.to_datetime(start, utc=True) if start else None
         end_ts = pd.to_datetime(end, utc=True) if end else None
@@ -176,12 +181,10 @@ def get_all_iaq(start: Optional[str] = None, end: Optional[str] = None):
             pass
 
         mask = pd.Series(True, index=df.index)
-        # protections autour des comparaisons (évite TypeError)
         if start_ts is not None:
             try:
                 mask &= df["timestamp"] >= start_ts
             except Exception:
-                # si comparaison échoue, laisser mask tel quel
                 pass
         if end_ts is not None:
             try:
@@ -192,7 +195,6 @@ def get_all_iaq(start: Optional[str] = None, end: Optional[str] = None):
         df_res = df.loc[mask]
         if not df_res.empty:
             df_out = df_res.copy()
-            # formater timestamp en ISO string
             try:
                 df_out["timestamp"] = df_out["timestamp"].dt.tz_convert("UTC").dt.strftime("%Y-%m-%dT%H:%M:%S")
             except Exception:
@@ -239,13 +241,55 @@ def get_all_iaq(start: Optional[str] = None, end: Optional[str] = None):
     for p in parts:
         results.extend(p)
 
-    # trier par timestamp si possible
+    # si pas de résultats -> renvoyer liste vide
+    if not results:
+        return []
+
+    # construire DataFrame depuis les résultats puis resampler selon 'step'
+    combined_df = pd.DataFrame(results)
+    if "timestamp" not in combined_df.columns:
+        return []
+
+    combined_df["timestamp"] = pd.to_datetime(combined_df["timestamp"], utc=True, errors="coerce")
+    combined_df = combined_df.dropna(subset=["timestamp"]).set_index("timestamp").sort_index()
+
+    # fréquence pandas à utiliser
+    freq = freq_map[step_l]
+
+    # colonnes de métriques à agréger
+    metrics = ["co2", "pm25", "tvoc", "temperature", "humidity"]
+    # resample et moyenne sur valeurs numériques
     try:
-        results = sorted(results, key=lambda x: pd.to_datetime(x.get("timestamp"), utc=True))
+        resampled = combined_df.resample(freq, label="left", closed="left").mean(numeric_only=True)
+    except TypeError:
+        # pour compatibilité pandas plus ancienne
+        resampled = combined_df.resample(freq, label="left", closed="left").mean()
+    # sélectionner uniquement les métriques (si présentes)
+    resampled = resampled.reindex(columns=[c for c in metrics if c in resampled.columns])
+
+    # arrondir les moyennes à 2 chiffres après la virgule
+    try:
+        resampled = resampled.round(2)
     except Exception:
+        # en cas d'erreur inattendue, on laisse les valeurs originales
         pass
 
-    return results
+    # supprimer périodes sans aucune valeur
+    resampled = resampled.dropna(how="all")
+    if resampled.empty:
+        return []
+
+    # formatter timestamp et préparer sortie
+    try:
+        resampled.index = resampled.index.tz_convert("UTC")
+    except Exception:
+        pass
+    resampled = resampled.reset_index()
+    resampled["timestamp"] = resampled["timestamp"].dt.strftime("%Y-%m-%dT%H:%M:%S")
+    out = resampled.to_dict(orient="records")
+    out = [_sanitize_for_storage(r) for r in out]
+
+    return out
 
 # Endpoint pour forcer le rechargement depuis le CSV (utile après mise à jour du fichier)
 @app.post("/iaq/load")
