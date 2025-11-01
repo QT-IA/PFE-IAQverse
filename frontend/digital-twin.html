@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <title>IAQverse</title>
     <link rel="stylesheet" href="style.css">
+    <script async src="https://unpkg.com/es-module-shims/dist/es-module-shims.js"></script>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.155.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.155.0/examples/jsm/"
+        }
+    }
+    </script>
 </head>
 <body>
     <header>
@@ -105,11 +114,189 @@
     <section class="room-panel">
         <h2>Visualisation</h2>
         <div class="room-visual">
-            <div class="alert-point" style="top: 20%; left: 30%;">Fenêtre 🔴</div>
-            <div class="alert-point" style="top: 60%; left: 50%;">Tableau 🔴</div>
+            <div id="blender-viewer"></div>
+            <!-- Bouton pour recentrer / cadrer le modèle -->
+            <button id="frame-btn" title="Centrer la pièce (touche F)" style="position:absolute; top:8px; right:8px; z-index:10; padding:6px 8px; background:#fff; border-radius:4px; border:1px solid #ccc; cursor:pointer;">Centrer</button>
+
+                <!-- data-target-names: liste de noms de noeuds dans le GLB (séparés par |) -->
+                <div class="alert-point" data-target-names="Window|Fenetre|Fenêtre|window|fenetre" style="top: 20%; left: 30%; transform: translate(-50%, -50%);"></div>
+                <div class="alert-point" data-target-names="Door|Porte|door|porte" style="top: 20%; left: 20%; transform: translate(-50%, -50%);"></div>
             <div class="room-label">2 Alertes</div>
         </div>
     </section>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    const container = document.getElementById('blender-viewer');
+        
+    if (!container.style.position) container.style.position = 'relative';
+    if (!container.style.width) container.style.width = '700px';
+    if (!container.style.height) container.style.height = '400px';
+
+        const width = container.clientWidth || 700;
+        const height = container.clientHeight || 400;
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setPixelRatio(window.devicePixelRatio || 1);
+        renderer.setSize(width, height);
+        container.appendChild(renderer.domElement);
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 2000);
+
+        // Lumières
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(5, 10, 7.5);
+        scene.add(dirLight);
+
+        // Contrôles
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.screenSpacePanning = false;
+        controls.minDistance = 0.5;
+        controls.maxDistance = 500;
+        controls.maxPolarAngle = Math.PI / 2.1;
+
+        const loader = new GLTFLoader();
+        let modelRoot = null;
+
+        function frameModel(object3d, offsetFactor = 1.5) {
+            const box = new THREE.Box3().setFromObject(object3d);
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+
+            // Centrer les objets
+            object3d.position.x = object3d.position.x - center.x;
+            object3d.position.y = object3d.position.y - center.y;
+            object3d.position.z = object3d.position.z - center.z;
+
+            // Position de la caméra
+            const cameraZ = maxDim * offsetFactor;
+            camera.position.set(cameraZ, cameraZ * 0.6, cameraZ);
+            camera.near = Math.max(0.1, maxDim / 100);
+            camera.far = Math.max(1000, maxDim * 10);
+            camera.updateProjectionMatrix();
+
+            // Centrer le modèle
+            controls.target.set(0, 0, 0);
+            controls.update();
+        }
+
+        loader.load(
+            '/assets/rooms/test/room.glb',
+            function (gltf) {
+                modelRoot = gltf.scene;
+                scene.add(modelRoot);
+
+                frameModel(modelRoot, 1.1);
+
+                animate();
+            },
+            function (xhr) {
+                if (xhr.lengthComputable) {
+                    console.log('Chargement GLB: ' + Math.round((xhr.loaded / xhr.total) * 100) + '%');
+                }
+            },
+            function (error) {
+                console.error('Erreur de chargement du modèle:', error);
+            }
+        );
+
+        // Animations
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            // Mis a jour 2D des positions des points d'alertes à partir du modèle 3D
+            updateAlertPoints();
+            renderer.render(scene, camera);
+        }
+
+        // Retailler
+        window.addEventListener('resize', () => {
+            const w = container.clientWidth || 800;
+            const h = container.clientHeight || 600;
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h);
+        });
+
+        // Raccourci clavier pour centrer le modèle (F)
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'f' && modelRoot) {
+                frameModel(modelRoot, 1.1);
+            }
+        });
+
+        // Bouton pour centrer le modèle
+        const frameBtn = document.getElementById('frame-btn');
+        if (frameBtn) {
+            frameBtn.addEventListener('click', () => {
+                if (modelRoot) frameModel(modelRoot, 1.1);
+            });
+        }
+
+        // Points d'alertes : projection 3D
+        function findTargetObjectByNames(root, names) {
+            const lowerNames = names.map(n => n.trim().toLowerCase()).filter(Boolean);
+            let found = null;
+            root.traverse((child) => {
+                if (found) return;
+                if (!child.name) return;
+                const lname = child.name.toLowerCase();
+                for (const n of lowerNames) {
+                    if (lname === n || lname.indexOf(n) !== -1) {
+                        found = child;
+                        return;
+                    }
+                }
+            });
+            return found;
+        }
+
+        function updateAlertPoints() {
+            const points = document.querySelectorAll('.alert-point');
+            if (!modelRoot || points.length === 0) return;
+
+            points.forEach(el => {
+                el.style.position = 'absolute';
+
+                const targetNames = (el.getAttribute('data-target-names') || '').split('|').map(s => s.trim()).filter(Boolean);
+                if (targetNames.length === 0) return;
+
+                const target = findTargetObjectByNames(modelRoot, targetNames);
+                if (!target) {
+                    el.style.display = 'none';
+                    return;
+                }
+
+                const worldPos = new THREE.Vector3();
+                target.getWorldPosition(worldPos);
+
+                const ndc = worldPos.clone().project(camera);
+
+                if (ndc.z > 1 || ndc.z < -1) {
+                    el.style.display = 'none';
+                    return;
+                }
+
+                const rectW = container.clientWidth || 700;
+                const rectH = container.clientHeight || 400;
+                const x = (ndc.x * 0.5 + 0.5) * rectW;
+                const y = (-ndc.y * 0.5 + 0.5) * rectH;
+
+                el.style.left = x + 'px';
+                el.style.top = y + 'px';
+                el.style.display = 'block';
+            });
+        }
+    </script>
     </main>
 
     <footer class="nav-bar">
