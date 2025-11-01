@@ -45,6 +45,15 @@
     }
   </script>
 
+  <div class="tabs-container">
+    <div class="location-tabs" id="location-tabs">
+      <!-- Les onglets des enseignes seront générés dynamiquement ici -->
+    </div>
+    <div class="room-tabs" id="room-tabs">
+      <!-- Les onglets des pièces seront générés dynamiquement ici -->
+    </div>
+  </div>
+
   <main class="grid">
     <div class="chart-box" id="co2-chart"></div>
     <div class="chart-box" id="pm25-chart"></div>
@@ -72,6 +81,125 @@
     </a>
   </div>
 </footer>
+
+<script>
+  let config = null;
+  let activeEnseigne = null;
+
+  async function loadEnseignes() {
+    try {
+      // Essayer d'abord l'API du backend
+      const response = await fetch('http://localhost:8000/config');
+      if (response.ok) {
+        config = await response.json();
+      } else {
+        // Sinon essayer de charger le fichier statique
+        const candidates = ['/assets/config.json', '../assets/config.json', 'assets/config.json'];
+        for (const path of candidates) {
+          try {
+            const r = await fetch(path, {cache: 'no-store'});
+            if (!r.ok) continue;
+            config = await r.json();
+            break;
+          } catch (e) {
+            continue;
+          }
+        }
+      }
+
+      if (!config || !config.lieux || !config.lieux.enseignes) {
+        console.error('Pas d\'enseignes trouvées dans la configuration');
+        return;
+      }
+
+      renderLocationTabs();
+      
+      // Activer la première enseigne par défaut
+      if (config.lieux.enseignes.length > 0) {
+        const defaultEnseigne = config.lieux.enseignes.find(e => e.id === config.lieux.active) || config.lieux.enseignes[0];
+        switchEnseigne(defaultEnseigne.id);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des enseignes:', error);
+    }
+  }
+
+  function renderLocationTabs() {
+    const tabsContainer = document.getElementById('location-tabs');
+    tabsContainer.innerHTML = config.lieux.enseignes.map(enseigne => `
+      <div class="location-tab${enseigne.id === activeEnseigne ? ' active' : ''}" 
+            onclick="switchEnseigne('${enseigne.id}')"
+            data-id="${enseigne.id}">
+        <img src="/assets/icons/building.png" alt="Enseigne">
+        ${escapeHtml(enseigne.nom)}
+      </div>
+    `).join('');
+  }
+
+  let activeRoom = null;
+
+  function renderRoomTabs(enseigneId) {
+    const roomTabs = document.getElementById('room-tabs');
+    const enseigne = config.lieux.enseignes.find(e => e.id === enseigneId);
+    
+    if (!enseigne || !Array.isArray(enseigne.pieces)) {
+      roomTabs.innerHTML = '<div class="room-tab">Aucune pièce</div>';
+      return;
+    }
+
+    roomTabs.innerHTML = enseigne.pieces.map(piece => `
+      <div class="room-tab${piece.id === activeRoom ? ' active' : ''}" 
+            onclick="switchRoom('${piece.id}')"
+            data-id="${piece.id}">
+        <img src="/assets/icons/${piece.type || 'room'}.png" alt="${piece.type || 'Pièce'}">
+        ${escapeHtml(piece.nom)}
+      </div>
+    `).join('');
+
+    // Si aucune pièce n'est active, activer la première
+    if (!activeRoom && enseigne.pieces.length > 0) {
+      switchRoom(enseigne.pieces[0].id);
+    }
+  }
+
+  function switchRoom(roomId) {
+    activeRoom = roomId;
+    
+    // Mettre à jour l'apparence des onglets
+    document.querySelectorAll('.room-tab').forEach(tab => {
+      tab.classList.toggle('active', tab.dataset.id === roomId);
+    });
+
+    // Mettre à jour les graphiques avec les données de la pièce sélectionnée
+    updateCharts(activeEnseigne, roomId);
+  }
+
+  function switchEnseigne(enseigneId) {
+    activeEnseigne = enseigneId;
+    activeRoom = null; // Réinitialiser la pièce active
+    
+    // Mettre à jour l'apparence des onglets d'enseignes
+    document.querySelectorAll('.location-tab').forEach(tab => {
+      tab.classList.toggle('active', tab.dataset.id === enseigneId);
+    });
+
+    // Mettre à jour les onglets des pièces pour l'enseigne sélectionnée
+    renderRoomTabs(enseigneId);
+  }
+
+  function escapeHtml(s) {
+    if (s === undefined || s === null) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // Charger les enseignes au démarrage
+  document.addEventListener('DOMContentLoaded', loadEnseignes);
+</script>
 
   <script src="charts.js"></script>
 </body>

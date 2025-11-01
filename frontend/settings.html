@@ -52,6 +52,299 @@
             </ul>
             </div>
             </div>
+
+    <script>
+    /* ========== Gestion des enseignes & pièces (UI) ========== */
+    function renderEnseignes() {
+            const container = document.getElementById('enseignes-list');
+            if (!container || !config || !config.lieux || !Array.isArray(config.lieux.enseignes)) return;
+
+            container.innerHTML = '';
+            config.lieux.enseignes.forEach(enseigne => {
+                const card = document.createElement('div');
+                card.className = 'location-card' + (config.lieux.active === enseigne.id ? ' active' : '');
+
+                const roomsHtml = (enseigne.pieces || []).map(piece => {
+                    return `<span class="room-tag">${escapeHtml(piece.nom)} <button class="remove-btn" title="Supprimer" onclick="removePiece('${enseigne.id}','${piece.id}')">×</button></span>`;
+                }).join('');
+
+                card.innerHTML = `
+                    <div class="actions">
+                        <button class="edit-btn" title="Modifier" onclick="editEnseigne('${enseigne.id}')"><img src="/assets/icons/edit.png" alt="Modifier"></button>
+                        <button class="remove-btn" title="Supprimer" onclick="removeEnseigne('${enseigne.id}')"><img src="/assets/icons/delete.png" alt="Supprimer"></button>
+                    </div>
+                    <h3>${escapeHtml(enseigne.nom || '—')}</h3>
+                    <p class="muted">${escapeHtml(enseigne.adresse || '')}</p>
+                    <div class="rooms">${roomsHtml}</div>
+                    <button class="btn-room" onclick="addPiece('${enseigne.id}')"><img src="/assets/icons/add.png" alt=""> Ajouter une pièce</button>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        function escapeHtml(s){
+            if (s === undefined || s === null) return '';
+            return String(s).replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]; });
+        }
+
+        function openEditModalWith(htmlTitle, formHtml, onsubmit) {
+            const modal = document.getElementById('editModal');
+            const form = document.getElementById('editForm');
+            modal.querySelector('h2').textContent = htmlTitle;
+            form.innerHTML = formHtml;
+            form.onsubmit = async (e) => { e.preventDefault(); await onsubmit(new FormData(form)); };
+            modal.style.display = 'block';
+        }
+
+        // Ouvre le modal pour éditer une valeur ponctuelle (élément avec data-path)
+        function openEditModal(element) {
+            if (!element) return;
+            const path = element.getAttribute('data-path');
+            if (!path) return;
+            const value = getByPath(config, path);
+
+            const modal = document.getElementById('editModal');
+            const form = document.getElementById('editForm');
+            form.innerHTML = '';
+
+            // Utiliser createFormGroup pour obtenir le contrôle approprié (interrupteur/sélection/texte...)
+            const group = createFormGroup('Modifier', path, value);
+
+            // Trouver l'élément input dans le groupe et le renommer en 'value' pour le gestionnaire de soumission
+            let inputEl = group.querySelector('input, select, textarea');
+            // Si booléen, l'input peut être dans un wrapper .switch
+            if (!inputEl) inputEl = group.querySelector('.switch input');
+            if (inputEl) {
+                // Mémoriser le chemin original sur l'input pour le gestionnaire
+                inputEl.dataset.path = path;
+                // Définir le nom à 'value' pour que FormData retourne de manière cohérente
+                inputEl.name = 'value';
+            }
+
+            form.appendChild(group);
+
+            form.onsubmit = async (e) => {
+                e.preventDefault();
+                // Lire la valeur de l'input
+                let newVal;
+                if (!inputEl) {
+                    newVal = null;
+                } else if (inputEl.type === 'checkbox') {
+                    newVal = !!inputEl.checked;
+                } else if (inputEl.tagName.toLowerCase() === 'select') {
+                    newVal = inputEl.value;
+                } else {
+                    newVal = inputEl.value;
+                }
+
+                if (Array.isArray(value)) {
+                    newVal = String(newVal||'').split(',').map(s => s.trim()).filter(Boolean);
+                }
+
+                // Créer un objet updates avec le chemin correct
+                let updates = {};
+                setByPath(updates, path, newVal);
+                // Mettre à jour la config locale
+                setByPath(config, path, newVal);
+
+                try {
+                    console.log('Saving single update:', updates);
+                    const response = await fetch('http://localhost:8000/api/saveConfig', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(updates)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Erreur lors de la sauvegarde');
+                    }
+
+                    const result = await response.json();
+                    // Mettre à jour la config locale si le serveur renvoie le résultat fusionné
+                    if (result && result.config) {
+                        config = result.config;
+                    }
+
+                    // Mettre à jour l'élément visuel
+                    if (Array.isArray(newVal)) element.textContent = newVal.join(', ');
+                    else if (typeof newVal === 'boolean') element.innerHTML = `<span class="badge ${newVal ? 'badge-yes' : 'badge-no'}">${newVal ? 'Oui' : 'Non'}</span>`;
+                    else element.textContent = newVal || '—';
+
+                    // Close modal and show success
+                    modal.style.display = 'none';
+                    showNotification('Modification sauvegardée');
+                } catch (error) {
+                    console.error('Erreur:', error);
+                    showNotification('Erreur lors de la sauvegarde', true);
+                }
+            };
+
+            modal.querySelector('h2').textContent = 'Modifier';
+            modal.style.display = 'block';
+        }
+
+        async function addEnseigne() {
+            openEditModalWith('Ajouter une enseigne', `
+                <div class="form-group"><label>Nom</label><input name="nom" type="text" required></div>
+                <div class="form-group"><label>Adresse</label><input name="adresse" type="text"></div>
+            `, async (formData) => {
+                const newEn = { 
+                    id: 'ens_' + Date.now(), 
+                    nom: formData.get('nom'), 
+                    adresse: formData.get('adresse') || '', 
+                    pieces: [] 
+                };
+
+                // Initialiser la structure si nécessaire
+                if (!config.lieux) {
+                    config.lieux = { enseignes: [], active: null };
+                }
+                if (!Array.isArray(config.lieux.enseignes)) {
+                    config.lieux.enseignes = [];
+                }
+
+                config.lieux.enseignes.push(newEn);
+                config.lieux.active = newEn.id;
+
+                try {
+                    const response = await fetch('http://localhost:8000/api/saveConfig', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(config)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Erreur lors de la sauvegarde');
+                    }
+
+                    const result = await response.json();
+                    if (result && result.config) {
+                        config = result.config;
+                    }
+
+                    document.getElementById('editModal').style.display = 'none';
+                    showNotification('Enseigne ajoutée avec succès');
+                    renderEnseignes();
+                } catch (error) {
+                    console.error('Erreur:', error);
+                    showNotification('Erreur lors de l\'ajout de l\'enseigne', true);
+                }
+            });
+        }
+
+        async function addPiece(enseigneId) {
+            openEditModalWith('Ajouter une pièce', `
+                <div class="form-group"><label>Nom de la pièce</label><input name="nom" type="text" required></div>
+                <div class="form-group"><label>Type</label>
+                    <select name="type"><option value="salon">Salon</option><option value="cuisine">Cuisine</option><option value="chambre">Chambre</option><option value="bureau">Bureau</option><option value="autre">Autre</option></select>
+                </div>
+            `, async (formData) => {
+                const enseigne = (config.lieux.enseignes || []).find(e => e.id === enseigneId);
+                if (!enseigne) {
+                    showNotification('Enseigne non trouvée', true);
+                    return;
+                }
+
+                const piece = { 
+                    id: 'piece_' + Date.now(), 
+                    nom: formData.get('nom'), 
+                    type: formData.get('type') 
+                };
+
+                // Initialiser le tableau des pièces si nécessaire
+                if (!Array.isArray(enseigne.pieces)) {
+                    enseigne.pieces = [];
+                }
+
+                enseigne.pieces.push(piece);
+
+                try {
+                    const response = await fetch('http://localhost:8000/api/saveConfig', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(config)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Erreur lors de la sauvegarde');
+                    }
+
+                    const result = await response.json();
+                    if (result && result.config) {
+                        config = result.config;
+                    }
+
+                    document.getElementById('editModal').style.display = 'none';
+                    showNotification('Pièce ajoutée avec succès');
+                    renderEnseignes();
+                } catch (error) {
+                    console.error('Erreur:', error);
+                    showNotification('Erreur lors de l\'ajout de la pièce', true);
+                }
+            });
+        }
+
+        async function editEnseigne(enseigneId) {
+            const enseigne = (config.lieux.enseignes || []).find(e => e.id === enseigneId);
+            if (!enseigne) {
+                showNotification('Enseigne non trouvée', true);
+                return;
+            }
+
+            openEditModalWith('Modifier l\'enseigne', `
+                <div class="form-group"><label>Nom</label><input name="nom" type="text" value="${escapeHtml(enseigne.nom)}" required></div>
+                <div class="form-group"><label>Adresse</label><input name="adresse" type="text" value="${escapeHtml(enseigne.adresse || '')}"></div>
+            `, async (formData) => {
+                // Mettre à jour les données de l'enseigne
+                enseigne.nom = formData.get('nom');
+                enseigne.adresse = formData.get('adresse');
+
+                try {
+                    const response = await fetch('http://localhost:8000/api/saveConfig', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(config)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Erreur lors de la sauvegarde');
+                    }
+
+                    const result = await response.json();
+                    if (result && result.config) {
+                        config = result.config;
+                    }
+
+                    document.getElementById('editModal').style.display = 'none';
+                    showNotification('Enseigne modifiée avec succès');
+                    renderEnseignes();
+                } catch (error) {
+                    console.error('Erreur:', error);
+                    showNotification('Erreur lors de la modification de l\'enseigne', true);
+                    // Restaurer l'état précédent en rechargeant la config
+                    loadConfigToUI();
+                }
+            });
+        }
+
+        async function removeEnseigne(enseigneId) {
+            if (!confirm('Supprimer cette enseigne ?')) return;
+            config.lieux.enseignes = (config.lieux.enseignes || []).filter(e => e.id !== enseigneId);
+            if (config.lieux.active === enseigneId) config.lieux.active = (config.lieux.enseignes[0] || {}).id || null;
+            await saveConfig();
+            renderEnseignes();
+        }
+
+        async function removePiece(enseigneId, pieceId) {
+            if (!confirm('Supprimer cette pièce ?')) return;
+            const enseigne = (config.lieux.enseignes || []).find(e => e.id === enseigneId);
+            if (!enseigne) return;
+            enseigne.pieces = (enseigne.pieces || []).filter(p => p.id !== pieceId);
+            await saveConfig();
+            renderEnseignes();
+        }
+        </script>
         </header>
 
         <script>
@@ -74,35 +367,47 @@
         <!-- Section du compte -->
         <div id="compte" class="active section">
             <details class="settings-section">
-                <summary>Vous</summary>
+                <summary>Vous
+                <button class="edit-btn" onclick="editSection('vous')">
+                    <img src="/assets/icons/edit.png" alt="Modifier">
+                </button>
+                </summary>
                 <div class="details-content">
-                <p>Nom</p>
-                <p>Prénom</p>
-                <p>Date de naissance</p>
-                <p>Email</p>
-                <p>Téléphone</p>
-                <p>Adresse postale</p>
-                <p>Photo de profil ou avatar</p>
+                <p>Nom : <span data-path="vous.nom">—</span></p>
+                <p>Prénom : <span data-path="vous.prenom">—</span></p>
+                <p>Date de naissance : <span data-path="vous.date_naissance">—</span></p>
+                <p>Email : <span data-path="vous.email">—</span></p>
+                <p>Téléphone : <span data-path="vous.telephone">—</span></p>
+                <p>Adresse postale : <span data-path="vous.adresse">—</span></p>
+                <p>Photo de profil ou avatar : <span data-path="vous.avatar">—</span></p>
                 </div>
             </details>
 
             <details class="settings-section">
-                <summary>Votre assurance</summary>
+                <summary>Votre assurance
+                <button class="edit-btn" onclick="editSection('assurance')">
+                    <img src="/assets/icons/edit.png" alt="Modifier">
+                </button>
+                </summary>
                 <div class="details-content">
-                <p>Nom</p>
-                <p>Email</p>
-                <p>Téléphone</p>
-                <p>Adresse Postale</p>
+                <p>Nom : <span data-path="assurance.nom">—</span></p>
+                <p>Email : <span data-path="assurance.email">—</span></p>
+                <p>Téléphone : <span data-path="assurance.telephone">—</span></p>
+                <p>Adresse Postale : <span data-path="assurance.adresse">—</span></p>
                 </div>
             </details>
 
             <details class="settings-section">
-                <summary>Votre syndicat</summary>
+                <summary>Votre syndicat
+                <button class="edit-btn" onclick="editSection('syndicat')">
+                    <img src="/assets/icons/edit.png" alt="Modifier">
+                </button>
+                </summary>
                 <div class="details-content">
-                <p>Nom</p>
-                <p>Email</p>
-                <p>Téléphone</p>
-                <p>Adresse Postale</p>
+                <p>Nom : <span data-path="syndicat.nom">—</span></p>
+                <p>Email : <span data-path="syndicat.email">—</span></p>
+                <p>Téléphone : <span data-path="syndicat.telephone">—</span></p>
+                <p>Adresse Postale : <span data-path="syndicat.adresse">—</span></p>
                 </div>
             </details>
         </div>
@@ -110,17 +415,25 @@
         <!-- Section de l'affichage -->
         <div id="affichage" class="section">
             <details class="settings-section">
-                <summary>Mode</summary>
+                <summary>Mode
+                <button class="edit-btn" onclick="editSection('mode')">
+                    <img src="/assets/icons/edit.png" alt="Modifier">
+                </button>
+                </summary>
                 <div class="details-content">
-                <p>Mode clair ou Mode sombre</p>
+                <p>Mode : <span data-path="affichage.mode">—</span></p>
                 </div>
             </details>
 
             <details class="settings-section">
-                <summary>Langue & Localisation</summary>
+                <summary>Langue & Localisation
+                <button class="edit-btn" onclick="editSection('langue & localisation')">
+                    <img src="/assets/icons/edit.png" alt="Modifier">
+                </button>
+                </summary>
                 <div class="details-content">
-                <p>Langue</p>
-                <p>Localisation</p>
+                <p>Langue : <span data-path="affichage.langue">—</span></p>
+                <p>Localisation : <span data-path="affichage.localisation">—</span></p>
                 </div>
             </details>
         </div>
@@ -128,31 +441,44 @@
         <!-- Section des notifications -->
         <div id="notifications" class="section">
             <details class="settings-section">
-                <summary>Technologies</summary>
+                <summary>Technologies
+                <button class="edit-btn" onclick="editSection('technologies')">
+                    <img src="/assets/icons/edit.png" alt="Modifier">
+                </button>
+                </summary>
                 <div class="details-content">
-                <p>Email</p>
-                <p>SMS</p>
-                <p>Push</p>
+                <p>Email : <span data-path="notifications.technologies.email">—</span></p>
+                <p>SMS : <span data-path="notifications.technologies.sms">—</span></p>
+                <p>Push : <span data-path="notifications.technologies.push">—</span></p>
                 </div>
             </details>
 
             <details class="settings-section">
-                <summary>Type</summary>
+                <summary>Type
+                <button class="edit-btn" onclick="editSection('type')">
+                    <img src="/assets/icons/edit.png" alt="Modifier">
+                </button>
+                </summary>
                 <div class="details-content">
-                <p>Alertes</p>
-                <p>Rappels</p>
-                <p>Newsletters</p>
+                <p>Alertes : <span data-path="notifications.types.alertes">—</span></p>
+                <p>Rappels : <span data-path="notifications.types.rappels">—</span></p>
+                <p>Newsletters : <span data-path="notifications.types.newsletters">—</span></p>
                 </div>
             </details>
         </div>
 
-        <!-- Section des lieux -->
+        <!-- Section des lieux (gestion des enseignes & pièces) -->
         <div id="lieux" class="section">
             <details class="settings-section">
-                <summary>Enseigne</summary>
+                <summary>Gestion des enseignes
+                    <button class="add-btn" type="button" onclick="addEnseigne()" title="Ajouter une enseigne">
+                        <img src="/assets/icons/add.png" alt="Ajouter">
+                    </button>
+                </summary>
                 <div class="details-content">
-                <p>Choisissez votre enseigne</p>
-                <p>Choisissez vos pièces</p>
+                    <div id="enseignes-list" class="locations-grid">
+                        <!-- Cartes des enseignes générées dynamiquement -->
+                    </div>
                 </div>
             </details>
         </div>
@@ -160,11 +486,12 @@
         <!-- Section des contacts -->
         <div id="contact" class="section">
             <details class="settings-section">
-                <summary>Nous contacter</summary>
+                <summary>Nous contacter
+                </summary>
                 <div class="details-content">
-                <p>Email</p>
-                <p>Téléphone</p>
-                <p>Adresse Postale</p>
+                <p>Email : <span data-path="contact.email">—</span></p>
+                <p>Téléphone : <span data-path="contact.telephone">—</span></p>
+                <p>Adresse Postale : <span data-path="contact.adresse_postale">—</span></p>
                 </div>
             </details>
         </div>
@@ -211,5 +538,362 @@
         });
     </script>
     </div>
+
+    <div id="editModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Modifier les paramètres</h2>
+        <form id="editForm">
+            <!-- Les champs seront générés dynamiquement ici -->
+        </form>
+        <div class="form-actions">
+            <button type="button" class="btn-secondary close-modal">Annuler</button>
+            <button type="submit" form="editForm" class="btn-primary">Enregistrer</button>
+        </div>
+    </div>
+    </div>
+
+    <!-- Système de notification -->
+    <div id="notification" class="notification"></div>
+
+    <script>
+        let config = null; // Stocke la configuration chargée
+        let currentSection = ''; // Section en cours d'édition
+
+        // Système de gestion des notifications
+        function showNotification(message, isError = false) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${isError ? 'error' : 'success'}`;
+            notification.style.display = 'block';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+
+        function getByPath(obj, path) {
+            return path.split('.').reduce((o, i) => o ? o[i] : undefined, obj);
+        }
+
+        function setByPath(obj, path, value) {
+            const parts = path.split('.');
+            let current = obj;
+            for (let i = 0; i < parts.length - 1; i++) {
+                current[parts[i]] = current[parts[i]] || {};
+                current = current[parts[i]];
+            }
+            current[parts[parts.length - 1]] = value;
+            return obj;
+        }
+
+        function createFormGroup(label, path, value) {
+            const group = document.createElement('div');
+            group.className = 'form-group';
+            
+            const labelEl = document.createElement('label');
+            labelEl.textContent = label;
+            
+            let input;
+
+            // Booléen : afficher un interrupteur stylisé dans la modal
+            if (typeof value === 'boolean') {
+                const switchLabel = document.createElement('label');
+                switchLabel.className = 'switch';
+                input = document.createElement('input');
+                input.type = 'checkbox';
+                input.checked = value;
+                input.name = path;
+                const slider = document.createElement('span');
+                slider.className = 'slider';
+                switchLabel.appendChild(input);
+                switchLabel.appendChild(slider);
+                // Remplacer la référence de l'input par son conteneur pour l'ajout
+                input.className = 'form-control';
+                
+                group.appendChild(labelEl);
+                group.appendChild(switchLabel);
+                return group;
+            }
+
+            // Tableaux
+            if (Array.isArray(value)) {
+                input = document.createElement('input');
+                input.type = 'text';
+                input.value = value.join(', ');
+                input.placeholder = 'Séparer les valeurs par des virgules';
+            }
+            // Sélection de la langue
+            else if (path.endsWith('.langue') || path === 'affichage.langue') {
+                input = document.createElement('select');
+                input.name = path;
+                const options = ['Français', 'English', 'Español', 'Deutsch', 'Italiano'];
+                options.forEach(opt => {
+                    const o = document.createElement('option');
+                    o.value = opt;
+                    o.textContent = opt;
+                    if ((value || '').toString() === opt) o.selected = true;
+                    input.appendChild(o);
+                });
+            }
+            // Liste déroulante pour la localisation
+            else if (path.endsWith('.localisation') || path === 'affichage.localisation') {
+                input = document.createElement('select');
+                input.name = path;
+                const options = ['Europe, Paris', 'Europe, Lyon', 'North America, New York', 'Asia, Tokyo', 'Other'];
+                options.forEach(opt => {
+                    const o = document.createElement('option');
+                    o.value = opt;
+                    o.textContent = opt;
+                    if ((value || '').toString() === opt) o.selected = true;
+                    input.appendChild(o);
+                });
+            }
+            else if (path.endsWith('.email')) {
+                input = document.createElement('input');
+                input.type = 'email';
+                input.value = value || '';
+            } else if (path.endsWith('.telephone')) {
+                input = document.createElement('input');
+                input.type = 'tel';
+                input.pattern = "[+0-9 ]{10,}";
+                input.value = value || '';
+            } else if (path.endsWith('.date_naissance')) {
+                input = document.createElement('input');
+                input.type = 'date';
+                input.value = value || '';
+            } else {
+                input = document.createElement('input');
+                input.type = 'text';
+                input.value = value || '';
+            }
+
+            input.className = 'form-control';
+            input.name = path;
+            
+            group.appendChild(labelEl);
+            group.appendChild(input);
+            return group;
+        }
+
+        function editSection(sectionId) {
+            currentSection = sectionId;
+            const modal = document.getElementById('editModal');
+            const form = document.getElementById('editForm');
+            form.innerHTML = '';
+            // Ajout d'un gestionnaire de soumission
+            form.onsubmit = async (e) => {
+                e.preventDefault();
+                await saveConfig();
+            };
+
+            const sectionConfig = {
+                vous: [
+                    ['Nom', 'vous.nom'],
+                    ['Prénom', 'vous.prenom'],
+                    ['Date de naissance', 'vous.date_naissance'],
+                    ['Email', 'vous.email'],
+                    ['Téléphone', 'vous.telephone'],
+                    ['Adresse', 'vous.adresse']
+                ],
+                assurance: [
+                    ['Nom', 'assurance.nom'],
+                    ['Email', 'assurance.email'],
+                    ['Téléphone', 'assurance.telephone'],
+                    ['Adresse', 'assurance.adresse']
+                ],
+                syndicat: [
+                    ['Nom', 'syndicat.nom'],
+                    ['Email', 'syndicat.email'],
+                    ['Téléphone', 'syndicat.telephone'],
+                    ['Adresse', 'syndicat.adresse']
+                ],
+                mode: [
+                    ['Mode d\'affichage', 'affichage.mode']
+                ],
+                'langue & localisation': [
+                    ['Langue', 'affichage.langue'],
+                    ['Localisation', 'affichage.localisation']
+                ],
+                technologies: [
+                    ['Notifications Email', 'notifications.technologies.email'],
+                    ['Notifications SMS', 'notifications.technologies.sms'],
+                    ['Notifications Push', 'notifications.technologies.push']
+                ],
+                type: [
+                    ['Alertes', 'notifications.types.alertes'],
+                    ['Rappels', 'notifications.types.rappels'],
+                    ['Newsletters', 'notifications.types.newsletters']
+                ],
+                enseigne: [
+                    ['Nom de l\'enseigne', 'lieux.enseigne'],
+                    ['Pièces', 'lieux.pieces']
+                ]
+            };
+
+            const fields = sectionConfig[sectionId] || [];
+            fields.forEach(([label, path]) => {
+                const value = getByPath(config, path);
+                form.appendChild(createFormGroup(label, path, value));
+            });
+
+            modal.style.display = 'block';
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        async function saveConfig() {
+            const form = document.getElementById('editForm');
+            const formData = new FormData(form);
+            let updates = {};
+            
+            for (const [path, value] of formData.entries()) {
+                const input = form.querySelector(`[name="${path}"]`);
+                let finalValue = value;
+
+                if (input.type === 'checkbox') {
+                    finalValue = input.checked;
+                } else if (input.name.endsWith('.pieces')) {
+                    finalValue = value.split(',').map(s => s.trim()).filter(Boolean);
+                } else if (typeof getByPath(config, path) === 'boolean') {
+                    finalValue = value.toLowerCase() === 'true' || value === '1' || value.toLowerCase() === 'oui';
+                }
+
+                setByPath(updates, path, finalValue);
+                setByPath(config, path, finalValue); // Mise à jour locale
+            }
+
+            try {
+                // if no specific updates (e.g. we mutated config directly), send full config
+                const payload = Object.keys(updates).length === 0 ? config : updates;
+                console.log('Saving payload:', payload);
+                const response = await fetch('http://localhost:8000/api/saveConfig', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                if (!response.ok) {
+                    console.error('Save failed:', result);
+                    throw new Error(result.detail || 'Erreur lors de la sauvegarde');
+                }
+
+                // If backend returned the merged config, replace local config
+                if (result && result.config) {
+                    config = result.config;
+                }
+
+                closeEditModal();
+                showNotification('Configuration sauvegardée avec succès');
+
+                // Mettre à jour l'affichage
+                document.querySelectorAll('[data-path]').forEach(el => {
+                    const path = el.getAttribute('data-path');
+                    const value = getByPath(config, path);
+                    if (Array.isArray(value)) {
+                        el.textContent = value.join(', ');
+                    } else if (typeof value === 'boolean') {
+                        el.textContent = value ? 'Oui' : 'Non';
+                    } else {
+                        el.textContent = value || '—';
+                    }
+                });
+
+                // Re-render enseignes if present
+                if (typeof renderEnseignes === 'function') renderEnseignes();
+            } catch (error) {
+                console.error('Erreur:', error);
+                showNotification('Erreur lors de la sauvegarde', true);
+            }
+        }
+    </script>
+
+    <script>
+    // Charge la configuration depuis le serveur ou le fichier local
+    async function loadConfigToUI() {
+        try {
+            // Essayer d'abord l'API du backend
+            const response = await fetch('http://localhost:8000/config');
+            if (response.ok) {
+                config = await response.json();
+            } else {
+                // Sinon essayer de charger le fichier statique
+                const candidates = ['/assets/config.json', '../assets/config.json', 'assets/config.json'];
+                for (const path of candidates) {
+                    try {
+                        const r = await fetch(path, {cache: 'no-store'});
+                        if (!r.ok) continue;
+                        config = await r.json();
+                        break;
+                    } catch (e) {
+                        continue;
+                    }
+                }
+            }
+
+            if (!config) {
+                showNotification('Impossible de charger la configuration', true);
+                return;
+            }
+
+            // Mettre à jour l'interface
+            document.querySelectorAll('[data-path]').forEach(el => {
+                const path = el.getAttribute('data-path');
+                const value = getByPath(config, path);
+                el.classList.add('value-display');
+
+            // Affichage booléen : badge vert/rouge non modifiable dans la vue d'info
+            if (typeof value === 'boolean') {
+                el.innerHTML = `<span class="badge ${value ? 'badge-yes' : 'badge-no'}">${value ? 'Oui' : 'Non'}</span>`;
+                // Permettre l'ouverture du modal pour éditer la valeur, sans exposer l'interrupteur inline
+                el.style.cursor = 'pointer';
+                el.addEventListener('click', () => openEditModal(el));
+                return;
+            }                // Mode d'affichage -> afficher un badge (Clair / Sombre) dans la vue d'info
+                if (path === 'affichage.mode') {
+                    const mode = (String(value||'').toLowerCase() === 'sombre') ? 'Sombre' : 'Clair';
+                    const cls = mode === 'Clair' ? 'badge-yes' : 'badge-no';
+                    el.innerHTML = `<span class="badge ${cls}">${mode}</span>`;
+                    el.style.cursor = 'pointer';
+                    el.addEventListener('click', () => openEditModal(el));
+                    return;
+                }
+
+                // Tableaux et autres valeurs : affichage texte et édition par clic
+                if (Array.isArray(value)) {
+                    el.textContent = value.join(', ');
+                } else {
+                    el.textContent = value || '—';
+                }
+                // Rendre l'élément cliquable pour l'édition
+                el.style.cursor = 'pointer';
+                el.addEventListener('click', (e) => {
+                    openEditModal(e.target);
+                });
+            });
+            // Rendre les enseignes visibles si elles sont présentes
+            if (typeof renderEnseignes === 'function') renderEnseignes();
+        } catch (error) {
+            console.error('Erreur:', error);
+            showNotification('Erreur lors du chargement de la configuration', true);
+        }
+    }
+
+    // Initialiser l'application au chargement de la page
+    document.addEventListener('DOMContentLoaded', loadConfigToUI);
+
+    // Fermer les boîtes de dialogue en cliquant à l'extérieur ou sur les boutons
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal || e.target.classList.contains('close') || e.target.classList.contains('close-modal')) {
+                modal.style.display = 'none';
+            }
+        });
+    });
+    // Lorsque la configuration est chargée, s'assurer que les enseignes sont rendues
+    // La fonction renderEnseignes est appelée depuis loadConfigToUI après le remplissage des data-paths
+    </script>
 </body>
 </html>
