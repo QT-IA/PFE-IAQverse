@@ -20,6 +20,8 @@ class IAQData(BaseModel):
     tvoc: float
     temperature: float
     humidity: float
+    enseigne: str
+    salle: str
 
 # Base de données simulée
 iaq_database = [] 
@@ -30,10 +32,19 @@ def receive_iaq(data: IAQData):
     iaq_database.append(data)
     return {"message": "Données IAQ enregistrées", "data": data}
 
-# Edpoint qui renvoie toutes les données IAQ
-@app.get("/iaq/all")
-def get_all_iaq():
-    return iaq_database
+# Edpoint qui renvoie toutes les données IAQ selon l'enseigne et la salle
+@app.get("/iaq/filter")
+def get_filtered_iaq(enseigne: str, salle: str):
+    return [d for d in iaq_database if d.enseigne == enseigne and d.salle == salle]
+
+# Configuration CORS (Autorisation du Frontend à Interroger l'API)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 CONFIG_PATH = Path(__file__).resolve().parent.parent / 'assets' / 'config.json'
 
@@ -91,12 +102,3 @@ async def save_config_endpoint(updates: dict):
         # return the updated config to client for confirmation
         return {"message": "Configuration mise à jour", "config": config}
     return {"error": "Erreur lors de la sauvegarde"}, 500
-
-# Configuration CORS (Autorisation du Frontend à Interroger l'API)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)

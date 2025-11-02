@@ -1,7 +1,7 @@
 {
     "vous": {
         "nom": "Dupont",
-        "prenom": "Jean",
+        "prenom": "Pierre",
         "date_naissance": "1990-01-01",
         "email": "jean.dupont@example.com",
         "telephone": "+33 1 23 45 67 89",
@@ -27,7 +27,7 @@
     },
     "notifications": {
         "technologies": {
-            "email": true,
+            "email": false,
             "sms": false,
             "push": true
         },
@@ -70,11 +70,6 @@
                         "id": "piece_1762004777082",
                         "nom": "Salon",
                         "type": "salon"
-                    },
-                    {
-                        "id": "piece_1762004839812",
-                        "nom": "WC",
-                        "type": "autre"
                     }
                 ]
             }
@@ -87,7 +82,7 @@
         "adresse_postale": "1 rue Support, 75000 Paris"
     },
     "value": false,
-    "nom": "Maison",
+    "nom": "",
     "adresse": "123 rue d'Avrons",
-    "type": "autre"
+    "type": "salon"
 }

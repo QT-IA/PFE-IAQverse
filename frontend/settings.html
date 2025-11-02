@@ -100,6 +100,7 @@
         // Ouvre le modal pour éditer une valeur ponctuelle (élément avec data-path)
         function openEditModal(element) {
             if (!element) return;
+            if (element.dataset.readonly === "true") return;
             const path = element.getAttribute('data-path');
             if (!path) return;
             const value = getByPath(config, path);
@@ -489,15 +490,16 @@
                 <summary>Nous contacter
                 </summary>
                 <div class="details-content">
-                <p>Email : <span data-path="contact.email">—</span></p>
-                <p>Téléphone : <span data-path="contact.telephone">—</span></p>
-                <p>Adresse Postale : <span data-path="contact.adresse_postale">—</span></p>
+                <p>Email : <span data-path="contact.email" data-readonly="true">—</span></p>
+                <p>Téléphone : <span data-path="contact.telephone" data-readonly="true">—</span></p>
+                <p>Adresse Postale : <span data-path="contact.adresse_postale" data-readonly="true">—</span></p>
                 </div>
             </details>
         </div>
     </main>
 
     <script>
+
     function showSection(id) {
     // Masquer toutes les sections
     document.querySelectorAll('.section').forEach(section => {
@@ -895,5 +897,31 @@
     // Lorsque la configuration est chargée, s'assurer que les enseignes sont rendues
     // La fonction renderEnseignes est appelée depuis loadConfigToUI après le remplissage des data-paths
     </script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Rétablir la dernière section ouverte si elle a été sauvegardée
+        const savedSection = localStorage.getItem('lastSection') || 'compte';
+        showSection(savedSection);
+
+        // Quand on change de section via le menu, sauvegarder l'état
+        document.querySelectorAll('.menu li').forEach(item => {
+            item.addEventListener('click', () => {
+                const id = item.textContent.trim().toLowerCase();
+                localStorage.setItem('lastSection', id);
+            });
+        });
+    });
+
+    // Quand la config est sauvegardée, conserver la section active
+    const originalSaveConfig = saveConfig;
+    saveConfig = async function() {
+        const currentSection = document.querySelector('.section.active')?.id || 'compte';
+        await originalSaveConfig();  // appelle ta fonction existante
+        localStorage.setItem('lastSection', currentSection);
+        showSection(currentSection); // réactive la section actuelle après mise à jour
+    };
+    </script>
+
 </body>
 </html>

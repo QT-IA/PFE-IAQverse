@@ -518,6 +518,11 @@ details[close] .details-content {
     max-height: 0;
 }
 
+[data-readonly="true"] {
+    cursor: default;
+    pointer-events: none;
+}
+
     /* Styles pour le modal d'édition et les formulaires */
 .form-group {
     margin-bottom: 1rem;
@@ -821,5 +826,3 @@ details[close] .details-content {
 .btn-room:hover { background:#016a2d; }
 
 .remove-btn { background: none; border: none; padding: 4px; cursor: pointer; filter: brightness(0) saturate(100%) invert(12%) sepia(100%) saturate(5000%) hue-rotate(-10deg) brightness(110%) contrast(120%);}
-
-

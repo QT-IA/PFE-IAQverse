@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>IAQverse</title>
   <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
 </head>
 <body>
   <header>
@@ -199,6 +199,20 @@
 
   // Charger les enseignes au démarrage
   document.addEventListener('DOMContentLoaded', loadEnseignes);
+
+  function updateCharts(enseigneId, salleId) {
+  // Cherche les objets correspondants dans la configuration
+  const enseigne = config.lieux.enseignes.find(e => e.id === enseigneId);
+  const salle = enseigne?.pieces?.find(p => p.id === salleId);
+
+  // ⚙️ Utilise les noms (Maison, Salon) pour l'API
+  currentEnseigne = enseigne?.nom || enseigneId;
+  currentSalle = salle?.nom || salleId;
+
+  // Recharge les données et met à jour les graphiques
+  fetchAndUpdate();
+}
+
 </script>
 
   <script src="charts.js"></script>
