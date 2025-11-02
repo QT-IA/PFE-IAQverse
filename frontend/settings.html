@@ -77,6 +77,17 @@
                     <p class="muted">${escapeHtml(enseigne.adresse || '')}</p>
                     <div class="rooms">${roomsHtml}</div>
                     <button class="btn-room" onclick="addPiece('${enseigne.id}')"><img src="/assets/icons/add.png" alt=""> Ajouter une pièce</button>
+
+                    <div id="confirmModal" class="modal" style="display:none;">
+                    <div class="modal-content">
+                        <h3 id="confirmTitle">Confirmation</h3>
+                        <p id="confirmMessage">Voulez-vous vraiment supprimer ?</p>
+                        <div class="modal-actions">
+                        <button id="confirmYes">Oui</button>
+                        <button id="confirmNo">Annuler</button>
+                        </div>
+                    </div>
+                    </div>
                 `;
 
                 container.appendChild(card);
@@ -329,21 +340,49 @@
             });
         }
 
+        function showConfirmation(message, callback) {
+            const modal = document.getElementById("confirmModal");
+            document.getElementById("confirmMessage").textContent = message;
+            modal.style.display = "block";
+
+            const yesBtn = document.getElementById("confirmYes");
+            const noBtn = document.getElementById("confirmNo");
+
+            const cleanup = () => {
+                modal.style.display = "none";
+                yesBtn.onclick = null;
+                noBtn.onclick = null;
+            };
+
+            yesBtn.onclick = () => {
+                cleanup();
+                callback(true);
+            };
+            noBtn.onclick = () => {
+                cleanup();
+                callback(false);
+            };
+        }
+
         async function removeEnseigne(enseigneId) {
-            if (!confirm('Supprimer cette enseigne ?')) return;
+        showConfirmation("Supprimer cette enseigne ?", async (confirmed) => {
+            if (!confirmed) return;
             config.lieux.enseignes = (config.lieux.enseignes || []).filter(e => e.id !== enseigneId);
             if (config.lieux.active === enseigneId) config.lieux.active = (config.lieux.enseignes[0] || {}).id || null;
             await saveConfig();
             renderEnseignes();
+        });
         }
 
         async function removePiece(enseigneId, pieceId) {
-            if (!confirm('Supprimer cette pièce ?')) return;
+        showConfirmation("Supprimer cette pièce ?", async (confirmed) => {
+            if (!confirmed) return;
             const enseigne = (config.lieux.enseignes || []).find(e => e.id === enseigneId);
             if (!enseigne) return;
             enseigne.pieces = (enseigne.pieces || []).filter(p => p.id !== pieceId);
             await saveConfig();
             renderEnseignes();
+        });
         }
         </script>
         </header>

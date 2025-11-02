@@ -580,6 +580,38 @@ details[close] .details-content {
     margin-top: 20px;
 }
 
+.modal-actions button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+#confirmYes {
+    background-color: #4CAF50;
+    color: white;
+}
+
+#confirmYes:hover {
+    background-color: #43a047;
+    transform: scale(1.05);
+}
+
+/* Bouton Annuler (rouge clair) */
+#confirmNo {
+    background-color: #f44336;
+    color: white;
+}
+
+#confirmNo:hover {
+    background-color: #e53935;
+    transform: scale(1.05);
+}
+
+
 .btn,
 .btn-primary,
 .btn-secondary {
