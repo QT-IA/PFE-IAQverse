@@ -92,6 +92,77 @@
 
                 container.appendChild(card);
             });
+            enableDragAndDrop();
+        }
+
+        function enableDragAndDrop() {
+            const container = document.getElementById('enseignes-list');
+            if (!container) return;
+
+            let draggedCard = null;
+
+            container.querySelectorAll('.location-card').forEach(card => {
+                card.draggable = true;
+
+                card.addEventListener('dragstart', (e) => {
+                    draggedCard = card;
+                    e.dataTransfer.effectAllowed = 'move';
+                    card.classList.add('dragging');
+                });
+
+                card.addEventListener('dragend', () => {
+                    card.classList.remove('dragging');
+                    draggedCard = null;
+
+                    // 🔄 Mettre à jour l'ordre dans la config
+                    const newOrder = Array.from(container.children).map(el => {
+                        const name = el.querySelector('h3')?.textContent.trim();
+                        return config.lieux.enseignes.find(e => e.nom === name)?.id;
+                    }).filter(Boolean);
+
+                    // Réordonner les enseignes selon la nouvelle position
+                    config.lieux.enseignes.sort((a, b) => newOrder.indexOf(a.id) - newOrder.indexOf(b.id));
+
+                    // 🔸 L’enseigne la plus à gauche devient la principale
+                    if (config.lieux.enseignes.length > 0) {
+                        config.lieux.active = config.lieux.enseignes[0].id;
+                    }
+
+                    // Sauvegarder la config
+                    fetch('http://localhost:8000/api/saveConfig', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(config)
+                    }).then(() => {
+                        showNotification('Nouvel ordre enregistré');
+                    }).catch(err => console.error(err));
+                });
+
+                card.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    const dragging = container.querySelector('.dragging');
+                    const afterElement = getDragAfterElementHorizontal(container, e.clientX);
+                    if (!afterElement) {
+                        container.appendChild(dragging);
+                    } else {
+                        container.insertBefore(dragging, afterElement);
+                    }
+                });
+            });
+
+            // 📏 Version horizontale du calcul de position
+            function getDragAfterElementHorizontal(container, x) {
+                const draggableElements = [...container.querySelectorAll('.location-card:not(.dragging)')];
+                return draggableElements.reduce((closest, child) => {
+                    const box = child.getBoundingClientRect();
+                    const offset = x - box.left - box.width / 2;
+                    if (offset < 0 && offset > closest.offset) {
+                        return { offset, element: child };
+                    } else {
+                        return closest;
+                    }
+                }, { offset: Number.NEGATIVE_INFINITY }).element;
+            }
         }
 
         function escapeHtml(s){
@@ -264,6 +335,11 @@
                 const enseigne = (config.lieux.enseignes || []).find(e => e.id === enseigneId);
                 if (!enseigne) {
                     showNotification('Enseigne non trouvée', true);
+                    return;
+                }
+
+                if (!glbFileBase64) {
+                    showNotification('Veuillez ajouter un fichier .glb avant de créer la pièce', true);
                     return;
                 }
 
