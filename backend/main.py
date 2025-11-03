@@ -3,39 +3,313 @@
 ###
 
 # Bibliothèques importées
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from datetime import datetime
+from typing import Any
+from pathlib import Path
+from typing import List, Optional
+import pandas as pd
+import math
+import numpy as np
 import json
 from pathlib import Path
 
 app = FastAPI()
 
-# Modèle de données IAQ
+# Modèle de données IAQ — accepter explicitement les valeurs nulles / vides
 class IAQData(BaseModel):
-    timestamp: datetime
-    co2: float
-    pm25: float
-    tvoc: float
-    temperature: float
-    humidity: float
-    enseigne: str
-    salle: str
+    timestamp: Optional[datetime] = None
+    co2: Optional[float] = None
+    pm25: Optional[float] = None
+    tvoc: Optional[float] = None
+    temperature: Optional[float] = None
+    humidity: Optional[float] = None
+    enseigne : Optional[str] = None
+    salle : Optional[str] = None
 
-# Base de données simulée
-iaq_database = [] 
+    # pour gerer les valeurs vides / nulles
+    @validator("*", pre=True)
+    def empty_to_none(cls, v: Any) -> Any:
+        # convertir '', 'null' ou NaN en None
+        if v is None:
+            return None
+        if isinstance(v, str) and v.strip() == "":
+            return None
+        # gérer les floats NaN transmis
+        try:
+            import math
+            if isinstance(v, float) and math.isnan(v):
+                return None
+        except Exception:
+            pass
+        return v
 
-# Endpoint pour envoyer des données capteurs
+    @validator("timestamp", pre=True, always=True)
+    def ensure_timestamp(cls, v: Any) -> datetime:
+        # si pas fourni ou vide -> now en UTC (évite erreurs de validation)
+        if v is None or (isinstance(v, str) and v.strip() == ""):
+            return datetime.utcnow()
+        return v
+
+# Base de données pour POSTs (données envoyées dynamiquement)
+iaq_database: List[dict] = []
+
+# chemin vers le CSV
+DATA_DIR = Path(__file__).parent / "data" / "IoT_Indoor_Air_Quality_Dataset.csv"
+
+def _find_col(cols_map, key_candidates):
+    for k in key_candidates:
+        for k0, v in cols_map.items():
+            if k in k0:
+                return v
+    return None
+
+def load_dataset_df(path: Optional[Path] = None) -> Optional[pd.DataFrame]:
+    """Charge le CSV et retourne un DataFrame standardisé (colonnes: timestamp, co2, pm25, tvoc, temperature, humidity)."""
+    p = Path(path) if path else DATA_DIR
+    if not p or not p.exists():
+        return None
+
+    df = pd.read_csv(p)
+    cols = {c.lower(): c for c in df.columns}
+
+    ts_col = _find_col(cols, ["timestamp", "time", "date", "datetime"])
+    co2_col = _find_col(cols, ["co2", "co_2"])
+    pm25_col = _find_col(cols, ["pm2.5", "pm25", "pm_2_5", "pm2"])
+    tvoc_col = _find_col(cols, ["tvoc"])
+    temp_col = _find_col(cols, ["temperature", "temp"])
+    hum_col = _find_col(cols, ["humidity", "hum"])
+
+    out = pd.DataFrame()
+    # timestamp
+    if ts_col:
+        out["timestamp"] = pd.to_datetime(df[ts_col], dayfirst=True, errors="coerce")
+    else:
+        out["timestamp"] = pd.NaT
+    # numériques
+    def to_num(col):
+        return pd.to_numeric(df[col], errors="coerce") if col else pd.Series([pd.NA]*len(df))
+
+    out["co2"] = to_num(co2_col)
+    out["pm25"] = to_num(pm25_col)
+    out["tvoc"] = to_num(tvoc_col)
+    out["temperature"] = to_num(temp_col)
+    out["humidity"] = to_num(hum_col)
+
+    # supprimer lignes sans timestamp valide
+    out = out.dropna(subset=["timestamp"]).sort_values("timestamp").reset_index(drop=True)
+
+    # rendre les timestamps cohérents (tz-aware UTC) pour comparaisons serveur
+    try:
+        if out["timestamp"].dt.tz is None:
+            out["timestamp"] = out["timestamp"].dt.tz_localize("UTC")
+        else:
+            out["timestamp"] = out["timestamp"].dt.tz_convert("UTC")
+    except Exception:
+        # si problème, on laisse tel quel (comparaisons gérées ensuite)
+        pass
+
+    return out
+
+# charger le DataFrame au démarrage (si présent)
+DATA_DF = load_dataset_df()
+
+def _sanitize_for_storage(d: dict) -> dict:
+    """Prépare l'enregistrement pour stockage/JSON-friendly (datetime -> ISO, NaN/inf -> None, numpy -> Python)."""
+    out = {}
+    for k, v in d.items():
+        # si datetime (déjà formaté en str pour DATA_DF), conserver tel quel
+        if isinstance(v, datetime):
+            out[k] = v.isoformat()
+            continue
+        # pandas/np missing
+        try:
+            if pd.isna(v):
+                out[k] = None
+                continue
+        except Exception:
+            pass
+        # numpy scalar -> python
+        if isinstance(v, np.generic):
+            try:
+                v = v.item()
+            except Exception:
+                pass
+        # floats inf / -inf -> None
+        if isinstance(v, float):
+            if not math.isfinite(v):
+                out[k] = None
+                continue
+        out[k] = v
+    return out
+
+# Endpoint pour envoyer des données capteurs (POST manuel)
 @app.post("/iaq")
 def receive_iaq(data: IAQData):
-    iaq_database.append(data)
-    return {"message": "Données IAQ enregistrées", "data": data}
+    rec = _sanitize_for_storage(data.dict())
+    iaq_database.append(rec)
+    return {"message": "Données IAQ enregistrées", "data": rec}
 
 # Edpoint qui renvoie toutes les données IAQ selon l'enseigne et la salle
 @app.get("/iaq/filter")
 def get_filtered_iaq(enseigne: str, salle: str):
     return [d for d in iaq_database if d.enseigne == enseigne and d.salle == salle]
+# Endpoint qui renvoie toutes les données IAQ — filtrage côté serveur avec pandas
+@app.get("/iaq/all")
+def get_all_iaq(start: Optional[str] = None, end: Optional[str] = None, step: str = "5min"):
+    """
+    Retourne les données IAQ. Paramètres optionnels:
+    - start : début de l'intervalle (format ISO ou tout format accepté par pandas.to_datetime)
+    - end   : fin de l'intervalle
+    - step  : "5min" (par défaut), "daily", "weekly" (renvoie les moyennes sur ces périodes)
+    """
+    step_l = (step or "5min").lower()
+    freq_map = {"5min": "5T", "daily": "D", "weekly": "W"}
+    if step_l not in freq_map:
+        raise HTTPException(status_code=400, detail=f"Paramètre 'step' invalide. Valeurs acceptées: {', '.join(freq_map.keys())}")
+
+    try:
+        start_ts = pd.to_datetime(start, utc=True) if start else None
+        end_ts = pd.to_datetime(end, utc=True) if end else None
+    except Exception:
+        raise HTTPException(status_code=400, detail="Format de date invalide pour 'start' ou 'end'")
+
+    parts = []
+    # filtrer le DataFrame (CSV) si chargé
+    if DATA_DF is not None:
+        df = DATA_DF.copy()
+        try:
+            if df["timestamp"].dt.tz is None:
+                df["timestamp"] = df["timestamp"].dt.tz_localize("UTC")
+            else:
+                df["timestamp"] = df["timestamp"].dt.tz_convert("UTC")
+        except Exception:
+            pass
+
+        mask = pd.Series(True, index=df.index)
+        if start_ts is not None:
+            try:
+                mask &= df["timestamp"] >= start_ts
+            except Exception:
+                pass
+        if end_ts is not None:
+            try:
+                mask &= df["timestamp"] <= end_ts
+            except Exception:
+                pass
+
+        df_res = df.loc[mask]
+        if not df_res.empty:
+            df_out = df_res.copy()
+            try:
+                df_out["timestamp"] = df_out["timestamp"].dt.tz_convert("UTC").dt.strftime("%Y-%m-%dT%H:%M:%S")
+            except Exception:
+                df_out["timestamp"] = df_out["timestamp"].astype(str)
+            raw = df_out.to_dict(orient="records")
+            parts.append([_sanitize_for_storage(r) for r in raw])
+
+    # filtrer les données dynamiques postées en mémoire
+    if iaq_database:
+        posts_df = pd.DataFrame(iaq_database)
+        if not posts_df.empty and "timestamp" in posts_df.columns:
+            posts_df["timestamp"] = pd.to_datetime(posts_df["timestamp"], errors="coerce")
+            try:
+                if posts_df["timestamp"].dt.tz is None:
+                    posts_df["timestamp"] = posts_df["timestamp"].dt.tz_localize("UTC")
+                else:
+                    posts_df["timestamp"] = posts_df["timestamp"].dt.tz_convert("UTC")
+            except Exception:
+                pass
+
+            mask_p = pd.Series(True, index=posts_df.index)
+            if start_ts is not None:
+                try:
+                    mask_p &= posts_df["timestamp"] >= start_ts
+                except Exception:
+                    pass
+            if end_ts is not None:
+                try:
+                    mask_p &= posts_df["timestamp"] <= end_ts
+                except Exception:
+                    pass
+
+            posts_filtered = posts_df.loc[mask_p].copy()
+            if not posts_filtered.empty:
+                try:
+                    posts_filtered["timestamp"] = posts_filtered["timestamp"].dt.tz_convert("UTC").dt.strftime("%Y-%m-%dT%H:%M:%S")
+                except Exception:
+                    posts_filtered["timestamp"] = posts_filtered["timestamp"].astype(str)
+                raw_p = posts_filtered.to_dict(orient="records")
+                parts.append([_sanitize_for_storage(r) for r in raw_p])
+
+    # concat lists de dicts
+    results = []
+    for p in parts:
+        results.extend(p)
+
+    # si pas de résultats -> renvoyer liste vide
+    if not results:
+        return []
+
+    # construire DataFrame depuis les résultats puis resampler selon 'step'
+    combined_df = pd.DataFrame(results)
+    if "timestamp" not in combined_df.columns:
+        return []
+
+    combined_df["timestamp"] = pd.to_datetime(combined_df["timestamp"], utc=True, errors="coerce")
+    combined_df = combined_df.dropna(subset=["timestamp"]).set_index("timestamp").sort_index()
+
+    # fréquence pandas à utiliser
+    freq = freq_map[step_l]
+
+    # colonnes de métriques à agréger
+    metrics = ["co2", "pm25", "tvoc", "temperature", "humidity"]
+    # resample et moyenne sur valeurs numériques
+    try:
+        resampled = combined_df.resample(freq, label="left", closed="left").mean(numeric_only=True)
+    except TypeError:
+        # pour compatibilité pandas plus ancienne
+        resampled = combined_df.resample(freq, label="left", closed="left").mean()
+    # sélectionner uniquement les métriques (si présentes)
+    resampled = resampled.reindex(columns=[c for c in metrics if c in resampled.columns])
+
+    # arrondir les moyennes à 2 chiffres après la virgule
+    try:
+        resampled = resampled.round(2)
+    except Exception:
+        # en cas d'erreur inattendue, on laisse les valeurs originales
+        pass
+
+    # supprimer périodes sans aucune valeur
+    resampled = resampled.dropna(how="all")
+    if resampled.empty:
+        return []
+
+    # formatter timestamp et préparer sortie
+    try:
+        resampled.index = resampled.index.tz_convert("UTC")
+    except Exception:
+        pass
+    resampled = resampled.reset_index()
+    resampled["timestamp"] = resampled["timestamp"].dt.strftime("%Y-%m-%dT%H:%M:%S")
+    out = resampled.to_dict(orient="records")
+    out = [_sanitize_for_storage(r) for r in out]
+
+    return out
+
+# Endpoint pour forcer le rechargement depuis le CSV (utile après mise à jour du fichier)
+@app.post("/iaq/load")
+def reload_from_csv(path: Optional[str] = None):
+    p = Path(path) if path else DATA_DIR
+    if not p or not p.exists():
+        raise HTTPException(status_code=404, detail=f"Fichier introuvable: {p}")
+    global DATA_DF, iaq_database
+    DATA_DF = load_dataset_df(p)
+    # réinitialiser les posts en mémoire (optionnel) — on vide pour éviter doublons
+    iaq_database = []
+    return {"message": "Dataset chargé", "count": len(DATA_DF) if DATA_DF is not None else 0}
 
 # Configuration CORS (Autorisation du Frontend à Interroger l'API)
 app.add_middleware(
