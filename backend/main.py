@@ -59,6 +59,9 @@ iaq_database: List[dict] = []
 # chemin vers le CSV
 DATA_DIR = Path(__file__).parent / "data" / "IoT_Indoor_Air_Quality_Dataset.csv"
 
+##################
+# traitement du CSV pour charger un DataFrame standardisé
+
 def _find_col(cols_map, key_candidates):
     for k in key_candidates:
         for k0, v in cols_map.items():
@@ -146,9 +149,6 @@ def _sanitize_for_storage(d: dict) -> dict:
         out[k] = v
     return out
 
-# Note: POST /iaq endpoint removed (not used). Use internal helpers to add records.
-
-
 # Edpoint qui renvoie toutes les données IAQ selon l'enseigne et la salle
 @app.get("/iaq/filter")
 def get_filtered_iaq(enseigne: str, salle: str):
@@ -164,7 +164,7 @@ def get_filtered_iaq(enseigne: str, salle: str):
     return [d for d in iaq_database if match(d)]
 
 
-# Endpoint qui renvoie toutes les données IAQ — filtrage côté serveur avec pandas
+# Endpoint qui renvoie toutes les données IAQ — filtrage côté serveur (localement pour l'instant) avec pandas
 @app.get("/iaq/all")
 def get_all_iaq(start: Optional[str] = None, end: Optional[str] = None, step: str = "5min"):
     """
@@ -478,6 +478,7 @@ async def save_config_endpoint(updates: dict):
         return {"message": "Configuration mise à jour", "config": config}
     return {"error": "Erreur lors de la sauvegarde"}, 500
 
+# Endpoint de debug pour iaq_database (local)
 @app.get("/iaq/debug")
 def debug_iaq():
     """Endpoint de debug : affiche iaq_database dans les logs et renvoie un résumé."""
