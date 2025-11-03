@@ -152,6 +152,20 @@ header h1 {
     opacity: 1;
 }
 
+a.active-page img {
+    opacity: 1;
+    transform: scale(1.15);
+}
+
+a img {
+    opacity: 0.4;
+    transition: all 0.2s ease;
+}
+
+a:hover img {
+    opacity: 0.6;
+}
+
 .location-tab {
     padding: 10px 20px;
     background-color: #f4f6f8;
