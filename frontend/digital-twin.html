@@ -133,6 +133,28 @@
             <div class="room-label">2 Alertes</div>
         </div>
     </section>
+    </main>
+
+    <footer class="nav-bar">
+    <div class="nav-left">
+        <a href="index.html">
+            <img src="/assets/icons/home.png">
+        </a>
+        <a href="digital-twin.html">
+            <img src="/assets/icons/digital-twin.png">
+        </a>
+    </div>
+
+    <div class="nav-center">
+        <span class="brand">IAQverse</span>
+    </div>
+
+    <div class="nav-right">
+        <a href="settings.html">
+            <img src="/assets/icons/settings.png">
+        </a>
+    </div>
+    </footer>
 
     <script type="module">
         import * as THREE from 'three';
@@ -198,8 +220,33 @@
             controls.update();
         }
 
+        function loadPieceModel(roomId) {
+            const enseigne = config.lieux.enseignes.find(e => e.id === activeEnseigne);
+            if (!enseigne) return;
+
+            const piece = enseigne.pieces.find(p => p.id === roomId);
+            if (!piece || !piece.glbModel) {
+                console.warn('Modèle GLB non défini pour cette pièce');
+                return;
+            }
+
+            const glbPath = piece.glbModel;
+
+            // Supprimer l'ancien modèle si nécessaire
+            if (modelRoot) {
+                scene.remove(modelRoot);
+                modelRoot.traverse(obj => {
+                if (obj.geometry) obj.geometry.dispose();
+                if (obj.material) {
+                    if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
+                    else obj.material.dispose();
+                }
+                });
+                modelRoot = null;
+        }
+
         loader.load(
-            '/assets/rooms/test/room.glb',
+            glbPath,
             function (gltf) {
                 modelRoot = gltf.scene;
                 scene.add(modelRoot);
@@ -217,6 +264,7 @@
                 console.error('Erreur de chargement du modèle:', error);
             }
         );
+        }
 
         // Animations
         function animate() {
@@ -304,30 +352,12 @@
                 el.style.top = y + 'px';
                 el.style.display = 'block';
             });
+
         }
+        // Rendre accessibles les fonctions et variables nécessaires au script global
+        window.loadPieceModel = loadPieceModel;
+        window.frameModel = frameModel;
     </script>
-    </main>
-
-    <footer class="nav-bar">
-    <div class="nav-left">
-        <a href="index.html">
-            <img src="/assets/icons/home.png">
-        </a>
-        <a href="digital-twin.html">
-            <img src="/assets/icons/digital-twin.png">
-        </a>
-    </div>
-
-    <div class="nav-center">
-        <span class="brand">IAQverse</span>
-    </div>
-
-    <div class="nav-right">
-        <a href="settings.html">
-            <img src="/assets/icons/settings.png">
-        </a>
-    </div>
-    </footer>
 
     <script>
     let config = null;
@@ -417,8 +447,8 @@
         tab.classList.toggle('active', tab.dataset.id === roomId);
         });
 
-        // Mettre à jour les graphiques avec les données de la pièce sélectionnée
-        updateCharts(activeEnseigne, roomId);
+        // Charger le modèle 3D de la pièce
+        loadPieceModel(roomId);
     }
 
     function switchEnseigne(enseigneId) {

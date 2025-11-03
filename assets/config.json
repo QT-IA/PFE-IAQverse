@@ -27,7 +27,7 @@
     },
     "notifications": {
         "technologies": {
-            "email": false,
+            "email": true,
             "sms": false,
             "push": true
         },
@@ -47,17 +47,20 @@
                     {
                         "id": "salon1",
                         "nom": "Salon",
-                        "type": "salon"
+                        "type": "salon",
+                        "glbModel": "/assets/rooms/room.glb"
                     },
                     {
                         "id": "cuisine1",
                         "nom": "Cuisine",
-                        "type": "cuisine"
+                        "type": "cuisine",
+                        "glbModel": "/assets/rooms/house.glb"
                     },
                     {
                         "id": "chambre1",
                         "nom": "Chambre",
-                        "type": "chambre"
+                        "type": "chambre",
+                        "glbModel": "/assets/rooms/room.glb"
                     }
                 ]
             },
@@ -69,12 +72,19 @@
                     {
                         "id": "piece_1762004777082",
                         "nom": "Salon",
-                        "type": "salon"
+                        "type": "salon",
+                        "glbModel": "/assets/rooms/room.glb"
+                    },
+                    {
+                        "id": "piece_1762178763443",
+                        "nom": "Chambre Arthur",
+                        "type": "chambre",
+                        "glbModel": "/assets/rooms/house.glb"
                     }
                 ]
             }
         ],
-        "active": "ens_1762004765975"
+        "active": "boutique1"
     },
     "contact": {
         "email": "support@iaqverse.local",

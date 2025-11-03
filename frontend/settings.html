@@ -54,7 +54,7 @@
             </div>
 
     <script>
-    /* ========== Gestion des enseignes & pièces (UI) ========== */
+    /* ========== Gestion des enseignes & pièces (UI) ========== */    
     function renderEnseignes() {
             const container = document.getElementById('enseignes-list');
             if (!container || !config || !config.lieux || !Array.isArray(config.lieux.enseignes)) return;
@@ -251,6 +251,15 @@
                 <div class="form-group"><label>Type</label>
                     <select name="type"><option value="salon">Salon</option><option value="cuisine">Cuisine</option><option value="chambre">Chambre</option><option value="bureau">Bureau</option><option value="autre">Autre</option></select>
                 </div>
+                <div class="form-group">
+                    <label>Modèle 3D (.glb)</label>
+                    <div id="glbDropZone" style="border: 2px dashed #ccc; padding: 20px; text-align: center; cursor: pointer;">
+                        Glissez-déposez un fichier .glb ici
+                    </div>
+                    <input type="file" id="glbInput" accept=".glb" style="display: none;">
+                    <p id="glbFileName" style="font-size: 0.9em; color: #555;"></p>
+                </div>
+
             `, async (formData) => {
                 const enseigne = (config.lieux.enseignes || []).find(e => e.id === enseigneId);
                 if (!enseigne) {
@@ -261,7 +270,8 @@
                 const piece = { 
                     id: 'piece_' + Date.now(), 
                     nom: formData.get('nom'), 
-                    type: formData.get('type') 
+                    type: formData.get('type'),
+                    glbModel: glbFileBase64 || null 
                 };
 
                 // Initialiser le tableau des pièces si nécessaire
@@ -295,6 +305,44 @@
                     showNotification('Erreur lors de l\'ajout de la pièce', true);
                 }
             });
+
+        const dropZone = document.getElementById('glbDropZone');
+        const fileInput = document.getElementById('glbInput');
+        const fileNameDisplay = document.getElementById('glbFileName');
+        let glbFileBase64 = null;
+
+        function handleGLBFile(file) {
+            if (!file || !file.name.endsWith('.glb')) {
+                showNotification('Fichier .glb invalide', true);
+                return;
+            }
+
+            glbFileBase64 = '/assets/rooms/' + file.name;
+            document.getElementById('glbFileName').textContent = file.name;
+        }
+
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        dropZone.addEventListener('dragover', e => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#4CAF50';
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+        dropZone.style.borderColor = '#ccc';
+        });
+
+        dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#ccc';
+        const file = e.dataTransfer.files[0];
+        handleGLBFile(file);
+        });
+
+        fileInput.addEventListener('change', () => {
+        const file = fileInput.files[0];
+        handleGLBFile(file);
+        });
         }
 
         async function editEnseigne(enseigneId) {
