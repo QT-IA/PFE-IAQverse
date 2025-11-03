@@ -1,21 +1,17 @@
 // Configuration
 const REFRESH_MS = 3000; // 3s
 /* Fichier des graphiques IAQ - mise à jour dynamique sans rechargement de la page */
-const API_URL = "http://localhost:8000/iaq/all";
-const WINDOW_MINUTES = 5; // fenêtre de 5 minutes (5 minutes après le départ)
+const API_URL_WINDOW = "http://localhost:8000/iaq/window";
 const chartIds = ["co2-chart", "pm25-chart", "comfort-chart", "tvoc-chart"];
-const config = { responsive: true, displayModeBar: false };
+// Evite le conflit avec la variable globale "config" utilisée par index.html
+const plotlyConfig = { responsive: true, displayModeBar: false };
 
-// Départ fixe demandé
-const BASE_START = new Date("2024-02-18T08:00:00Z");
+// Utiliser des variables globales (var) pour partager avec index.html
+var currentEnseigne = window.currentEnseigne || "Maison";
+var currentSalle = window.currentSalle || "Salon";
+let seenTimestamps = new Set(); // pour déduplication et append
 
-let currentEnseigne = "Maison";
-let currentSalle = "Salon";
-
-// Génère l’URL API selon l’enseigne et la salle
-function getApiUrl() {
-  return `http://localhost:8000/iaq/filter?enseigne=${encodeURIComponent(currentEnseigne)}&salle=${encodeURIComponent(currentSalle)}`;
-}
+// getApiUrl supprimé (filtrage côté client après récupération)
 
 // Affiche un message si aucune donnée
 function renderEmpty(id, message = "Aucune donnée disponible") {
@@ -42,13 +38,13 @@ function initEmptyCharts() {
     "co2-chart",
     [{ x: [], y: [], type: "scatter", mode: "lines+markers" }],
     makeCommonLayout("Évolution du CO₂", "ppm"),
-    config
+    plotlyConfig
   );
   Plotly.newPlot(
     "pm25-chart",
     [{ x: [], y: [], type: "bar" }],
     makeCommonLayout("Concentration de PM2.5", "µg/m³"),
-    config
+    plotlyConfig
   );
   Plotly.newPlot(
     "comfort-chart",
@@ -74,14 +70,25 @@ function initEmptyCharts() {
       // legend at the bottom of the graph
       legend: { orientation: "h", y: -0.2 },
     }),
-    config
+    plotlyConfig
   );
   Plotly.newPlot(
     "tvoc-chart",
     [{ x: [], y: [], type: "scatter" }],
     makeCommonLayout("Concentration de TVOC", "mg/m³"),
-    config
+    plotlyConfig
   );
+}
+
+// Réinitialise les graphiques (appelé lors d'un changement d'enseigne/salle)
+function resetCharts() {
+  // effacer le contenu et réinitialiser les figures vides
+  chartIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = "";
+  });
+  initEmptyCharts();
+  seenTimestamps = new Set();
 }
 
 // Transforme les données en traces Plotly
@@ -141,8 +148,8 @@ function updateChartsWithData(data) {
   const traces = buildTracesFromData(data);
 
   // utiliser Plotly.react pour remplacer efficacement traces + layout
-  Plotly.react("co2-chart", traces.co2, makeCommonLayout("Évolution du CO₂", "ppm"), config);
-  Plotly.react("pm25-chart", traces.pm25, makeCommonLayout("Concentration de PM2.5", "µg/m³"), config);
+  Plotly.react("co2-chart", traces.co2, makeCommonLayout("Évolution du CO₂", "ppm"), plotlyConfig);
+  Plotly.react("pm25-chart", traces.pm25, makeCommonLayout("Concentration de PM2.5", "µg/m³"), plotlyConfig);
   Plotly.react(
     "comfort-chart",
     traces.comfort,
@@ -150,63 +157,83 @@ function updateChartsWithData(data) {
       yaxis2: { title: "Humidité (%)", overlaying: "y", side: "right" },
       legend: { orientation: "h", x: 0.5, xanchor: "center", y: -0.5, yanchor: "bottom" }
     }),
-    config
+    plotlyConfig
   );
-  Plotly.react("tvoc-chart", traces.tvoc, makeCommonLayout("Concentration de TVOC", "mg/m³"), config);
+  Plotly.react("tvoc-chart", traces.tvoc, makeCommonLayout("Concentration de TVOC", "mg/m³"), plotlyConfig);
 }
 
-// --- nouveau : logique d'incrémentation et append --- //
-let currentWindowStart = new Date(BASE_START); // début de la prochaine fenêtre à demander
-const seenTimestamps = new Set(); // pour déduplication
-let allData = []; // données cumulées affichées
+// Pas de fenêtre glissante côté client : on récupère les agrégats côté serveur et on filtre ici
 
 // Récupère les données depuis l’API
 async function fetchAndUpdate() {
   try {
-    const start = new Date(currentWindowStart);
-    const end = new Date(start.getTime() + WINDOW_MINUTES * 60 * 1000);
-    const url = `${API_URL}?start=${encodeURIComponent(start.toISOString())}&end=${encodeURIComponent(end.toISOString())}`;
-
-    const res = await fetch(url);
+    if (typeof window === "undefined" || typeof window.fetch !== "function") {
+      throw new Error("fetch indisponible dans ce contexte");
+    }
+    // demander la dernière heure pour l'enseigne/salle courants (filtrage côté serveur)
+    const params = new URLSearchParams({
+      enseigne: currentEnseigne || "",
+      salle: currentSalle || "",
+      hours: String(1),
+      step: "5min",
+    });
+    const url = `${API_URL_WINDOW}?${params.toString()}`;
+    console.debug("IAQ fetch:", url);
+    const res = await window.fetch(url, { cache: "no-store" });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
+    if (!Array.isArray(data) || data.length === 0) {
+      chartIds.forEach(id => renderEmpty(id, "Pas de données"));
+      return;
+    }
+    // trier par timestamp croissant et afficher
+    data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-    // ajouter uniquement les nouveaux points (déduplication par timestamp exact)
-    let added = 0;
-    for (const d of data) {
-      const tsKey = d.timestamp;
-      if (!tsKey) continue;
-      if (!seenTimestamps.has(tsKey)) {
-        seenTimestamps.add(tsKey);
-        allData.push(d);
-        added++;
-      }
+    // Sélectionner uniquement les nouveaux points (par timestamp unique)
+    const fresh = data.filter(d => d && d.timestamp && !seenTimestamps.has(d.timestamp));
+    if (fresh.length === 0) return; // rien de nouveau
+
+    // Marquer comme vus
+    fresh.forEach(d => seenTimestamps.add(d.timestamp));
+
+    // Si aucun point affiché jusqu'ici (graphiques vides), on dessine tout le set courant
+    const co2El = document.getElementById("co2-chart");
+    const hasData = co2El && co2El.data && co2El.data[0] && co2El.data[0].x && co2El.data[0].x.length > 0;
+    if (!hasData) {
+      updateChartsWithData(data);
+      return;
     }
 
-    if (added > 0) {
-      // trier par timestamp et mettre à jour les graphiques
-      allData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-      updateChartsWithData(allData);
-    }
-
-    // avancer la fenêtre pour le prochain fetch
-    currentWindowStart = end;
+    // Sinon on fait un append incrémental pour chaque graphique
+    const xs = fresh.map(d => (d.timestamp ? new Date(d.timestamp) : null));
+    // CO2
+    const co2 = fresh.map(d => d.co2);
+    Plotly.extendTraces("co2-chart", { x: [xs], y: [co2] }, [0]);
+    // PM2.5
+    const pm25 = fresh.map(d => d.pm25);
+    Plotly.extendTraces("pm25-chart", { x: [xs], y: [pm25] }, [0]);
+    // Comfort (temp & humidity)
+    const temp = fresh.map(d => d.temperature);
+    const hum = fresh.map(d => d.humidity);
+    Plotly.extendTraces("comfort-chart", { x: [xs, xs], y: [temp, hum] }, [0, 1]);
+    // TVOC
+    const tvoc = fresh.map(d => d.tvoc);
+    Plotly.extendTraces("tvoc-chart", { x: [xs], y: [tvoc] }, [0]);
   } catch (err) {
     console.error("Erreur fetch IAQ :", err);
     chartIds.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.innerHTML = `<div style="padding:16px;color:#c00">Erreur: ${err.message}</div>`;
     });
-    // n'avance pas la fenêtre en cas d'erreur réseau — tenté de nouveau au prochain intervalle
   }
 }
 
 /* Initialisation */
 if (typeof window !== "undefined" && typeof Plotly !== "undefined") {
   initEmptyCharts();
-  // premier fetch immédiat (fenêtre BASE_START -> BASE_START + WINDOW_MINUTES)
+  // premier fetch immédiat
   fetchAndUpdate();
-  // actualisations périodiques sans recharger la page (10s) : chaque fois récupère les 5min suivantes
+  // actualisations périodiques sans recharger la page
   setInterval(fetchAndUpdate, REFRESH_MS);
 
   // resize Plotly lorsque la fenêtre change (throttle)
@@ -223,4 +250,12 @@ if (typeof window !== "undefined" && typeof Plotly !== "undefined") {
 } else {
   // si exécuté dans un contexte sans DOM/Plotly
   console.warn("Charts non initialisés : fenêtre ou Plotly introuvable.");
+}
+
+// Exposer explicitement certaines fonctions/états au scope global
+if (typeof window !== "undefined") {
+  window.resetCharts = resetCharts;
+  window.fetchAndUpdate = fetchAndUpdate;
+  window.currentEnseigne = currentEnseigne;
+  window.currentSalle = currentSalle;
 }

@@ -210,6 +210,9 @@
   currentSalle = salle?.nom || salleId;
 
   // Recharge les données et met à jour les graphiques
+  if (typeof window.resetCharts === 'function') {
+    window.resetCharts();
+  }
   fetchAndUpdate();
 }
 
