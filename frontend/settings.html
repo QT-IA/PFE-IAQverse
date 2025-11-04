@@ -93,6 +93,7 @@
                 container.appendChild(card);
             });
             enableDragAndDrop();
+            enablePieceDragAndDrop();
         }
 
         function enableDragAndDrop() {
@@ -114,7 +115,7 @@
                     card.classList.remove('dragging');
                     draggedCard = null;
 
-                    // 🔄 Mettre à jour l'ordre dans la config
+                    // Mettre à jour l'ordre dans la config
                     const newOrder = Array.from(container.children).map(el => {
                         const name = el.querySelector('h3')?.textContent.trim();
                         return config.lieux.enseignes.find(e => e.nom === name)?.id;
@@ -123,7 +124,7 @@
                     // Réordonner les enseignes selon la nouvelle position
                     config.lieux.enseignes.sort((a, b) => newOrder.indexOf(a.id) - newOrder.indexOf(b.id));
 
-                    // 🔸 L’enseigne la plus à gauche devient la principale
+                    // L’enseigne la plus à gauche devient la principale
                     if (config.lieux.enseignes.length > 0) {
                         config.lieux.active = config.lieux.enseignes[0].id;
                     }
@@ -150,7 +151,7 @@
                 });
             });
 
-            // 📏 Version horizontale du calcul de position
+            // Version horizontale du calcul de position
             function getDragAfterElementHorizontal(container, x) {
                 const draggableElements = [...container.querySelectorAll('.location-card:not(.dragging)')];
                 return draggableElements.reduce((closest, child) => {
@@ -163,6 +164,71 @@
                     }
                 }, { offset: Number.NEGATIVE_INFINITY }).element;
             }
+        }
+
+        function enablePieceDragAndDrop() {
+            document.querySelectorAll('.rooms').forEach(roomContainer => {
+                let draggedTag = null;
+
+                roomContainer.querySelectorAll('.room-tag').forEach(tag => {
+                    tag.draggable = true;
+
+                    tag.addEventListener('dragstart', (e) => {
+                        draggedTag = tag;
+                        e.dataTransfer.effectAllowed = 'move';
+                        tag.classList.add('dragging');
+                    });
+
+                    tag.addEventListener('dragend', () => {
+                        tag.classList.remove('dragging');
+                        draggedTag = null;
+
+                        const enseigneCard = tag.closest('.location-card');
+                        const enseigneName = enseigneCard.querySelector('h3').textContent.trim();
+                        const enseigne = config.lieux.enseignes.find(e => e.nom === enseigneName);
+                        if (!enseigne) return;
+
+                        const newOrder = Array.from(roomContainer.children).map(el => {
+                            const name = el.textContent.replace('×', '').trim();
+                            return enseigne.pieces.find(p => p.nom === name)?.id;
+                        }).filter(Boolean);
+
+                        enseigne.pieces.sort((a, b) => newOrder.indexOf(a.id) - newOrder.indexOf(b.id));
+
+                        fetch('http://localhost:8000/api/saveConfig', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(config)
+                        }).then(() => {
+                            showNotification('Ordre des pièces enregistré');
+                        }).catch(err => console.error(err));
+                    });
+
+                    tag.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        const dragging = roomContainer.querySelector('.dragging');
+                        const afterElement = getDragAfterElement(roomContainer, e.clientX);
+                        if (!afterElement) {
+                            roomContainer.appendChild(dragging);
+                        } else {
+                            roomContainer.insertBefore(dragging, afterElement);
+                        }
+                    });
+                });
+
+                function getDragAfterElement(container, x) {
+                    const draggableElements = [...container.querySelectorAll('.room-tag:not(.dragging)')];
+                    return draggableElements.reduce((closest, child) => {
+                        const box = child.getBoundingClientRect();
+                        const offset = x - box.left - box.width / 2;
+                        if (offset < 0 && offset > closest.offset) {
+                            return { offset, element: child };
+                        } else {
+                            return closest;
+                        }
+                    }, { offset: Number.NEGATIVE_INFINITY }).element;
+                }
+            });
         }
 
         function escapeHtml(s){
@@ -580,12 +646,9 @@
         <div id="affichage" class="section">
             <details class="settings-section">
                 <summary>Mode
-                <button class="edit-btn" onclick="editSection('mode')">
-                    <img src="/assets/icons/edit.png" alt="Modifier">
-                </button>
                 </summary>
                 <div class="details-content">
-                <p>Mode : <span data-path="affichage.mode">—</span></p>
+                <p><span data-path="affichage.mode">—</span></p>
                 </div>
             </details>
 
@@ -686,22 +749,6 @@
     }
     }
     </script>
-
-    <script>
-        document.querySelectorAll('.section').forEach(section => {
-        section.querySelectorAll('.settings-section').forEach(details => {
-            details.addEventListener('toggle', function () {
-            if (details.open) {
-                section.querySelectorAll('.settings-section').forEach(other => {
-                if (other !== details) {
-                    other.removeAttribute('open');
-                }
-                });
-            }
-            });
-        });
-        });
-    </script>
     </div>
 
     <div id="editModal" class="modal">
@@ -787,6 +834,7 @@
                 input.value = value.join(', ');
                 input.placeholder = 'Séparer les valeurs par des virgules';
             }
+            
             // Sélection de la langue
             else if (path.endsWith('.langue') || path === 'affichage.langue') {
                 input = document.createElement('select');
@@ -966,7 +1014,7 @@
                     }
                 });
 
-                // Re-render enseignes if present
+                // Re-render enseignes si présent
                 if (typeof renderEnseignes === 'function') renderEnseignes();
             } catch (error) {
                 console.error('Erreur:', error);
@@ -1016,15 +1064,51 @@
                 el.style.cursor = 'pointer';
                 el.addEventListener('click', () => openEditModal(el));
                 return;
-            }                // Mode d'affichage -> afficher un badge (Clair / Sombre) dans la vue d'info
+            }   // Mode d'affichage -> afficher un badge (Clair / Sombre) dans la vue d'info
+
                 if (path === 'affichage.mode') {
-                    const mode = (String(value||'').toLowerCase() === 'sombre') ? 'Sombre' : 'Clair';
-                    const cls = mode === 'Clair' ? 'badge-yes' : 'badge-no';
-                    el.innerHTML = `<span class="badge ${cls}">${mode}</span>`;
-                    el.style.cursor = 'pointer';
-                    el.addEventListener('click', () => openEditModal(el));
+                    const currentMode = String(value || '').toLowerCase();
+
+                    // Créer un select
+                    const select = document.createElement('select');
+                    select.className = 'form-control';
+                    ['Clair', 'Sombre'].forEach(mode => {
+                        const option = document.createElement('option');
+                        option.value = mode.toLowerCase();
+                        option.textContent = mode;
+                        if (mode.toLowerCase() === currentMode) {
+                        option.selected = true;
+                        }
+                        select.appendChild(option);
+                    });
+
+                    // Supprimer le contenu précédent
+                    el.innerHTML = '';
+                    el.appendChild(select);
+
+                    // Sauvegarder la sélection
+                    select.addEventListener('change', async () => {
+                        const newMode = select.value === 'sombre' ? 'Sombre' : 'Clair';
+                        const updates = {};
+                        setByPath(updates, 'affichage.mode', newMode);
+                        setByPath(config, 'affichage.mode', newMode);
+
+                        try {
+                        const r = await fetch('http://localhost:8000/api/saveConfig', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(updates)
+                        });
+                        if (r.ok) showNotification('Mode mis à jour');
+                        else showNotification('Erreur lors de la sauvegarde', true);
+                        } catch (err) {
+                        console.error(err);
+                        showNotification('Erreur lors de la sauvegarde', true);
+                        }
+                    });
+
                     return;
-                }
+                    }
 
                 // Tableaux et autres valeurs : affichage texte et édition par clic
                 if (Array.isArray(value)) {

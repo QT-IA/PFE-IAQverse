@@ -577,6 +577,39 @@ details[close] .details-content {
     margin-right: 8px;
 }
 
+select.form-control {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-color: #ffffff;
+    border: 1px solid #ccc;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: box-shadow .15s ease, border-color .15s ease;
+    cursor: pointer;
+}
+
+select.form-control:focus {
+    outline: none;
+    border-color: #2c3e50;
+    box-shadow: 0 0 5px rgba(44,62,80,0.12);
+}
+
+select.form-control option {
+    background-color: #ffffff;
+    color: #333;
+}
+
+select.form-control option:checked {
+    background-color: #2c3e50;
+    color: #fff;
+}
+
+select.form-control::after {
+    content: '';
+}
+
 .modal .modal-content {
     max-width: 500px;
     padding: 24px;
@@ -624,7 +657,6 @@ details[close] .details-content {
     background-color: #e53935;
     transform: scale(1.05);
 }
-
 
 .btn,
 .btn-primary,
@@ -715,13 +747,16 @@ details[close] .details-content {
     border-radius: 50%;
     box-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
+
 .switch input:checked + .slider { background: #2c3e50; }
 .switch input:checked + .slider:before { transform: translateX(20px); }
 
 /* Mode toggle with labels */
-.mode-toggle { display: inline-flex; align-items: center; gap: 8px; }
-.mode-toggle .mode-label { font-size: 0.9rem; color: #4b5563; }
-.mode-toggle .mode-slider { width: 46px; height: 26px; border-radius: 20px; background: #ccc; display: inline-block; position: relative; }
+.mode-toggle .switch { display: inline-flex; align-items: center; gap: 10px; }
+.mode-slider .switch{ transform: translateY(2px); }
+.inline-mode-toggle .switch {margin: 0; transform: scale(0.9);}
+.mode-toggle .mode-label .switch { color: #4d545f; line-height: 1; vertical-align: middle;}
+.mode-toggle .mode-slider { width: 46px; height: 26px; border-radius: 20px; background: #ccc; display: inline-block; position: relative; vertical-align: middle; }
 .mode-toggle input { display: none; }
 .mode-toggle .mode-slider:after { content: ''; position: absolute; width: 20px; height: 20px; background: white; top:3px; left:3px; border-radius:50%; transition: .2s; box-shadow:0 1px 2px rgba(0,0,0,0.2); }
 .mode-toggle input:checked + .mode-slider { background: #2c3e50; }
@@ -803,7 +838,6 @@ details[close] .details-content {
     font-weight: 700;
 }
 
-/* Badges pour affichage des boolean en lecture seule */
 .badge {
     display: inline-block;
     padding: 6px 10px;
