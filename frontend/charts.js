@@ -23,7 +23,7 @@ function renderEmpty(id, message = "Aucune donnée disponible") {
 function makeCommonLayout(title, yTitle) {
   return {
     autosize: true,
-    margin: { t: 40, r: 20, b: 50, l: 50 },
+    margin: { t: 40, r: 50, b: 50, l: 50 },
     xaxis: { title: "Heure", type: "date" },
     title,
     yaxis: { title: yTitle },
@@ -66,6 +66,7 @@ function initEmptyCharts() {
       },
     ],
     Object.assign(makeCommonLayout("Température & Humidité", "Température (°C)"), {
+      margin: { r: 100, l: 100},
       yaxis2: { title: "Humidité (%)", overlaying: "y", side: "right" },
       // legend at the bottom of the graph
       legend: { orientation: "h", y: -0.2 },

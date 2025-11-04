@@ -596,7 +596,7 @@
 
         <!-- Section du compte -->
         <div id="compte" class="active section">
-            <details class="settings-section">
+            <details id="compte-list-vous" class="settings-section">
                 <summary>Vous
                 <button class="edit-btn" onclick="editSection('vous')">
                     <img src="/assets/icons/edit.png" alt="Modifier">
@@ -613,7 +613,7 @@
                 </div>
             </details>
 
-            <details class="settings-section">
+            <details id="compte-list-assurance" class="settings-section">
                 <summary>Votre assurance
                 <button class="edit-btn" onclick="editSection('assurance')">
                     <img src="/assets/icons/edit.png" alt="Modifier">
@@ -627,7 +627,7 @@
                 </div>
             </details>
 
-            <details class="settings-section">
+            <details id="compte-list-syndicat" class="settings-section">
                 <summary>Votre syndicat
                 <button class="edit-btn" onclick="editSection('syndicat')">
                     <img src="/assets/icons/edit.png" alt="Modifier">
@@ -644,7 +644,7 @@
 
         <!-- Section de l'affichage -->
         <div id="affichage" class="section">
-            <details class="settings-section">
+            <details id="affichage-list-mode" class="settings-section">
                 <summary>Mode
                 </summary>
                 <div class="details-content">
@@ -652,7 +652,7 @@
                 </div>
             </details>
 
-            <details class="settings-section">
+            <details id="affichage-list-langue-localisation" class="settings-section">
                 <summary>Langue & Localisation
                 <button class="edit-btn" onclick="editSection('langue & localisation')">
                     <img src="/assets/icons/edit.png" alt="Modifier">
@@ -667,7 +667,7 @@
 
         <!-- Section des notifications -->
         <div id="notifications" class="section">
-            <details class="settings-section">
+            <details id="notifications-list-technologies" class="settings-section">
                 <summary>Technologies
                 <button class="edit-btn" onclick="editSection('technologies')">
                     <img src="/assets/icons/edit.png" alt="Modifier">
@@ -680,7 +680,7 @@
                 </div>
             </details>
 
-            <details class="settings-section">
+            <details id="notifications-list-type" class="settings-section">
                 <summary>Type
                 <button class="edit-btn" onclick="editSection('type')">
                     <img src="/assets/icons/edit.png" alt="Modifier">
@@ -696,7 +696,7 @@
 
         <!-- Section des lieux (gestion des enseignes & pièces) -->
         <div id="lieux" class="section">
-            <details class="settings-section">
+            <details id="lieux-list" class="settings-section">
                 <summary>Gestion des enseignes
                     <button class="add-btn" type="button" onclick="addEnseigne()" title="Ajouter une enseigne">
                         <img src="/assets/icons/add.png" alt="Ajouter">
@@ -712,7 +712,7 @@
 
         <!-- Section des contacts -->
         <div id="contact" class="section">
-            <details class="settings-section">
+            <details id="contact-list" class="settings-section">
                 <summary>Nous contacter
                 </summary>
                 <div class="details-content">
@@ -1168,6 +1168,43 @@
         localStorage.setItem('lastSection', currentSection);
         showSection(currentSection); // réactive la section actuelle après mise à jour
     };
+
+    // Sauvegarder et restaurer les <details> ouverts
+    document.querySelectorAll("details.settings-section").forEach(d => {
+    d.addEventListener("toggle", () => {
+        if (d.open) {
+        localStorage.setItem("openDetail", d.id);
+        } else {
+        localStorage.removeItem("openDetail");
+        }
+    });
+    });
+
+    window.addEventListener("DOMContentLoaded", () => {
+    const openDetail = localStorage.getItem("openDetail");
+    if (openDetail) {
+        const el = document.getElementById(openDetail);
+        if (el) el.open = true;
+    }
+    });
+
+    // Fermer les autres sections quand une est ouverte
+    document.querySelectorAll("details.settings-section").forEach((current) => {
+    current.addEventListener("toggle", () => {
+        if (current.open) {
+        document.querySelectorAll("details.settings-section").forEach((other) => {
+            if (other !== current && other.open) {
+            other.open = false;
+            }
+        });
+        // Sauvegarde la section ouverte
+        localStorage.setItem("openDetail", current.id);
+        } else {
+        // Si la section vient d'être refermée
+        localStorage.removeItem("openDetail");
+        }
+    });
+    });
     </script>
 
 </body>

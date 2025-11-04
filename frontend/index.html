@@ -114,10 +114,22 @@
 
       renderLocationTabs();
       
-      // Activer la première enseigne par défaut
+      // Activer la première enseigne par défaut ou l'ancienne sélectionnée
+      const savedEnseigne = localStorage.getItem('activeEnseigne');
+      const savedRoom = localStorage.getItem('activeRoom');
+
       if (config.lieux.enseignes.length > 0) {
-        const defaultEnseigne = config.lieux.enseignes.find(e => e.id === config.lieux.active) || config.lieux.enseignes[0];
-        switchEnseigne(defaultEnseigne.id);
+        const defaultEnseigne = savedEnseigne ||
+          (config.lieux.enseignes.find(e => e.id === config.lieux.active) || config.lieux.enseignes[0]).id;
+
+        switchEnseigne(defaultEnseigne);
+
+        if (savedRoom) {
+          const enseigne = config.lieux.enseignes.find(e => e.id === defaultEnseigne);
+          if (enseigne?.pieces?.some(p => p.id === savedRoom)) {
+            switchRoom(savedRoom);
+          }
+        }
       }
     } catch (error) {
       console.error('Erreur lors du chargement des enseignes:', error);
@@ -164,6 +176,7 @@
 
   function switchRoom(roomId) {
     activeRoom = roomId;
+    localStorage.setItem('activeRoom', roomId);
     
     // Mettre à jour l'apparence des onglets
     document.querySelectorAll('.room-tab').forEach(tab => {
@@ -177,6 +190,7 @@
   function switchEnseigne(enseigneId) {
     activeEnseigne = enseigneId;
     activeRoom = null; // Réinitialiser la pièce active
+    localStorage.setItem('activeEnseigne', enseigneId);
     
     // Mettre à jour l'apparence des onglets d'enseignes
     document.querySelectorAll('.location-tab').forEach(tab => {
