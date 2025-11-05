@@ -57,7 +57,7 @@ class IAQData(BaseModel):
 iaq_database: List[dict] = []
 
 # chemin vers le CSV
-DATA_DIR = Path(__file__).parent / "data" / "IoT_Indoor_Air_Quality_Dataset.csv"
+DATA_DIR = Path(__file__).parent.parent / "assets" / "datasets" / "IoT_Indoor_Air_Quality_Dataset.csv"
 
 ##################
 # traitement du CSV pour charger un DataFrame standardisé
