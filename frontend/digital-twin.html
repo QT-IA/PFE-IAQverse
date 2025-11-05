@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <title>IAQverse</title>
     <link rel="stylesheet" href="style.css">
-    <script src="theme.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/config-loader.js"></script>
+    <script src="js/tabs-manager.js"></script>
+    <script src="js/digital-twin.js"></script>
     <script async src="https://unpkg.com/es-module-shims/dist/es-module-shims.js"></script>
     <script type="importmap">
     {
@@ -19,12 +23,12 @@
     <header>
     <h1>Digital Twin</h1>
     <div class="header-buttons">
-      <button class="theme-toggle-btn" onclick="toggleTheme()" title="Changer le thème">
+        <button class="theme-toggle-btn" onclick="toggleTheme()" title="Changer le thème">
         <img src="/assets/icons/theme.png" alt="Thème">
-      </button>
-      <button class="info-btn" onclick="openModal()">
+        </button>
+        <button class="info-btn" onclick="openModal()">
         <img src="/assets/icons/info.png">
-      </button>
+        </button>
     </div>
 
     <div id="infoModal" class="modal">
@@ -40,23 +44,6 @@
     </div>
     </div>
     </header>
-
-    <script>
-        function openModal() {
-            document.getElementById("infoModal").style.display = "block";
-        }
-
-        function closeModal() {
-            document.getElementById("infoModal").style.display = "none";
-        }
-
-        window.onclick = function(event) {
-            const modal = document.getElementById("infoModal");
-            if (event.target === modal) {
-                modal.style.display = "none";
-            }
-        }
-    </script>
 
     <div class="tabs-container">
     <div class="location-tabs" id="location-tabs">
@@ -102,26 +89,6 @@
         </div>
     </section>
 
-    <script>
-    function showDetails(sujet) {
-        const panel = document.getElementById("details-panel");
-        const list = document.getElementById("details-list");
-        panel.classList.remove("hidden");
-        list.innerHTML = "";
-
-        if (sujet === "Fenêtre") {
-            list.innerHTML = `
-            <li>Taux anormal de CO₂ au niveau de la fenêtre</li>
-            <li>Forte concentration de PM2.5</li>
-            `;
-        } else if (sujet === "Tableau") {
-            list.innerHTML = `<li>Légère accumulation de poussière détectée</li>`;
-        } else if (sujet === "Sol") {
-            list.innerHTML = `<li>Sol propre, aucune alerte détectée</li>`;
-        }
-    }
-    </script>
-
     <!-- Colonne droite : Visualisation pièce -->
     <section class="room-panel">
         <h2>Visualisation</h2>
@@ -162,355 +129,8 @@
     </div>
     </footer>
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    <script type="module" src="js/three-scene.js"></script>
 
-    const container = document.getElementById('blender-viewer');
-        
-    if (!container.style.position) container.style.position = 'relative';
-    if (!container.style.width) container.style.width = '700px';
-    if (!container.style.height) container.style.height = '400px';
-
-        const width = container.clientWidth || 700;
-        const height = container.clientHeight || 400;
-
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-        renderer.setPixelRatio(window.devicePixelRatio || 1);
-        renderer.setSize(width, height);
-        container.appendChild(renderer.domElement);
-
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 2000);
-
-        // Lumières
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-        scene.add(ambientLight);
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        dirLight.position.set(5, 10, 7.5);
-        scene.add(dirLight);
-
-        // Contrôles
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.08;
-        controls.screenSpacePanning = false;
-        controls.minDistance = 0.5;
-        controls.maxDistance = 500;
-        controls.maxPolarAngle = Math.PI / 2.1;
-
-        const loader = new GLTFLoader();
-        let modelRoot = null;
-
-        function frameModel(object3d, offsetFactor = 1.5) {
-            const box = new THREE.Box3().setFromObject(object3d);
-            const center = box.getCenter(new THREE.Vector3());
-            const size = box.getSize(new THREE.Vector3());
-            const maxDim = Math.max(size.x, size.y, size.z);
-
-            // Centrer les objets
-            object3d.position.x = object3d.position.x - center.x;
-            object3d.position.y = object3d.position.y - center.y;
-            object3d.position.z = object3d.position.z - center.z;
-
-            // Position de la caméra
-            const cameraZ = maxDim * offsetFactor;
-            camera.position.set(cameraZ, cameraZ * 0.6, cameraZ);
-            camera.near = Math.max(0.1, maxDim / 100);
-            camera.far = Math.max(1000, maxDim * 10);
-            camera.updateProjectionMatrix();
-
-            // Centrer le modèle
-            controls.target.set(0, 0, 0);
-            controls.update();
-        }
-
-        function loadPieceModel(roomId) {
-            const enseigne = config.lieux.enseignes.find(e => e.id === activeEnseigne);
-            if (!enseigne) return;
-
-            const piece = enseigne.pieces.find(p => p.id === roomId);
-            if (!piece || !piece.glbModel) {
-                console.warn('Modèle GLB non défini pour cette pièce');
-
-                // Supprimer le modèle précédent s’il existe
-                if (modelRoot) {
-                    scene.remove(modelRoot);
-                    modelRoot.traverse(obj => {
-                        if (obj.geometry) obj.geometry.dispose();
-                        if (obj.material) {
-                            if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
-                            else obj.material.dispose();
-                        }
-                    });
-                    modelRoot = null;
-                }
-
-                renderer.render(scene, camera);
-                return;
-            }
-
-            const glbPath = piece.glbModel;
-
-            // Supprimer l'ancien modèle si nécessaire
-            if (modelRoot) {
-                scene.remove(modelRoot);
-                modelRoot.traverse(obj => {
-                if (obj.geometry) obj.geometry.dispose();
-                if (obj.material) {
-                    if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
-                    else obj.material.dispose();
-                }
-                });
-                modelRoot = null;
-        }
-
-        loader.load(
-            glbPath,
-            function (gltf) {
-                modelRoot = gltf.scene;
-                scene.add(modelRoot);
-
-                frameModel(modelRoot, 1.1);
-
-                animate();
-            },
-            function (xhr) {
-                if (xhr.lengthComputable) {
-                    console.log('Chargement GLB: ' + Math.round((xhr.loaded / xhr.total) * 100) + '%');
-                }
-            },
-            function (error) {
-                console.error('Erreur de chargement du modèle:', error);
-            }
-        );
-        }
-
-        // Animations
-        function animate() {
-            requestAnimationFrame(animate);
-            controls.update();
-            // Mis a jour 2D des positions des points d'alertes à partir du modèle 3D
-            updateAlertPoints();
-            renderer.render(scene, camera);
-        }
-
-        // Retailler
-        window.addEventListener('resize', () => {
-            const w = container.clientWidth || 800;
-            const h = container.clientHeight || 600;
-            camera.aspect = w / h;
-            camera.updateProjectionMatrix();
-            renderer.setSize(w, h);
-        });
-
-        // Raccourci clavier pour centrer le modèle (F)
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'f' && modelRoot) {
-                frameModel(modelRoot, 1.1);
-            }
-        });
-
-        // Bouton pour centrer le modèle
-        const frameBtn = document.getElementById('frame-btn');
-        if (frameBtn) {
-            frameBtn.addEventListener('click', () => {
-                if (modelRoot) frameModel(modelRoot, 1.1);
-            });
-        }
-
-        // Points d'alertes : projection 3D
-        function findTargetObjectByNames(root, names) {
-            const lowerNames = names.map(n => n.trim().toLowerCase()).filter(Boolean);
-            let found = null;
-            root.traverse((child) => {
-                if (found) return;
-                if (!child.name) return;
-                const lname = child.name.toLowerCase();
-                for (const n of lowerNames) {
-                    if (lname === n || lname.indexOf(n) !== -1) {
-                        found = child;
-                        return;
-                    }
-                }
-            });
-            return found;
-        }
-
-        function updateAlertPoints() {
-            const points = document.querySelectorAll('.alert-point');
-            if (!modelRoot || points.length === 0) return;
-
-            points.forEach(el => {
-                el.style.position = 'absolute';
-
-                const targetNames = (el.getAttribute('data-target-names') || '').split('|').map(s => s.trim()).filter(Boolean);
-                if (targetNames.length === 0) return;
-
-                const target = findTargetObjectByNames(modelRoot, targetNames);
-                if (!target) {
-                    el.style.display = 'none';
-                    return;
-                }
-
-                const worldPos = new THREE.Vector3();
-                target.getWorldPosition(worldPos);
-
-                const ndc = worldPos.clone().project(camera);
-
-                if (ndc.z > 1 || ndc.z < -1) {
-                    el.style.display = 'none';
-                    return;
-                }
-
-                const rectW = container.clientWidth || 700;
-                const rectH = container.clientHeight || 400;
-                const x = (ndc.x * 0.5 + 0.5) * rectW;
-                const y = (-ndc.y * 0.5 + 0.5) * rectH;
-
-                el.style.left = x + 'px';
-                el.style.top = y + 'px';
-                el.style.display = 'block';
-            });
-
-        }
-        // Rendre accessibles les fonctions et variables nécessaires au script global
-        window.loadPieceModel = loadPieceModel;
-        window.frameModel = frameModel;
-    </script>
-
-    <script>
-    let config = null;
-    let activeEnseigne = null;
-
-    async function loadEnseignes() {
-        try {
-        // Essayer d'abord l'API du backend
-        const response = await fetch('http://localhost:8000/config');
-        if (response.ok) {
-            config = await response.json();
-        } else {
-            // Sinon essayer de charger le fichier statique
-            const candidates = ['/assets/config.json', '../assets/config.json', 'assets/config.json'];
-            for (const path of candidates) {
-            try {
-                const r = await fetch(path, {cache: 'no-store'});
-                if (!r.ok) continue;
-                config = await r.json();
-                break;
-            } catch (e) {
-                continue;
-            }
-            }
-        }
-
-        if (!config || !config.lieux || !config.lieux.enseignes) {
-            console.error('Pas d\'enseignes trouvées dans la configuration');
-            return;
-        }
-
-        renderLocationTabs();
-        
-        // Activer la première enseigne par défaut ou l'ancienne sélectionnée
-        const savedEnseigne = localStorage.getItem('activeEnseigne');
-        const savedRoom = localStorage.getItem('activeRoom');
-
-        if (config.lieux.enseignes.length > 0) {
-        const defaultEnseigne = savedEnseigne ||
-            (config.lieux.enseignes.find(e => e.id === config.lieux.active) || config.lieux.enseignes[0]).id;
-
-        switchEnseigne(defaultEnseigne);
-
-        if (savedRoom) {
-            const enseigne = config.lieux.enseignes.find(e => e.id === defaultEnseigne);
-            if (enseigne?.pieces?.some(p => p.id === savedRoom)) {
-            switchRoom(savedRoom);
-            }
-        }
-        }
-        } catch (error) {
-        console.error('Erreur lors du chargement des enseignes:', error);
-        }
-    }
-
-    function renderLocationTabs() {
-        const tabsContainer = document.getElementById('location-tabs');
-        tabsContainer.innerHTML = config.lieux.enseignes.map(enseigne => `
-        <div class="location-tab${enseigne.id === activeEnseigne ? ' active' : ''}" 
-                onclick="switchEnseigne('${enseigne.id}')"
-                data-id="${enseigne.id}">
-            <img src="/assets/icons/building.png" alt="Enseigne">
-            ${escapeHtml(enseigne.nom)}
-        </div>
-        `).join('');
-    }
-
-    let activeRoom = null;
-
-    function renderRoomTabs(enseigneId) {
-        const roomTabs = document.getElementById('room-tabs');
-        const enseigne = config.lieux.enseignes.find(e => e.id === enseigneId);
-        
-        if (!enseigne || !Array.isArray(enseigne.pieces)) {
-        roomTabs.innerHTML = '<div class="room-tab">Aucune pièce</div>';
-        return;
-        }
-
-        roomTabs.innerHTML = enseigne.pieces.map(piece => `
-        <div class="room-tab${piece.id === activeRoom ? ' active' : ''}" 
-                onclick="switchRoom('${piece.id}')"
-                data-id="${piece.id}">
-            <img src="/assets/icons/${piece.type || 'room'}.png" alt="${piece.type || 'Pièce'}">
-            ${escapeHtml(piece.nom)}
-        </div>
-        `).join('');
-
-        // Si aucune pièce n'est active, activer la première
-        if (!activeRoom && enseigne.pieces.length > 0) {
-        switchRoom(enseigne.pieces[0].id);
-        }
-    }
-
-    function switchRoom(roomId) {
-        activeRoom = roomId;
-        localStorage.setItem('activeRoom', roomId);
-        
-        // Mettre à jour l'apparence des onglets
-        document.querySelectorAll('.room-tab').forEach(tab => {
-        tab.classList.toggle('active', tab.dataset.id === roomId);
-        });
-
-        // Charger le modèle 3D de la pièce
-        loadPieceModel(roomId);
-    }
-
-    function switchEnseigne(enseigneId) {
-        activeEnseigne = enseigneId;
-        activeRoom = null; // Réinitialiser la pièce active
-        localStorage.setItem('activeEnseigne', enseigneId);
-        
-        // Mettre à jour l'apparence des onglets d'enseignes
-        document.querySelectorAll('.location-tab').forEach(tab => {
-        tab.classList.toggle('active', tab.dataset.id === enseigneId);
-        });
-
-        // Mettre à jour les onglets des pièces pour l'enseigne sélectionnée
-        renderRoomTabs(enseigneId);
-    }
-
-    function escapeHtml(s) {
-        if (s === undefined || s === null) return '';
-        return String(s)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
-
-    // Charger les enseignes au démarrage
-    document.addEventListener('DOMContentLoaded', loadEnseignes);
-    </script>
+    
 </body>
 </html>
