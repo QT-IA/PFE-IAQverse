@@ -4,14 +4,20 @@
   <meta charset="UTF-8">
   <title>IAQverse</title>
   <link rel="stylesheet" href="style.css">
+  <script src="theme.js"></script>
   <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
 </head>
 <body>
   <header>
     <h1>Dashboard</h1>
-    <button class="info-btn" onclick="openModal()">
-      <img src="/assets/icons/info.png">
-    </button>
+    <div class="header-buttons">
+      <button class="theme-toggle-btn" onclick="toggleTheme()" title="Changer le thème">
+        <img src="/assets/icons/theme.png" alt="Thème">
+      </button>
+      <button class="info-btn" onclick="openModal()">
+        <img src="/assets/icons/info.png">
+      </button>
+    </div>
 
     <div id="infoModal" class="modal">
     <div class="modal-content">

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>IAQverse</title>
     <link rel="stylesheet" href="style.css">
+    <script src="theme.js"></script>
 </head>
 <body>
     <div class="settings-layout">
@@ -34,9 +35,14 @@
 
         <header>
         <h1>Paramètres</h1>
-        <button class="info-btn" onclick="openModal()">
+        <div class="header-buttons">
+          <button class="theme-toggle-btn" onclick="toggleTheme()" title="Changer le thème">
+            <img src="/assets/icons/theme.png" alt="Thème">
+          </button>
+          <button class="info-btn" onclick="openModal()">
             <img src="/assets/icons/info.png">
-            </button>
+          </button>
+        </div>
 
             <div id="infoModal" class="modal">
             <div class="modal-content">
@@ -1124,6 +1130,11 @@
             });
             // Rendre les enseignes visibles si elles sont présentes
             if (typeof renderEnseignes === 'function') renderEnseignes();
+            
+            // Appliquer le thème depuis la configuration
+            if (config?.affichage?.mode) {
+                applyTheme(config.affichage.mode);
+            }
         } catch (error) {
             console.error('Erreur:', error);
             showNotification('Erreur lors du chargement de la configuration', true);

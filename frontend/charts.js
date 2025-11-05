@@ -21,13 +21,33 @@ function renderEmpty(id, message = "Aucune donnée disponible") {
 
 // Mise en page commune des graphiques
 function makeCommonLayout(title, yTitle) {
+  // Détecter le thème actuel
+  const isDark = document.documentElement.getAttribute('data-theme') === 'sombre';
+  
   return {
     autosize: true,
     margin: { t: 40, r: 50, b: 50, l: 50 },
-    xaxis: { title: "Heure", type: "date" },
-    title,
-    yaxis: { title: yTitle },
-    font: { family: "Segoe UI, sans-serif" },
+    xaxis: { 
+      title: "Heure", 
+      type: "date",
+      color: isDark ? '#a8b2c1' : '#2c3e50',
+      gridcolor: isDark ? '#3a4049' : '#e2e8f0'
+    },
+    title: {
+      text: title,
+      font: { color: isDark ? '#e4e7eb' : '#2c3e50' }
+    },
+    yaxis: { 
+      title: yTitle,
+      color: isDark ? '#a8b2c1' : '#2c3e50',
+      gridcolor: isDark ? '#3a4049' : '#e2e8f0'
+    },
+    font: { 
+      family: "Segoe UI, sans-serif",
+      color: isDark ? '#e4e7eb' : '#2c3e50'
+    },
+    paper_bgcolor: isDark ? '#252930' : '#ffffff',
+    plot_bgcolor: isDark ? '#252930' : '#ffffff'
   };
 }
 
@@ -259,4 +279,51 @@ if (typeof window !== "undefined") {
   window.fetchAndUpdate = fetchAndUpdate;
   window.currentEnseigne = currentEnseigne;
   window.currentSalle = currentSalle;
+  window.refreshChartsTheme = refreshChartsTheme;
+}
+
+// Fonction pour rafraîchir les graphiques lors du changement de thème
+function refreshChartsTheme() {
+  chartIds.forEach(id => {
+    const gd = document.getElementById(id);
+    if (gd && gd.data && gd.data.length > 0) {
+      // Récupérer le layout actuel et le mettre à jour avec le nouveau thème
+      const currentLayout = gd.layout;
+      
+      // Déterminer le titre actuel pour recréer le layout
+      let title = "";
+      let yaxisTitle = "";
+      
+      switch(id) {
+        case "co2-chart":
+          title = "Évolution du CO₂";
+          yaxisTitle = "ppm";
+          break;
+        case "pm25-chart":
+          title = "Concentration de PM2.5";
+          yaxisTitle = "µg/m³";
+          break;
+        case "comfort-chart":
+          title = "Température & Humidité";
+          yaxisTitle = "Température (°C)";
+          break;
+        case "tvoc-chart":
+          title = "Concentration de TVOC";
+          yaxisTitle = "mg/m³";
+          break;
+      }
+      
+      // Créer un nouveau layout avec le thème actuel
+      const newLayout = makeCommonLayout(title, yaxisTitle);
+      
+      // Préserver les configurations spécifiques (comme yaxis2 pour comfort-chart)
+      if (id === "comfort-chart" && currentLayout.yaxis2) {
+        newLayout.yaxis2 = currentLayout.yaxis2;
+        newLayout.legend = currentLayout.legend;
+      }
+      
+      // Mettre à jour le graphique avec le nouveau layout
+      Plotly.react(id, gd.data, newLayout, plotlyConfig);
+    }
+  });
 }
