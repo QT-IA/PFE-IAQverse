@@ -21,7 +21,7 @@
         "adresse": "20 boulevard du Syndicat"
     },
     "affichage": {
-        "mode": "Clair",
+        "mode": "Sombre",
         "langue": "Français",
         "localisation": "Europe, Paris"
     },
@@ -39,6 +39,25 @@
     },
     "lieux": {
         "enseignes": [
+            {
+                "id": "ens_1762004765975",
+                "nom": "Maison",
+                "adresse": "123 rue d'Avron",
+                "pieces": [
+                    {
+                        "id": "piece_1762004777082",
+                        "nom": "Salon",
+                        "type": "salon",
+                        "glbModel": "/assets/rooms/room.glb"
+                    },
+                    {
+                        "id": "piece_1762178763443",
+                        "nom": "Chambre Arthur",
+                        "type": "chambre",
+                        "glbModel": "/assets/rooms/house.glb"
+                    }
+                ]
+            },
             {
                 "id": "boutique1",
                 "nom": "Boutique",
@@ -63,28 +82,9 @@
                         "glbModel": "/assets/rooms/room.glb"
                     }
                 ]
-            },
-            {
-                "id": "ens_1762004765975",
-                "nom": "Maison",
-                "adresse": "123 rue d'Avron",
-                "pieces": [
-                    {
-                        "id": "piece_1762004777082",
-                        "nom": "Salon",
-                        "type": "salon",
-                        "glbModel": "/assets/rooms/room.glb"
-                    },
-                    {
-                        "id": "piece_1762178763443",
-                        "nom": "Chambre Arthur",
-                        "type": "chambre",
-                        "glbModel": "/assets/rooms/house.glb"
-                    }
-                ]
             }
         ],
-        "active": "boutique1"
+        "active": "ens_1762004765975"
     },
     "contact": {
         "email": "support@iaqverse.local",
