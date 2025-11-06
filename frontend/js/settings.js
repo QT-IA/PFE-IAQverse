@@ -38,6 +38,17 @@ function setByPath(obj, path, value) {
   return obj;
 }
 
+// Sanitize a string for use in filenames: remove diacritics, spaces -> _, keep a-z0-9_-
+function sanitizeForFilename(s) {
+  if (!s) return 'file';
+  try {
+    // normalize and remove diacritics
+      s = s.normalize('NFD').replace(/[\u0000-\u036f]/g, '');
+  } catch (e) {}
+    const res = String(s).toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_\-]/g, '');
+    return res || 'file';
+}
+
 // Groupe de champs dynamique pour la modale d'édition
 function createFormGroup(label, path, value) {
   const group = document.createElement('div');
@@ -310,6 +321,15 @@ async function addEnseigne() {
   const newEn = { id: 'ens_' + Date.now(), nom: formData.get('nom'), adresse: formData.get('adresse') || '', pieces: [] };
   if (!settingsConfig.lieux) settingsConfig.lieux = { enseignes: [], active: null };
   if (!Array.isArray(settingsConfig.lieux.enseignes)) settingsConfig.lieux.enseignes = [];
+  // validate unique enseigne name (case-insensitive)
+  const newName = (newEn.nom || '').toString().trim().toLowerCase();
+  const duplicate = (settingsConfig.lieux.enseignes || []).some(e => (e.nom || '').toString().trim().toLowerCase() === newName);
+  if (duplicate) {
+    showNotification('Une enseigne avec ce nom existe déjà', true);
+    // close modal and do not add
+    document.getElementById('editModal').style.display = 'none';
+    return;
+  }
   settingsConfig.lieux.enseignes.push(newEn);
   settingsConfig.lieux.active = newEn.id;
 
@@ -339,11 +359,42 @@ async function addPiece(enseigneId) {
   `, async (formData) => {
   const enseigne = (settingsConfig.lieux.enseignes || []).find(e => e.id === enseigneId);
     if (!enseigne) { showNotification('Enseigne non trouvée', true); return; }
-    if (!glbFileBase64) { showNotification('Veuillez ajouter un fichier .glb avant de créer la pièce', true); return; }
+    // get piece name + type
+    const pieceName = formData.get('nom');
+    const pieceType = formData.get('type');
 
-    const piece = { id: 'piece_' + Date.now(), nom: formData.get('nom'), type: formData.get('type'), glbModel: glbFileBase64 || null };
+    const piece = { id: 'piece_' + Date.now(), nom: pieceName, type: pieceType, glbModel: null };
     if (!Array.isArray(enseigne.pieces)) enseigne.pieces = [];
     enseigne.pieces.push(piece);
+    // If a GLB file was selected, upload it to the backend with the naming convention enseigne_piece.glb
+    try {
+      if (glbFile) {
+  // Build deterministic filename using enseigne and piece IDs but normalize them to avoid empty values
+  const rawEns = String(enseigne.id || enseigneId || 'unknown');
+  const rawPiece = String(piece.id || Date.now());
+  // Use raw IDs and strip any existing 'ens'/'piece' prefixes — no sanitize here to debug the issue
+  const ensSuffix = rawEns.replace(/^ens[_-]?/, '') || 'unknown';
+  const pieceSuffix = rawPiece.replace(/^piece[_-]?/, '') || String(Date.now());
+  const filename = `ens_${ensSuffix}_piece_${pieceSuffix}.glb`;
+        const fd = new FormData();
+        fd.append('file', glbFile, filename);
+        fd.append('filename', filename);
+
+        const upResp = await fetch('http://localhost:8000/api/uploadGlb', {
+          method: 'POST', body: fd
+        });
+        if (!upResp.ok) throw new Error('Erreur upload');
+        const upJson = await upResp.json();
+        if (upJson && upJson.path) {
+          piece.glbModel = upJson.path;
+        } else {
+          showNotification('Upload du modèle .glb échoué, la pièce sera créée sans 3D', true);
+        }
+      }
+    } catch (err) {
+      console.error('Upload GLB error', err);
+      showNotification('Erreur lors de l’upload du modèle 3D', true);
+    }
 
     try {
       const response = await fetch('http://localhost:8000/api/saveConfig', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settingsConfig) });
@@ -357,11 +408,11 @@ async function addPiece(enseigneId) {
 
   const dropZone = document.getElementById('glbDropZone');
   const fileInput = document.getElementById('glbInput');
-  let glbFileBase64 = null;
+  let glbFile = null;
 
   function handleGLBFile(file) {
-    if (!file || !file.name.endsWith('.glb')) { showNotification('Fichier .glb invalide', true); return; }
-    glbFileBase64 = '/assets/rooms/' + file.name;
+    if (!file || !file.name.toLowerCase().endsWith('.glb')) { showNotification('Fichier .glb invalide', true); return; }
+    glbFile = file;
     document.getElementById('glbFileName').textContent = file.name;
   }
 
@@ -380,7 +431,14 @@ async function editEnseigne(enseigneId) {
     <div class="form-group"><label>Nom</label><input name="nom" type="text" value="${escapeHtml(enseigne.nom)}" required></div>
     <div class="form-group"><label>Adresse</label><input name="adresse" type="text" value="${escapeHtml(enseigne.adresse || '')}"></div>
   `, async (formData) => {
-    enseigne.nom = formData.get('nom');
+    const newName = (formData.get('nom') || '').toString().trim();
+    // check uniqueness among other enseignes
+    const conflict = (settingsConfig.lieux.enseignes || []).some(e => e.id !== enseigneId && (e.nom || '').toString().trim().toLowerCase() === newName.toLowerCase());
+    if (conflict) {
+      showNotification('Une autre enseigne utilise déjà ce nom', true);
+      return;
+    }
+    enseigne.nom = newName;
     enseigne.adresse = formData.get('adresse');
 
     try {
@@ -409,9 +467,25 @@ function showConfirmation(message, callback) {
 async function removeEnseigne(enseigneId) {
   showConfirmation('Supprimer cette enseigne ?', async (confirmed) => {
     if (!confirmed) return;
+  // collect GLB paths to delete for all pieces of the enseigne
+  const enseigne = (settingsConfig.lieux.enseignes || []).find(e => e.id === enseigneId);
+  const pathsToDelete = [];
+  if (enseigne && Array.isArray(enseigne.pieces)) {
+    enseigne.pieces.forEach(p => { if (p && p.glbModel) pathsToDelete.push(p.glbModel); });
+  }
+  try {
+    if (pathsToDelete.length > 0) {
+      await fetch('http://localhost:8000/api/deleteFiles', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(pathsToDelete) });
+    }
+  } catch (err) {
+    console.error('Erreur suppression fichiers GLB:', err);
+    showNotification('Erreur lors de la suppression des fichiers 3D', true);
+  }
+
   settingsConfig.lieux.enseignes = (settingsConfig.lieux.enseignes || []).filter(e => e.id !== enseigneId);
   if (settingsConfig.lieux.active === enseigneId) settingsConfig.lieux.active = (settingsConfig.lieux.enseignes[0] || {}).id || null;
     await saveConfigAll();
+    showNotification('Enseigne supprimée avec succès');
     renderEnseignes();
   });
 }
@@ -421,8 +495,21 @@ async function removePiece(enseigneId, pieceId) {
     if (!confirmed) return;
   const enseigne = (settingsConfig.lieux.enseignes || []).find(e => e.id === enseigneId);
     if (!enseigne) return;
+    const piece = (enseigne.pieces || []).find(p => p.id === pieceId);
+    const pathsToDelete = [];
+    if (piece && piece.glbModel) pathsToDelete.push(piece.glbModel);
+    try {
+      if (pathsToDelete.length > 0) {
+        await fetch('http://localhost:8000/api/deleteFiles', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(pathsToDelete) });
+      }
+    } catch (err) {
+      console.error('Erreur suppression fichier GLB:', err);
+      showNotification('Erreur lors de la suppression du fichier 3D', true);
+    }
+
     enseigne.pieces = (enseigne.pieces || []).filter(p => p.id !== pieceId);
     await saveConfigAll();
+    showNotification('Pièce supprimée avec succès');
     renderEnseignes();
   });
 }

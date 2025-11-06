@@ -3,7 +3,7 @@
 ###
 
 # Bibliothèques importées
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Body
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, field_validator
 from datetime import datetime
@@ -449,6 +449,78 @@ def save_config(config):
     except Exception as e:
         print(f"Erreur lors de la sauvegarde de la configuration : {e}")
         return False
+
+
+@app.post("/api/uploadGlb")
+async def upload_glb(file: UploadFile = File(...), filename: str = Form(...)):
+    """Upload d'un fichier .glb via multipart/form-data.
+    Le fichier est enregistré dans assets/rooms/<filename>. Retourne le chemin relatif pour l'UI.
+    """
+    try:
+        # valider extension
+        if not filename.lower().endswith('.glb'):
+            raise HTTPException(status_code=400, detail="Le nom de fichier doit se terminer par .glb")
+
+        rooms_dir = Path(__file__).resolve().parent.parent / 'assets' / 'rooms'
+        rooms_dir.mkdir(parents=True, exist_ok=True)
+
+        safe_name = Path(filename).name
+        target = rooms_dir / safe_name
+
+        # write file
+        contents = await file.read()
+        with open(target, 'wb') as f:
+            f.write(contents)
+
+        rel = f"/assets/rooms/{safe_name}"
+        logger.info("Uploaded GLB to %s", target)
+        return {"path": rel}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Erreur lors de l'upload GLB: %s", e)
+        raise HTTPException(status_code=500, detail="Erreur lors de l'upload du fichier")
+
+
+@app.post("/api/deleteFiles")
+async def delete_files(paths: List[str] = Body(...)):
+    """Supprime des fichiers listés dans le dossier assets/rooms.
+    Le paramètre `paths` peut contenir des valeurs comme '/assets/rooms/name.glb' ou simplement 'name.glb'.
+    On valide que la suppression reste confinée à assets/rooms pour éviter toute suppression arbitraire.
+    """
+    rooms_dir = Path(__file__).resolve().parent.parent / 'assets' / 'rooms'
+    rooms_dir.mkdir(parents=True, exist_ok=True)
+    deleted = []
+    not_found = []
+    errors = {}
+    for p in paths:
+        try:
+            name = str(p or '')
+            # normalize possible prefixes
+            if name.startswith('/'):
+                name = name.lstrip('/')
+            if name.startswith('assets/rooms/'):
+                name = name[len('assets/rooms/'):]
+            # take only the basename to avoid directory traversal
+            name = Path(name).name
+            target = rooms_dir / name
+            try:
+                resolved = target.resolve()
+            except Exception as e:
+                errors[p] = f"Invalid path: {e}"
+                continue
+            # ensure the file is inside rooms_dir
+            if resolved.parent != rooms_dir.resolve():
+                errors[p] = 'Path outside allowed directory'
+                continue
+            if target.exists():
+                target.unlink()
+                deleted.append(f"/assets/rooms/{name}")
+            else:
+                not_found.append(p)
+        except Exception as e:
+            errors[p] = str(e)
+    return {"deleted": deleted, "not_found": not_found, "errors": errors}
 
 @app.get("/config")
 def get_config():
