@@ -41,6 +41,8 @@ controls.maxPolarAngle = Math.PI / 2.1;
 
 const loader = new GLTFLoader();
 let modelRoot = null;
+let isLoading = false; // prevent concurrent loads
+let animationStarted = false; // ensure only one animate loop
 
 function frameModel(object3d, offsetFactor = 1.5) {
   const box = new THREE.Box3().setFromObject(object3d);
@@ -77,6 +79,12 @@ function disposeObject(root) {
 }
 
 function loadPieceModel(roomId) {
+  // Prevent concurrent loads
+  if (isLoading) {
+    console.warn('Un modèle est déjà en cours de chargement, appel ignoré');
+    return;
+  }
+
   // Utiliser la config globale remplie par config-loader.js / tabs-manager.js
   try {
     const cfg = typeof getConfig === 'function' ? getConfig() : window.config;
@@ -90,6 +98,7 @@ function loadPieceModel(roomId) {
     if (!piece || !piece.glbModel) {
       console.warn('Modèle GLB non défini pour cette pièce');
 
+      // Clear existing model
       if (modelRoot) {
         scene.remove(modelRoot);
         disposeObject(modelRoot);
@@ -101,19 +110,26 @@ function loadPieceModel(roomId) {
 
     const glbPath = piece.glbModel;
 
+    // Clear existing model before loading new one
     if (modelRoot) {
       scene.remove(modelRoot);
       disposeObject(modelRoot);
       modelRoot = null;
     }
 
+    isLoading = true;
     loader.load(
       glbPath,
       function (gltf) {
+        isLoading = false;
         modelRoot = gltf.scene;
         scene.add(modelRoot);
         frameModel(modelRoot, 1.1);
-        animate();
+        // Start animation loop only once
+        if (!animationStarted) {
+          animationStarted = true;
+          animate();
+        }
       },
       function (xhr) {
         if (xhr.lengthComputable) {
@@ -121,10 +137,12 @@ function loadPieceModel(roomId) {
         }
       },
       function (error) {
+        isLoading = false;
         console.error('Erreur de chargement du modèle:', error);
       }
     );
   } catch (e) {
+    isLoading = false;
     console.error('loadPieceModel error:', e);
   }
 }
