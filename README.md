@@ -5,7 +5,7 @@
 ---
 
 ## Structure du projet
-
+```
 > **IAQverse/**
 > │
 > ├── **backend/**              API FastAPI, traitement des données
@@ -30,7 +30,7 @@
 > │   └── .env
 > │
 > └── README.md              Documentation du projet
-
+```
 ## Fonctionnalités
 
 - **Collecte IAQ** : CO₂, PM2.5, TVOC, température, humidité
