@@ -1,0 +1,174 @@
+{
+    "brand": "IAQverse",
+    "nav": {
+        "home": "Panel",
+        "digitalTwin": "Gemelos Digitales",
+        "settings": "Ajustes"
+    },
+    "dashboard": {
+        "title": "Panel",
+        "aboutTitle": "Acerca de esta página",
+        "aboutParagraph": "Este panel le permite visualizar los principales componentes de la calidad del aire interior a lo largo del tiempo.",
+        "co2": "Tendencia de CO₂",
+        "pm25": "Concentración de PM2.5",
+        "comfort": "Temperatura y Humedad",
+        "tvoc": "Concentración de TVOC"
+    },
+    "charts": {
+        "no_data": "Sin datos",
+        "trace": {
+            "co2": "CO₂ (ppm)",
+            "pm25": "PM2.5 (µg/m³)",
+            "temp": "Temperatura (°C)",
+            "humidity": "Humedad (%)",
+            "tvoc": "TVOC (mg/m³)"
+        },
+        "co2Y": "ppm",
+        "pm25Y": "µg/m³",
+        "temperatureY": "Temperatura (°C)",
+        "humidityY": "Humedad (%)",
+        "tvocY": "mg/m³"
+    },
+    "settings": {
+        "title": "Ajustes",
+        "menu": {
+            "account": "Cuenta",
+            "display": "Pantalla",
+            "notifications": "Notificaciones",
+            "locations": "Lugares",
+            "contact": "Contacto"
+        },
+        "aboutTitle": "Acerca de esta página",
+        "aboutParagraph": "Use este panel de ajustes para modificar sus preferencias y mejorar la experiencia.",
+        "languageLabel": "Idioma",
+        "summary": {
+            "you": "Usted",
+            "insurance": "Su seguro",
+            "union": "Su sindicato",
+            "mode": "Modo",
+            "langloc": "Idioma y Localización",
+            "technologies": "Tecnologías",
+            "type": "Tipo",
+            "manage_brands": "Gestionar ubicaciones",
+            "contact": "Contacto"
+        },
+        "infoList": {
+            "account": "Gestión de la información de la cuenta",
+            "display": "Gestión de pantalla e idioma",
+            "notifications": "Su configuración de notificaciones",
+            "rooms": "Agregar y eliminar salas",
+            "contact": "Contáctenos"
+        },
+        "fields": {
+            "nom": "Nombre",
+            "prenom": "Nombre",
+            "date_naissance": "Fecha de nacimiento",
+            "email": "Correo electrónico",
+            "telephone": "Teléfono",
+            "adresse": "Dirección",
+            "mode_affichage": "Modo de visualización",
+            "langue": "Idioma",
+            "localisation": "Localización",
+            "avatar": "Foto de perfil",
+            "sms": "SMS",
+            "push": "Push",
+            "alertes": "Alertas",
+            "rappels": "Recordatorios",
+            "newsletters": "Boletines"
+        }
+    },
+    "digitalTwin": {
+        "title": "Gemelos Digitales",
+        "visualisation": "Visualización",
+        "aboutTitle": "Acerca de esta página",
+        "aboutParagraph": "Esta vista Gemelos Digitales le permite visualizar alertas de calidad del aire interior en tiempo real.",
+        "actions": "Acciones",
+        "details": "Detalles",
+        "table": {
+            "state": "Estado",
+            "subject": "Asunto",
+            "action": "Acción"
+        },
+        "tip": {
+            "table": "La tabla a la izquierda muestra acciones recomendadas.",
+            "visual": "La visualización resalta las zonas afectadas en la sala.",
+            "details": "Los detalles en el centro explican las causas de las alertas."
+        },
+        "sample": {
+            "window": {
+                "subject": "Ventana",
+                "action": "Cerrar"
+            },
+            "board": {
+                "subject": "Pizarra",
+                "action": "Quitar polvo"
+            },
+            "floor": {
+                "subject": "Suelo",
+                "action": "Quitar polvo"
+            }
+        }
+    },
+    "buttons": {
+        "toggleTheme": "Cambiar tema",
+        "frame": "Enfocar"
+    },
+    "placeholders": {
+        "comma_list": "Separe los valores con comas"
+    },
+    "languages": {
+        "fr": "Français",
+        "en": "English",
+        "es": "Español",
+        "de": "Deutsch",
+        "it": "Italiano"
+    },
+    "modes": {
+        "light": "Claro",
+        "dark": "Oscuro"
+    },
+    "actions": {
+        "add_location": "Agregar sala",
+        "add_brand": "Agregar ubicación",
+        "edit": "Editar",
+        "remove": "Eliminar",
+        "confirm": "Confirmación",
+        "yes": "Sí",
+        "no": "No",
+        "cancel": "Cancelar",
+        "save": "Guardar"
+    },
+    "modals": {
+        "add_brand": "Agregar ubicación",
+        "add_room": "Agregar sala",
+        "edit_brand": "Editar ubicación",
+        "edit_title": "Editar ajustes",
+        "glb_label": "Modelo 3D (.glb)",
+        "glb_drop": "Arrastre y suelte un archivo .glb aquí"
+    },
+    "notifications": {
+        "saved": "Cambios guardados",
+        "save_error": "Error al guardar",
+        "order_saved": "Nuevo orden guardado",
+        "rooms_order_saved": "Orden de salas guardado",
+        "location_exists": "Ya existe una ubicación con ese nombre",
+        "add_success": "Ubicación agregada con éxito",
+        "add_error": "Error al agregar la ubicación",
+        "file_invalid": "Archivo .glb inválido",
+        "upload_error": "Error al subir el modelo 3D",
+        "piece_added": "Sala agregada con éxito",
+        "piece_add_error": "Error al agregar la sala",
+        "update_success": "Ubicación actualizada con éxito",
+        "update_error": "Error al actualizar la ubicación",
+        "delete_files_error": "Error al eliminar archivos 3D",
+        "delete_success": "Ubicación eliminada con éxito",
+        "delete_file_error": "Error al eliminar archivo 3D",
+        "piece_deleted": "Sala eliminada con éxito",
+        "config_saved": "Configuración guardada con éxito",
+        "location_not_found": "Ubicación no encontrada",
+        "confirm_delete_message": "¿Está seguro de que desea eliminarlo?",
+        "mode_updated": "Modo actualizado",
+        "load_error": "No se puede cargar la configuración",
+        "load_failure": "Error al cargar la configuración"
+    }
+}
