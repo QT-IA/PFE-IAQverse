@@ -16,8 +16,9 @@ function showSection(id) {
   if (target) target.classList.add('active');
 
   document.querySelectorAll('.menu li').forEach(item => item.classList.remove('active'));
+  // prefer explicit data-section attribute (keeps ids stable across translations)
   const activeItem = [...document.querySelectorAll('.menu li')]
-    .find(li => li.textContent.trim().toLowerCase() === id);
+    .find(li => (li.dataset && li.dataset.section ? li.dataset.section : li.textContent.trim().toLowerCase()) === id);
   if (activeItem) activeItem.classList.add('active');
 }
 
@@ -55,7 +56,33 @@ function createFormGroup(label, path, value) {
   group.className = 'form-group';
 
   const labelEl = document.createElement('label');
-  labelEl.textContent = label;
+  const t = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t : (()=>undefined);
+  // If caller passed an i18n key (contains a dot), use it directly
+  if (typeof label === 'string' && label.indexOf('.') >= 0) {
+    const key = label;
+    const resolved = (t && t(key)) || label;
+    labelEl.textContent = resolved;
+    try { labelEl.setAttribute('data-i18n', key); } catch(e) {}
+  } else {
+    // try to resolve a translation key from the human label (fallback to original)
+    const sanitizeKey = (s) => {
+      try { s = s.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); } catch(e){}
+      return String(s).toLowerCase().trim().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    };
+    // primary candidate
+    const candidate = `settings.fields.${sanitizeKey(label)}`;
+    // secondary candidate: remove short stop words like 'de','du','la','le','des','d'
+    const stripped = String(label).replace(/\b(de|du|des|la|le|les|d')\b/gi, ' ');
+    const candidate2 = `settings.fields.${sanitizeKey(stripped)}`;
+    let translatedLabel = (t && t(candidate)) || (t && t(candidate2)) || label;
+    labelEl.textContent = translatedLabel;
+    // attach best candidate key if it exists in translations, otherwise attach candidate so MutationObserver can still try
+    try {
+      if (t && t(candidate)) labelEl.setAttribute('data-i18n', candidate);
+      else if (t && t(candidate2)) labelEl.setAttribute('data-i18n', candidate2);
+      else labelEl.setAttribute('data-i18n', candidate);
+    } catch(e) {}
+  }
 
   let input;
   if (typeof value === 'boolean') {
@@ -75,17 +102,30 @@ function createFormGroup(label, path, value) {
     return group;
   }
 
-  if (Array.isArray(value)) {
+    if (Array.isArray(value)) {
     input = document.createElement('input');
     input.type = 'text';
     input.value = value.join(', ');
-    input.placeholder = 'Séparer les valeurs par des virgules';
+    input.setAttribute('data-i18n-placeholder', 'placeholders.comma_list');
   } else if (path.endsWith('.langue') || path === 'affichage.langue') {
     input = document.createElement('select');
     input.name = path;
-    ['Français', 'English', 'Español', 'Deutsch', 'Italiano'].forEach(opt => {
+    // prefer language codes as option values so saving writes codes (fr/en) while keeping label for display
+    const langs = [ ['fr','Français'], ['en','English'], ['es','Español'], ['de','Deutsch'], ['it','Italiano'] ];
+    langs.forEach(([code, _label]) => {
       const o = document.createElement('option');
-      o.value = opt; o.textContent = opt; if ((value || '').toString() === opt) o.selected = true; input.appendChild(o);
+      // store the code as the option value (preferred)
+      o.value = code;
+      // also keep dataset.lang for compatibility
+      o.dataset.lang = code;
+      // use i18n for option label when available and attach data-i18n so it updates on language change
+      const optKey = `languages.${code}`;
+      const optText = (t && typeof t === 'function') ? (t(optKey) || _label) : _label;
+      o.textContent = optText;
+      try { o.setAttribute('data-i18n', optKey); } catch (e) {}
+      // mark selected if stored value is either the code or the human label (backwards compatibility)
+      if ((value || '').toString() === code || (value || '').toString() === _label) o.selected = true;
+      input.appendChild(o);
     });
   } else if (path.endsWith('.localisation') || path === 'affichage.localisation') {
     input = document.createElement('select');
@@ -115,7 +155,17 @@ function createFormGroup(label, path, value) {
 function openEditModalWith(htmlTitle, formHtml, onsubmit) {
   const modal = document.getElementById('editModal');
   const form = document.getElementById('editForm');
-  modal.querySelector('h2').textContent = htmlTitle;
+  // allow passing an i18n key as title. If htmlTitle matches a key in translations, use it;
+  // otherwise fall back to the provided string. Also attach data-i18n so it updates on language change.
+  try {
+    const titleEl = modal.querySelector('h2');
+    if (titleEl) {
+      titleEl.setAttribute('data-i18n', htmlTitle);
+      const t = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t : (()=>undefined);
+      const resolved = (t && t(htmlTitle)) || htmlTitle;
+      titleEl.textContent = resolved;
+    }
+  } catch(e) { try { modal.querySelector('h2').textContent = htmlTitle; } catch(_){} }
   form.innerHTML = formHtml;
   form.onsubmit = async (e) => { e.preventDefault(); await onsubmit(new FormData(form)); };
   modal.style.display = 'flex';
@@ -155,13 +205,46 @@ function openEditModal(element) {
       if (!response.ok) throw new Error('Erreur lors de la sauvegarde');
   const result = await response.json(); if (result && result.config) settingsConfig = result.config;
 
-      if (Array.isArray(newVal)) element.textContent = newVal.join(', ');
-      else if (typeof newVal === 'boolean') element.innerHTML = `<span class="badge ${newVal ? 'badge-yes' : 'badge-no'}">${newVal ? 'Oui' : 'Non'}</span>`;
-      else element.textContent = newVal || '—';
+  if (Array.isArray(newVal)) element.textContent = newVal.join(', ');
+  else if (typeof newVal === 'boolean') element.innerHTML = `<span class="badge ${newVal ? 'badge-yes' : 'badge-no'}">${newVal ? (window.i18n && window.i18n.t ? window.i18n.t('actions.yes') || 'Oui' : 'Oui') : (window.i18n && window.i18n.t ? window.i18n.t('actions.no') || 'Non' : 'Non')}</span>`;
+  else element.textContent = newVal || '—';
 
-      modal.style.display = 'none';
-      showNotification('Modification sauvegardée');
-    } catch (err) { console.error(err); showNotification('Erreur lors de la sauvegarde', true); }
+  // If the edited field is the language, apply it immediately (single-field edit flow)
+  try {
+    if (path === 'affichage.langue') {
+      let appliedCode = null;
+      if (inputEl && inputEl.tagName && inputEl.tagName.toLowerCase() === 'select') {
+        const opt = inputEl.options[inputEl.selectedIndex];
+        appliedCode = (opt && opt.value) ? opt.value : ((opt && opt.dataset && opt.dataset.lang) ? opt.dataset.lang : null);
+      } else {
+        // newVal may be a code or a human label; attempt to derive
+        if (/^[a-z]{2}$/i.test(String(newVal || ''))) appliedCode = String(newVal).toLowerCase();
+        else {
+          try {
+            const langsObj = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t('languages') : null;
+            if (langsObj) {
+              for (const k in langsObj) {
+                if (langsObj[k] && String(langsObj[k]).toLowerCase() === String(newVal).toLowerCase()) { appliedCode = k; break; }
+              }
+            }
+          } catch(e){}
+        }
+      }
+      if (appliedCode && window.i18n && typeof window.i18n.setLanguage === 'function') {
+        try { window.i18n.setLanguage(appliedCode); } catch(e) { console.warn('i18n.setLanguage failed', e); }
+      }
+      // update displayed label to localized name if possible
+      try {
+        const t = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t : (()=>undefined);
+        const display = (t && appliedCode) ? (t(`languages.${appliedCode}`) || appliedCode) : (newVal || '—');
+        if (element) element.textContent = display;
+      } catch(e){}
+    }
+  } catch(e) { console.warn('language apply in openEditModal failed', e); }
+
+  modal.style.display = 'none';
+  showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.saved') || 'Modification sauvegardée' : 'Modification sauvegardée');
+  } catch (err) { console.error(err); showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.save_error') || 'Erreur lors de la sauvegarde' : 'Erreur lors de la sauvegarde', true); }
   };
 
   modal.querySelector('h2').textContent = 'Modifier';
@@ -177,31 +260,56 @@ function renderEnseignes() {
   settingsConfig.lieux.enseignes.forEach(enseigne => {
     const card = document.createElement('div');
   card.className = 'location-card' + (settingsConfig.lieux.active === enseigne.id ? ' active' : '');
+    const t = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t : (()=>undefined);
+    const editLabel = (t && t('actions.edit')) || 'Modifier';
+    const removeLabel = (t && t('actions.remove')) || 'Supprimer';
+    const addRoomLabel = (t && t('actions.add_location')) || 'Ajouter une pièce';
+    const confirmTitle = (t && t('actions.confirm')) || 'Confirmation';
+    const confirmMessage = (t && t('notifications.confirm_delete_message')) || 'Voulez-vous vraiment supprimer ?';
+    const yesLabel = (t && t('actions.yes')) || 'Oui';
+    const cancelLabel = (t && t('actions.cancel')) || 'Annuler';
 
     const roomsHtml = (enseigne.pieces || []).map(piece => {
-      return `<span class="room-tag">${escapeHtml(piece.nom)} <button class="remove-btn" title="Supprimer" onclick="removePiece('${enseigne.id}','${piece.id}')">×</button></span>`;
+      return `<span class="room-tag">${escapeHtml(piece.nom)} <button class="remove-btn" title="${removeLabel}" onclick="removePiece('${enseigne.id}','${piece.id}')">×</button></span>`;
     }).join('');
 
     card.innerHTML = `
       <div class="actions">
-        <button class="edit-btn" title="Modifier" onclick="editEnseigne('${enseigne.id}')"><img src="/assets/icons/edit.png" alt="Modifier"></button>
-        <button class="remove-btn" title="Supprimer" onclick="removeEnseigne('${enseigne.id}')"><img src="/assets/icons/delete.png" alt="Supprimer"></button>
+        <button class="edit-btn" title="${editLabel}" onclick="editEnseigne('${enseigne.id}')"><img src="/assets/icons/edit.png" alt="${editLabel}"></button>
+        <button class="remove-btn" title="${removeLabel}" onclick="removeEnseigne('${enseigne.id}')"><img src="/assets/icons/delete.png" alt="${removeLabel}"></button>
       </div>
       <h3>${escapeHtml(enseigne.nom || '—')}</h3>
       <p class="muted">${escapeHtml(enseigne.adresse || '')}</p>
       <div class="rooms">${roomsHtml}</div>
-      <button class="btn-room" onclick="addPiece('${enseigne.id}')"><img src="/assets/icons/add.png" alt=""> Ajouter une pièce</button>
+      <button class="btn-room" onclick="addPiece('${enseigne.id}')"><img src="/assets/icons/add.png" alt=""></button>
 
       <div id="confirmModal" class="modal" style="display:none;">
         <div class="modal-content">
-          <h3 id="confirmTitle">Confirmation</h3>
-          <p id="confirmMessage">Voulez-vous vraiment supprimer ?</p>
+          <h3 id="confirmTitle">${confirmTitle}</h3>
+          <p id="confirmMessage">${confirmMessage}</p>
           <div class="modal-actions">
-            <button id="confirmYes">Oui</button>
-            <button id="confirmNo">Annuler</button>
+            <button id="confirmYes">${yesLabel}</button>
+            <button id="confirmNo">${cancelLabel}</button>
           </div>
         </div>
       </div>`;
+
+    // After creating the innerHTML, ensure the add-room button contains a translatable label
+    const btnRoom = card.querySelector('.btn-room');
+    if (btnRoom) {
+      // preserve img if present
+      const img = btnRoom.querySelector('img');
+      // clear and rebuild: <img> + <span data-i18n="actions.add_location">...</span>
+      btnRoom.innerHTML = '';
+      if (img) btnRoom.appendChild(img);
+      const lbl = document.createElement('span');
+      lbl.className = 'btn-room-label';
+      lbl.setAttribute('data-i18n', 'actions.add_location');
+      lbl.textContent = addRoomLabel;
+      btnRoom.appendChild(lbl);
+      // set tooltip/title to be translatable as well
+      try { btnRoom.setAttribute('data-i18n-title', 'actions.add_location'); } catch(e) {}
+    }
 
     container.appendChild(card);
   });
@@ -234,11 +342,11 @@ function enableDragAndDrop() {
       }).filter(Boolean);
 
   settingsConfig.lieux.enseignes.sort((a, b) => newOrder.indexOf(a.id) - newOrder.indexOf(b.id));
-  if (settingsConfig.lieux.enseignes.length > 0) settingsConfig.lieux.active = settingsConfig.lieux.enseignes[0].id;
+      if (settingsConfig.lieux.enseignes.length > 0) settingsConfig.lieux.active = settingsConfig.lieux.enseignes[0].id;
 
       fetch('http://localhost:8000/api/saveConfig', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settingsConfig)
-      }).then(() => showNotification('Nouvel ordre enregistré')).catch(err => console.error(err));
+      }).then(() => showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.order_saved') || 'Nouvel ordre enregistré' : 'Nouvel ordre enregistré')).catch(err => console.error(err));
     });
 
     card.addEventListener('dragover', (e) => {
@@ -290,7 +398,7 @@ function enablePieceDragAndDrop() {
 
         fetch('http://localhost:8000/api/saveConfig', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settingsConfig)
-        }).then(() => showNotification('Ordre des pièces enregistré')).catch(err => console.error(err));
+  }).then(() => showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.rooms_order_saved') || 'Ordre des pièces enregistré' : 'Ordre des pièces enregistré')).catch(err => console.error(err));
       });
 
       tag.addEventListener('dragover', (e) => {
@@ -314,9 +422,9 @@ function enablePieceDragAndDrop() {
 }
 
 async function addEnseigne() {
-  openEditModalWith('Ajouter une enseigne', `
-    <div class="form-group"><label>Nom</label><input name="nom" type="text" required></div>
-    <div class="form-group"><label>Adresse</label><input name="adresse" type="text"></div>
+  openEditModalWith('modals.add_brand', `
+    <div class="form-group"><label data-i18n="settings.fields.nom">Nom</label><input name="nom" type="text" required></div>
+    <div class="form-group"><label data-i18n="settings.fields.adresse">Adresse</label><input name="adresse" type="text"></div>
   `, async (formData) => {
   const newEn = { id: 'ens_' + Date.now(), nom: formData.get('nom'), adresse: formData.get('adresse') || '', pieces: [] };
   if (!settingsConfig.lieux) settingsConfig.lieux = { enseignes: [], active: null };
@@ -325,7 +433,7 @@ async function addEnseigne() {
   const newName = (newEn.nom || '').toString().trim().toLowerCase();
   const duplicate = (settingsConfig.lieux.enseignes || []).some(e => (e.nom || '').toString().trim().toLowerCase() === newName);
   if (duplicate) {
-    showNotification('Une enseigne avec ce nom existe déjà', true);
+  showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.location_exists') || 'Une enseigne avec ce nom existe déjà' : 'Une enseigne avec ce nom existe déjà', true);
     // close modal and do not add
     document.getElementById('editModal').style.display = 'none';
     return;
@@ -337,28 +445,28 @@ async function addEnseigne() {
   const response = await fetch('http://localhost:8000/api/saveConfig', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settingsConfig) });
       if (!response.ok) throw new Error('Erreur lors de la sauvegarde');
   const result = await response.json(); if (result && result.config) settingsConfig = result.config;
-      document.getElementById('editModal').style.display = 'none';
-      showNotification('Enseigne ajoutée avec succès');
+  document.getElementById('editModal').style.display = 'none';
+  showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.add_success') || 'Enseigne ajoutée avec succès' : 'Enseigne ajoutée avec succès');
       renderEnseignes();
-    } catch (err) { console.error(err); showNotification("Erreur lors de l'ajout de l'enseigne", true); }
+  } catch (err) { console.error(err); showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.add_error') || "Erreur lors de l'ajout de l'enseigne" : "Erreur lors de l'ajout de l'enseigne", true); }
   });
 }
 
 async function addPiece(enseigneId) {
-  openEditModalWith('Ajouter une pièce', `
-    <div class="form-group"><label>Nom de la pièce</label><input name="nom" type="text" required></div>
-    <div class="form-group"><label>Type</label>
+  openEditModalWith('modals.add_room', `
+    <div class="form-group"><label data-i18n="digitalTwin.sample.window.subject">Nom de la pièce</label><input name="nom" type="text" required></div>
+    <div class="form-group"><label data-i18n="settings.fields.type">Type</label>
       <select name="type"><option value="salon">Salon</option><option value="cuisine">Cuisine</option><option value="chambre">Chambre</option><option value="bureau">Bureau</option><option value="autre">Autre</option></select>
     </div>
     <div class="form-group">
-      <label>Modèle 3D (.glb)</label>
-      <div id="glbDropZone" style="border: 2px dashed #ccc; padding: 20px; text-align: center; cursor: pointer;">Glissez-déposez un fichier .glb ici</div>
+      <label data-i18n="modals.glb_label">Modèle 3D (.glb)</label>
+      <div id="glbDropZone" style="border: 2px dashed #ccc; padding: 20px; text-align: center; cursor: pointer;" data-i18n="modals.glb_drop">Glissez-déposez un fichier .glb ici</div>
       <input type="file" id="glbInput" accept=".glb" style="display: none;">
       <p id="glbFileName" style="font-size: 0.9em; color: #555;"></p>
     </div>
   `, async (formData) => {
   const enseigne = (settingsConfig.lieux.enseignes || []).find(e => e.id === enseigneId);
-    if (!enseigne) { showNotification('Enseigne non trouvée', true); return; }
+  if (!enseigne) { showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.location_not_found') || 'Enseigne non trouvée' : 'Enseigne non trouvée', true); return; }
     // get piece name + type
     const pieceName = formData.get('nom');
     const pieceType = formData.get('type');
@@ -388,22 +496,22 @@ async function addPiece(enseigneId) {
         if (upJson && upJson.path) {
           piece.glbModel = upJson.path;
         } else {
-          showNotification('Upload du modèle .glb échoué, la pièce sera créée sans 3D', true);
+          showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.upload_error') || 'Upload du modèle .glb échoué, la pièce sera créée sans 3D' : 'Upload du modèle .glb échoué, la pièce sera créée sans 3D', true);
         }
       }
     } catch (err) {
       console.error('Upload GLB error', err);
-      showNotification('Erreur lors de l’upload du modèle 3D', true);
+      showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.upload_error') || 'Erreur lors de l’upload du modèle 3D' : 'Erreur lors de l’upload du modèle 3D', true);
     }
 
     try {
       const response = await fetch('http://localhost:8000/api/saveConfig', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settingsConfig) });
       if (!response.ok) throw new Error('Erreur lors de la sauvegarde');
       const result = await response.json(); if (result && result.config) settingsConfig = result.config;
-      document.getElementById('editModal').style.display = 'none';
-      showNotification('Pièce ajoutée avec succès');
+  document.getElementById('editModal').style.display = 'none';
+  showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.piece_added') || 'Pièce ajoutée avec succès' : 'Pièce ajoutée avec succès');
       renderEnseignes();
-    } catch (err) { console.error(err); showNotification("Erreur lors de l'ajout de la pièce", true); }
+  } catch (err) { console.error(err); showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.piece_add_error') || "Erreur lors de l'ajout de la pièce" : "Erreur lors de l'ajout de la pièce", true); }
   });
 
   const dropZone = document.getElementById('glbDropZone');
@@ -411,7 +519,7 @@ async function addPiece(enseigneId) {
   let glbFile = null;
 
   function handleGLBFile(file) {
-    if (!file || !file.name.toLowerCase().endsWith('.glb')) { showNotification('Fichier .glb invalide', true); return; }
+  if (!file || !file.name.toLowerCase().endsWith('.glb')) { showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.file_invalid') || 'Fichier .glb invalide' : 'Fichier .glb invalide', true); return; }
     glbFile = file;
     document.getElementById('glbFileName').textContent = file.name;
   }
@@ -425,17 +533,17 @@ async function addPiece(enseigneId) {
 
 async function editEnseigne(enseigneId) {
   const enseigne = (settingsConfig.lieux.enseignes || []).find(e => e.id === enseigneId);
-  if (!enseigne) { showNotification('Enseigne non trouvée', true); return; }
+  if (!enseigne) { showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.location_not_found') || 'Enseigne non trouvée' : 'Enseigne non trouvée', true); return; }
 
-  openEditModalWith('Modifier l\'enseigne', `
-    <div class="form-group"><label>Nom</label><input name="nom" type="text" value="${escapeHtml(enseigne.nom)}" required></div>
-    <div class="form-group"><label>Adresse</label><input name="adresse" type="text" value="${escapeHtml(enseigne.adresse || '')}"></div>
+  openEditModalWith('modals.edit_brand', `
+    <div class="form-group"><label data-i18n="settings.fields.nom">Nom</label><input name="nom" type="text" value="${escapeHtml(enseigne.nom)}" required></div>
+    <div class="form-group"><label data-i18n="settings.fields.adresse">Adresse</label><input name="adresse" type="text" value="${escapeHtml(enseigne.adresse || '')}"></div>
   `, async (formData) => {
     const newName = (formData.get('nom') || '').toString().trim();
     // check uniqueness among other enseignes
     const conflict = (settingsConfig.lieux.enseignes || []).some(e => e.id !== enseigneId && (e.nom || '').toString().trim().toLowerCase() === newName.toLowerCase());
     if (conflict) {
-      showNotification('Une autre enseigne utilise déjà ce nom', true);
+      showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.location_exists') || 'Une autre enseigne utilise déjà ce nom' : 'Une autre enseigne utilise déjà ce nom', true);
       return;
     }
     enseigne.nom = newName;
@@ -445,10 +553,10 @@ async function editEnseigne(enseigneId) {
       const response = await fetch('http://localhost:8000/api/saveConfig', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settingsConfig) });
       if (!response.ok) throw new Error('Erreur lors de la sauvegarde');
       const result = await response.json(); if (result && result.config) settingsConfig = result.config;
-      document.getElementById('editModal').style.display = 'none';
-      showNotification('Enseigne modifiée avec succès');
+  document.getElementById('editModal').style.display = 'none';
+  showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.update_success') || 'Enseigne modifiée avec succès' : 'Enseigne modifiée avec succès');
       renderEnseignes();
-    } catch (err) { console.error(err); showNotification("Erreur lors de la modification de l'enseigne", true); loadConfigToUI(); }
+  } catch (err) { console.error(err); showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.update_error') || "Erreur lors de la modification de l'enseigne" : "Erreur lors de la modification de l'enseigne", true); loadConfigToUI(); }
   });
 }
 
@@ -477,15 +585,15 @@ async function removeEnseigne(enseigneId) {
     if (pathsToDelete.length > 0) {
       await fetch('http://localhost:8000/api/deleteFiles', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(pathsToDelete) });
     }
-  } catch (err) {
+    } catch (err) {
     console.error('Erreur suppression fichiers GLB:', err);
-    showNotification('Erreur lors de la suppression des fichiers 3D', true);
+    showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.delete_files_error') || 'Erreur lors de la suppression des fichiers 3D' : 'Erreur lors de la suppression des fichiers 3D', true);
   }
 
   settingsConfig.lieux.enseignes = (settingsConfig.lieux.enseignes || []).filter(e => e.id !== enseigneId);
   if (settingsConfig.lieux.active === enseigneId) settingsConfig.lieux.active = (settingsConfig.lieux.enseignes[0] || {}).id || null;
-    await saveConfigAll();
-    showNotification('Enseigne supprimée avec succès');
+  await saveConfigAll();
+  showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.delete_success') || 'Enseigne supprimée avec succès' : 'Enseigne supprimée avec succès');
     renderEnseignes();
   });
 }
@@ -504,12 +612,12 @@ async function removePiece(enseigneId, pieceId) {
       }
     } catch (err) {
       console.error('Erreur suppression fichier GLB:', err);
-      showNotification('Erreur lors de la suppression du fichier 3D', true);
+      showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.delete_file_error') || 'Erreur lors de la suppression du fichier 3D' : 'Erreur lors de la suppression du fichier 3D', true);
     }
 
     enseigne.pieces = (enseigne.pieces || []).filter(p => p.id !== pieceId);
-    await saveConfigAll();
-    showNotification('Pièce supprimée avec succès');
+  await saveConfigAll();
+  showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.piece_deleted') || 'Pièce supprimée avec succès' : 'Pièce supprimée avec succès');
     renderEnseignes();
   });
 }
@@ -532,14 +640,14 @@ function editSection(sectionId) {
   form.onsubmit = async (e) => { e.preventDefault(); await saveConfigSection(); };
 
   const sectionConfig = {
-    vous: [ ['Nom', 'vous.nom'], ['Prénom', 'vous.prenom'], ['Date de naissance', 'vous.date_naissance'], ['Email', 'vous.email'], ['Téléphone', 'vous.telephone'], ['Adresse', 'vous.adresse'] ],
-    assurance: [ ['Nom', 'assurance.nom'], ['Email', 'assurance.email'], ['Téléphone', 'assurance.telephone'], ['Adresse', 'assurance.adresse'] ],
-    syndicat: [ ['Nom', 'syndicat.nom'], ['Email', 'syndicat.email'], ['Téléphone', 'syndicat.telephone'], ['Adresse', 'syndicat.adresse'] ],
-    mode: [ ["Mode d'affichage", 'affichage.mode'] ],
-    'langue & localisation': [ ['Langue', 'affichage.langue'], ['Localisation', 'affichage.localisation'] ],
-    technologies: [ ['Notifications Email', 'notifications.technologies.email'], ['Notifications SMS', 'notifications.technologies.sms'], ['Notifications Push', 'notifications.technologies.push'] ],
-    type: [ ['Alertes', 'notifications.types.alertes'], ['Rappels', 'notifications.types.rappels'], ['Newsletters', 'notifications.types.newsletters'] ],
-    enseigne: [ ["Nom de l'enseigne", 'lieux.enseigne'], ['Pièces', 'lieux.pieces'] ]
+    vous: [ ['settings.fields.nom', 'vous.nom'], ['settings.fields.prenom', 'vous.prenom'], ['settings.fields.date_naissance', 'vous.date_naissance'], ['settings.fields.email', 'vous.email'], ['settings.fields.telephone', 'vous.telephone'], ['settings.fields.adresse', 'vous.adresse'] ],
+    assurance: [ ['settings.fields.nom', 'assurance.nom'], ['settings.fields.email', 'assurance.email'], ['settings.fields.telephone', 'assurance.telephone'], ['settings.fields.adresse', 'assurance.adresse'] ],
+    syndicat: [ ['settings.fields.nom', 'syndicat.nom'], ['settings.fields.email', 'syndicat.email'], ['settings.fields.telephone', 'syndicat.telephone'], ['settings.fields.adresse', 'syndicat.adresse'] ],
+    mode: [ ['settings.fields.mode_affichage', 'affichage.mode'] ],
+    'langue & localisation': [ ['settings.fields.langue', 'affichage.langue'], ['settings.fields.localisation', 'affichage.localisation'] ],
+    technologies: [ ['settings.fields.email', 'notifications.technologies.email'], ['settings.fields.sms', 'notifications.technologies.sms'], ['settings.fields.push', 'notifications.technologies.push'] ],
+    type: [ ['settings.fields.alertes', 'notifications.types.alertes'], ['settings.fields.rappels', 'notifications.types.rappels'], ['settings.fields.newsletters', 'notifications.types.newsletters'] ],
+    enseigne: [ ['settings.fields.nom', 'lieux.enseigne'], ['settings.fields.pieces', 'lieux.pieces'] ]
   };
 
   const fields = sectionConfig[sectionId] || [];
@@ -554,28 +662,111 @@ async function saveConfigSection() {
   const form = document.getElementById('editForm');
   const formData = new FormData(form);
   let updates = {};
+  // remember previous language to detect change
+  const prevLang = getByPath(settingsConfig, 'affichage.langue');
   for (const [path, value] of formData.entries()) {
     const input = form.querySelector(`[name="${path}"]`);
     let finalValue = value;
     if (input.type === 'checkbox') finalValue = input.checked;
     else if (input.name.endsWith('.pieces')) finalValue = value.split(',').map(s => s.trim()).filter(Boolean);
     else if (typeof getByPath(settingsConfig, path) === 'boolean') finalValue = value.toLowerCase() === 'true' || value === '1' || value.toLowerCase() === 'oui';
-    setByPath(updates, path, finalValue);
-    setByPath(settingsConfig, path, finalValue);
+    // Special handling for language fields: store language code (fr/en) and include label for compatibility
+    if (path.endsWith('.langue') || path === 'affichage.langue') {
+      try {
+        const sel = input;
+        const selectedOption = sel && sel.options && sel.options[sel.selectedIndex];
+        // prefer the option.value (we store codes as values); fallback to dataset.lang
+        const codeValue = selectedOption ? (selectedOption.value || (selectedOption.dataset && selectedOption.dataset.lang) || finalValue) : finalValue;
+        const humanLabel = selectedOption ? (selectedOption.textContent || finalValue) : finalValue;
+        setByPath(updates, path, codeValue);
+        setByPath(settingsConfig, path, codeValue);
+        // also include a label field for backend compatibility (non-destructive)
+        try { setByPath(updates, `${path}.__label`, humanLabel); } catch(e){}
+      } catch (e) {
+        setByPath(updates, path, finalValue);
+        setByPath(settingsConfig, path, finalValue);
+      }
+    } else {
+      setByPath(updates, path, finalValue);
+      setByPath(settingsConfig, path, finalValue);
+    }
   }
 
   try {
   const payload = Object.keys(updates).length === 0 ? settingsConfig : updates;
+    console.info('saveConfigSection: payload ->', payload);
+    // Apply language immediately on the client so a backend save failure doesn't block UI language change
+    try {
+      const selForLang = form.querySelector('[name="affichage.langue"]');
+      let immediateCode = null;
+      if (selForLang && selForLang.options && selForLang.selectedIndex >= 0) {
+        const opt = selForLang.options[selForLang.selectedIndex];
+        // prefer the option value (we now store codes as values), fallback to dataset.lang
+        immediateCode = (opt && opt.value) ? opt.value : ((opt && opt.dataset && opt.dataset.lang) ? opt.dataset.lang : null);
+      }
+      // fallback: try to derive from stored value
+      if (!immediateCode) {
+        const derive = (s) => { if(!s) return null; const k = String(s).toLowerCase(); if(k.includes('fr')) return 'fr'; if(k.includes('en')) return 'en'; if(k.includes('es')) return 'es'; if(k.includes('de')) return 'de'; if(k.includes('it')) return 'it'; return null; };
+        immediateCode = derive(getByPath(settingsConfig, 'affichage.langue'));
+      }
+      console.info('saveConfigSection: immediate language code ->', immediateCode);
+      if (immediateCode && window.i18n && typeof window.i18n.setLanguage === 'function') {
+        try { window.i18n.setLanguage(immediateCode); } catch(e){ console.warn('i18n.setLanguage failed', e); }
+      }
+
+    } catch(e) { console.warn('saveConfigSection language apply failed', e); }
+
     const response = await fetch('http://localhost:8000/api/saveConfig', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const result = await response.json();
+    console.info('saveConfigSection: save response ok=', response.ok, ' result=', result);
     if (!response.ok) throw new Error(result.detail || 'Erreur lors de la sauvegarde');
-  if (result && result.config) settingsConfig = result.config;
+    if (result && result.config) settingsConfig = result.config;
     document.getElementById('editModal').style.display = 'none';
-    showNotification('Configuration sauvegardée avec succès');
+  showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.config_saved') || 'Configuration sauvegardée avec succès' : 'Configuration sauvegardée avec succès');
     // rafraîchir affichage
     updateDataPathsDisplay();
     if (typeof renderEnseignes === 'function') renderEnseignes();
-  } catch (err) { console.error(err); showNotification('Erreur lors de la sauvegarde', true); }
+    // if language changed via the settings modal, apply it through i18n
+    try{
+      // Try to obtain the language code from the form select (preferred), otherwise derive from stored value
+      const sel = form.querySelector('[name="affichage.langue"]');
+      let newCode = null;
+      if (sel && sel.options && sel.selectedIndex >= 0) {
+        const opt = sel.options[sel.selectedIndex];
+        newCode = (opt && opt.value) ? opt.value : ((opt && opt.dataset && opt.dataset.lang) ? opt.dataset.lang : null);
+      }
+      const newLangValue = getByPath(settingsConfig, 'affichage.langue');
+      // helper to derive code from a human value as fallback
+      const deriveCodeFromValue = (s) => {
+        if (!s) return null;
+        const maybe = String(s).trim();
+        if (/^[a-z]{2}$/i.test(maybe)) return maybe.toLowerCase();
+        // try to find in current translations
+        try{
+          const langsObj = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t('languages') : null;
+          if (langsObj) {
+            for (const k in langsObj) {
+              if (langsObj[k] && String(langsObj[k]).toLowerCase() === maybe.toLowerCase()) return k;
+            }
+          }
+        }catch(e){}
+        // fallback substring heuristics
+        const k = maybe.toLowerCase();
+        if (k.includes('fr') || k.includes('franc')) return 'fr';
+        if (k.includes('en') || k.includes('anglais')) return 'en';
+        if (k.includes('es') || k.includes('esp')) return 'es';
+        if (k.includes('de') || k.includes('allem')) return 'de';
+        if (k.includes('it') || k.includes('ital')) return 'it';
+        return null;
+      };
+
+      const prevCode = deriveCodeFromValue(prevLang);
+      if (!newCode) newCode = deriveCodeFromValue(newLangValue);
+      if (newCode && newCode !== prevCode && window.i18n && typeof window.i18n.setLanguage === 'function'){
+        window.i18n.setLanguage(newCode);
+      }
+    }catch(e){console.warn('i18n apply failed', e);}
+  } catch (err) { console.error(err); showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.save_error') || 'Erreur lors de la sauvegarde' : 'Erreur lors de la sauvegarde', true); }
 }
 
 // Remplissage des spans [data-path]
@@ -586,7 +777,10 @@ function updateDataPathsDisplay() {
     el.classList.add('value-display');
 
     if (typeof value === 'boolean') {
-      el.innerHTML = `<span class="badge ${value ? 'badge-yes' : 'badge-no'}">${value ? 'Oui' : 'Non'}</span>`;
+      const t = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t : (()=>undefined);
+      const yes = (t && t('actions.yes')) || 'Oui';
+      const no = (t && t('actions.no')) || 'Non';
+      el.innerHTML = `<span class="badge ${value ? 'badge-yes' : 'badge-no'}">${value ? yes : no}</span>`;
       el.style.cursor = 'pointer';
       el.onclick = () => openEditModal(el);
       return;
@@ -596,9 +790,12 @@ function updateDataPathsDisplay() {
       const currentMode = String(value || '').toLowerCase();
       const select = document.createElement('select');
       select.className = 'form-control';
-      ['Clair', 'Sombre'].forEach(mode => {
+      const t = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t : (()=>undefined);
+      const light = (t && t('modes.light')) || 'Clair';
+      const dark = (t && t('modes.dark')) || 'Sombre';
+      [ {val:'clair', label: light}, {val:'sombre', label: dark} ].forEach(mode => {
         const option = document.createElement('option');
-        option.value = mode.toLowerCase(); option.textContent = mode; if (mode.toLowerCase() === currentMode) option.selected = true; select.appendChild(option);
+        option.value = mode.val; option.textContent = mode.label; if (mode.val === currentMode) option.selected = true; select.appendChild(option);
       });
       el.innerHTML = '';
       el.appendChild(select);
@@ -607,14 +804,47 @@ function updateDataPathsDisplay() {
   const updates = {}; setByPath(updates, 'affichage.mode', newMode); setByPath(settingsConfig, 'affichage.mode', newMode);
         try {
           const r = await fetch('http://localhost:8000/api/saveConfig', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) });
-          if (r.ok) showNotification('Mode mis à jour'); else showNotification('Erreur lors de la sauvegarde', true);
-        } catch (err) { console.error(err); showNotification('Erreur lors de la sauvegarde', true); }
+          if (r.ok) showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.mode_updated') || 'Mode mis à jour' : 'Mode mis à jour'); else showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.save_error') || 'Erreur lors de la sauvegarde' : 'Erreur lors de la sauvegarde', true);
+        } catch (err) { console.error(err); showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.save_error') || 'Erreur lors de la sauvegarde' : 'Erreur lors de la sauvegarde', true); }
       });
       return;
     }
 
     if (Array.isArray(value)) el.textContent = value.join(', ');
-    else el.textContent = value || '—';
+    else if (path === 'affichage.langue') {
+      const t = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t : (()=>undefined);
+      let display = '—';
+      if (value) {
+        const str = String(value).trim();
+        // if it's already a 2-letter code
+        if (/^[a-z]{2}$/i.test(str)) {
+          const code = str.toLowerCase();
+          display = (t && t(`languages.${code}`)) || code;
+        } else {
+          // try to find matching code from translations (label -> code)
+          try {
+            const langsObj = (t && typeof t === 'function') ? t('languages') : null;
+            if (langsObj && typeof langsObj === 'object') {
+              const found = Object.keys(langsObj).find(k => String(langsObj[k]).toLowerCase() === str.toLowerCase());
+              if (found) display = (t && t(`languages.${found}`)) || langsObj[found];
+              else {
+                // fallback heuristics
+                const s = str.toLowerCase();
+                if (s.includes('fr')) display = (t && t('languages.fr')) || 'Français';
+                else if (s.includes('en')) display = (t && t('languages.en')) || 'English';
+                else if (s.includes('es')) display = (t && t('languages.es')) || 'Español';
+                else if (s.includes('de')) display = (t && t('languages.de')) || 'Deutsch';
+                else if (s.includes('it')) display = (t && t('languages.it')) || 'Italiano';
+                else display = str;
+              }
+            } else {
+              display = str;
+            }
+          } catch (e) { display = str; }
+        }
+      }
+      el.textContent = display;
+    } else el.textContent = value || '—';
     el.style.cursor = 'pointer';
     el.onclick = (e) => openEditModal(e.target);
   });
@@ -625,13 +855,13 @@ async function loadConfigToUI() {
   try {
   await loadConfig();
   settingsConfig = getConfig();
-  if (!settingsConfig) { showNotification('Impossible de charger la configuration', true); return; }
+  if (!settingsConfig) { showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.load_error') || 'Impossible de charger la configuration' : 'Impossible de charger la configuration', true); return; }
     updateDataPathsDisplay();
     if (typeof renderEnseignes === 'function') renderEnseignes();
   if (settingsConfig?.affichage?.mode) applyTheme(settingsConfig.affichage.mode);
   } catch (error) {
     console.error('Erreur:', error);
-    showNotification('Erreur lors du chargement de la configuration', true);
+    showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.load_failure') || 'Erreur lors du chargement de la configuration' : 'Erreur lors du chargement de la configuration', true);
   }
 }
 
@@ -642,7 +872,7 @@ document.addEventListener('DOMContentLoaded', () => {
   showSection(savedSection);
   document.querySelectorAll('.menu li').forEach(item => {
     item.addEventListener('click', () => {
-      const id = item.textContent.trim().toLowerCase();
+      const id = (item.dataset && item.dataset.section) ? item.dataset.section : item.textContent.trim().toLowerCase();
       localStorage.setItem('lastSection', id);
     });
   });
@@ -673,6 +903,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // Charger la config dans l'UI
   loadConfigToUI();
 });
+
+// Re-apply displayed values (labels) when language changes so translations loaded later update UI
+if (typeof window !== 'undefined') {
+  window.addEventListener('language-changed', () => {
+    try { updateDataPathsDisplay(); } catch (e) { /* ignore */ }
+  });
+}
 
 // Exposer global pour les onclick existants
 window.showSection = showSection;

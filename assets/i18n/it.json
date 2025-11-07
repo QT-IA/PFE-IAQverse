@@ -1,0 +1,174 @@
+{
+    "brand": "IAQverse",
+    "nav": {
+        "home": "Home",
+        "digitalTwin": "Gemello Digitale",
+        "settings": "Impostazioni"
+    },
+    "dashboard": {
+        "title": "Dashboard",
+        "aboutTitle": "Informazioni su questa pagina",
+        "aboutParagraph": "Questa dashboard consente di visualizzare le metriche principali della qualità dell'aria interna nel tempo.",
+        "co2": "Andamento CO₂",
+        "pm25": "Concentrazione PM2.5",
+        "comfort": "Temperatura & Umidità",
+        "tvoc": "Concentrazione TVOC"
+    },
+    "charts": {
+        "no_data": "Nessun dato",
+        "trace": {
+            "co2": "CO₂ (ppm)",
+            "pm25": "PM2.5 (µg/m³)",
+            "temp": "Temperatura (°C)",
+            "humidity": "Umidità (%)",
+            "tvoc": "TVOC (mg/m³)"
+        },
+        "co2Y": "ppm",
+        "pm25Y": "µg/m³",
+        "temperatureY": "Temperatura (°C)",
+        "humidityY": "Umidità (%)",
+        "tvocY": "mg/m³"
+    },
+    "settings": {
+        "title": "Impostazioni",
+        "menu": {
+            "account": "Account",
+            "display": "Schermo",
+            "notifications": "Notifiche",
+            "locations": "Località",
+            "contact": "Contatti"
+        },
+        "aboutTitle": "Informazioni",
+        "aboutParagraph": "Usa questo pannello per personalizzare le tue preferenze.",
+        "languageLabel": "Lingua",
+        "summary": {
+            "you": "Tu",
+            "insurance": "La tua assicurazione",
+            "union": "La tua unione",
+            "mode": "Modalità",
+            "langloc": "Lingua & Localizzazione",
+            "technologies": "Tecnologie",
+            "type": "Tipo",
+            "manage_brands": "Gestisci sedi",
+            "contact": "Contatti"
+        },
+        "infoList": {
+            "account": "Gestisci informazioni account",
+            "display": "Impostazioni schermo e lingua",
+            "notifications": "Impostazioni notifiche",
+            "rooms": "Aggiungi o rimuovi stanze",
+            "contact": "Contattaci"
+        },
+        "fields": {
+            "nom": "Cognome",
+            "prenom": "Nome",
+            "date_naissance": "Data di nascita",
+            "email": "Email",
+            "telephone": "Telefono",
+            "adresse": "Indirizzo",
+            "mode_affichage": "Modalità visualizzazione",
+            "langue": "Lingua",
+            "localisation": "Localizzazione",
+            "avatar": "Avatar",
+            "sms": "SMS",
+            "push": "Push",
+            "alertes": "Allarmi",
+            "rappels": "Promemoria",
+            "newsletters": "Newsletter"
+        }
+    },
+    "digitalTwin": {
+        "title": "Gemello Digitale",
+        "visualisation": "Visualizzazione",
+        "aboutTitle": "Informazioni",
+        "aboutParagraph": "Questa vista del Gemello Digitale mostra avvisi in tempo reale sulla qualità dell'aria interna.",
+        "actions": "Azioni",
+        "details": "Dettagli",
+        "table": {
+            "state": "Stato",
+            "subject": "Soggetto",
+            "action": "Azione"
+        },
+        "tip": {
+            "table": "La tabella a sinistra mostra le azioni consigliate.",
+            "visual": "La visualizzazione evidenzia le aree interessate nella stanza.",
+            "details": "I dettagli al centro spiegano le cause degli avvisi."
+        },
+        "sample": {
+            "window": {
+                "subject": "Finestra",
+                "action": "Chiudere"
+            },
+            "board": {
+                "subject": "Lavagna",
+                "action": "Spolverare"
+            },
+            "floor": {
+                "subject": "Pavimento",
+                "action": "Pulire"
+            }
+        }
+    },
+    "buttons": {
+        "toggleTheme": "Cambia tema",
+        "frame": "Centratura"
+    },
+    "placeholders": {
+        "comma_list": "Valori separati da virgola"
+    },
+    "languages": {
+        "fr": "Français",
+        "en": "English",
+        "es": "Español",
+        "de": "Deutsch",
+        "it": "Italiano"
+    },
+    "modes": {
+        "light": "Chiaro",
+        "dark": "Scuro"
+    },
+    "actions": {
+        "add_location": "Aggiungi stanza",
+        "add_brand": "Aggiungi sede",
+        "edit": "Modifica",
+        "remove": "Rimuovi",
+        "confirm": "Conferma",
+        "yes": "Sì",
+        "no": "No",
+        "cancel": "Annulla",
+        "save": "Salva"
+    },
+    "modals": {
+        "add_brand": "Aggiungi sede",
+        "add_room": "Aggiungi stanza",
+        "edit_brand": "Modifica sede",
+        "edit_title": "Modifica impostazioni",
+        "glb_label": "Modello 3D (.glb)",
+        "glb_drop": "Trascina qui un file .glb"
+    },
+    "notifications": {
+        "saved": "Modifiche salvate",
+        "save_error": "Errore durante il salvataggio",
+        "order_saved": "Nuovo ordine salvato",
+        "rooms_order_saved": "Ordine stanze salvato",
+        "location_exists": "Una sede con questo nome esiste già",
+        "add_success": "Sede aggiunta con successo",
+        "add_error": "Errore durante l'aggiunta della sede",
+        "file_invalid": "File .glb non valido",
+        "upload_error": "Errore durante il caricamento del modello 3D",
+        "piece_added": "Stanza aggiunta con successo",
+        "piece_add_error": "Errore durante l'aggiunta della stanza",
+        "update_success": "Sede aggiornata con successo",
+        "update_error": "Errore durante l'aggiornamento della sede",
+        "delete_files_error": "Errore nella cancellazione dei file 3D",
+        "delete_success": "Sede rimossa con successo",
+        "delete_file_error": "Errore durante la cancellazione del file 3D",
+        "piece_deleted": "Stanza rimossa con successo",
+        "config_saved": "Configurazione salvata con successo",
+        "location_not_found": "Sede non trovata",
+        "confirm_delete_message": "Sei sicuro di voler eliminare questo elemento?",
+        "mode_updated": "Modalità aggiornata",
+        "load_error": "Impossibile caricare la configurazione",
+        "load_failure": "Errore durante il caricamento della configurazione"
+    }
+}
