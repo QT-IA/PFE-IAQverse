@@ -178,10 +178,9 @@
     setupSync();
     attachSelectHandler();
     setupMutationObserver();
-    const preferred =
-      localStorage.getItem(STORAGE_KEY) ||
-      (navigator.language && navigator.language.split("-")[0]) ||
-      "fr";
+    // Default language preference: prefer stored value, otherwise default to French
+    // (do NOT fall back to navigator.language so the app defaults to French)
+    const preferred = localStorage.getItem(STORAGE_KEY) || "fr";
     await setLanguage(preferred, false);
   }
 
