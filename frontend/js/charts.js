@@ -20,10 +20,12 @@ function renderEmpty(id, message = "Aucune donnée disponible") {
 // Mise en page commune des graphiques
 function makeCommonLayout(title, yTitle) {
   const isDark = document.documentElement.getAttribute('data-theme') === 'sombre';
+  // detect small screens for responsive behaviour (hide date labels)
+  const isSmallScreen = (typeof window !== 'undefined') && (window.innerWidth <= 820);
   return {
     autosize: true,
-    margin: { t: 40, r: 50, b: 50, l: 50 },
-    xaxis: { title: "Heure", type: "date", color: isDark ? '#a8b2c1' : '#2c3e50', gridcolor: isDark ? '#3a4049' : '#e2e8f0' },
+  margin: { t: 40, r: (isSmallScreen ? 60 : 100), b: (isSmallScreen ? 100 : 90), l: 50 },
+    xaxis: { title: (isSmallScreen ? '' : "Heure"), type: "date", showticklabels: !isSmallScreen, color: isDark ? '#a8b2c1' : '#2c3e50', gridcolor: isDark ? '#3a4049' : '#e2e8f0' },
     title: { text: title, font: { color: isDark ? '#e4e7eb' : '#2c3e50' } },
     yaxis: { title: yTitle, color: isDark ? '#a8b2c1' : '#2c3e50', gridcolor: isDark ? '#3a4049' : '#e2e8f0' },
     font: { family: "Segoe UI, sans-serif", color: isDark ? '#e4e7eb' : '#2c3e50' },
@@ -42,10 +44,27 @@ function initEmptyCharts() {
       { x: [], y: [], type: "scatter", name: "Température (°C)", line: { color: "red" } },
       { x: [], y: [], type: "scatter", name: "Humidité (%)", yaxis: "y2", line: { color: "blue" } },
     ],
-    Object.assign(makeCommonLayout("Température & Humidité", "Température (°C)"), { margin: { r: 100, l: 100}, yaxis2: { title: "Humidité (%)", overlaying: "y", side: "right" }, legend: { orientation: "h", y: -0.2 } }),
+    (function(){
+      const base = makeCommonLayout("Température & Humidité", "Température (°C)");
+      // responsive minimum margins
+      const isSmallScreen = (typeof window !== 'undefined') && (window.innerWidth <= 820);
+      const minR = isSmallScreen ? 70 : 140; // increase desktop right margin to avoid truncation
+      const minL = isSmallScreen ? 60 : 100;
+      const minB = isSmallScreen ? 90 : 120; // reserve space for legend + gap
+      // remove x-axis labels (date) for comfort chart to declutter
+      base.xaxis = Object.assign({}, base.xaxis, { title: '', showticklabels: false });
+      // ensure yaxis2 uses same color as primary yaxis for title/ticks
+      const y2 = { title: "Humidité (%)", overlaying: "y", side: "right", color: base.yaxis && base.yaxis.color };
+      // position legend: always at the bottom of the chart (below the plot)
+      const legend = isSmallScreen ? { orientation: "h", x: 0.5, xanchor: "center", y: -0.08, yanchor: "top" } : { orientation: "h", x: 0.5, xanchor: "center", y: -0.12, yanchor: "top" };
+      return Object.assign(base, { margin: { r: minR, l: minL, b: minB }, yaxis2: y2, legend: legend });
+    })(),
     plotlyConfig
   );
   Plotly.newPlot("tvoc-chart", [{ x: [], y: [], type: "scatter" }], makeCommonLayout("Concentration de TVOC", "mg/m³"), plotlyConfig);
+  // replace tvoc initial plot to include markers consistently
+  Plotly.react("tvoc-chart", [{ x: [], y: [], type: "scatter", mode: "lines+markers", marker: { size: 6 } }], makeCommonLayout("Concentration de TVOC", "mg/m³"), plotlyConfig);
+  // ensure tvoc and comfort initial traces include markers
 }
 
 // Réinitialise les graphiques (appelé lors d'un changement d'enseigne/salle)
@@ -62,10 +81,10 @@ function buildTracesFromData(data) {
     co2: [{ x: timestamps, y: data.map(d => d.co2), type: "scatter", mode: "lines+markers", name: "CO₂ (ppm)", line: { color: "green" }, marker: { size: 6 } }],
     pm25: [{ x: timestamps, y: data.map(d => d.pm25), type: "bar", name: "PM2.5 (µg/m³)", marker: { color: "orange" } }],
     comfort: [
-      { x: timestamps, y: data.map(d => d.temperature), type: "scatter", name: "Température (°C)", line: { color: "red" } },
-      { x: timestamps, y: data.map(d => d.humidity), type: "scatter", name: "Humidité (%)", line: { color: "blue" }, yaxis: "y2" },
+      { x: timestamps, y: data.map(d => d.temperature), type: "scatter", mode: "lines+markers", name: "Température (°C)", line: { color: "red" }, marker: { size: 6 } },
+      { x: timestamps, y: data.map(d => d.humidity), type: "scatter", mode: "lines+markers", name: "Humidité (%)", line: { color: "blue" }, marker: { size: 6 }, yaxis: "y2" },
     ],
-    tvoc: [{ x: timestamps, y: data.map(d => d.tvoc), type: "scatter", name: "TVOC (mg/m³)", line: { color: "purple" } }],
+    tvoc: [{ x: timestamps, y: data.map(d => d.tvoc), type: "scatter", mode: "lines+markers", name: "TVOC (mg/m³)", line: { color: "purple" }, marker: { size: 6 } }],
   };
 }
 
@@ -75,7 +94,19 @@ function updateChartsWithData(data) {
   const traces = buildTracesFromData(data);
   Plotly.react("co2-chart", traces.co2, makeCommonLayout("Évolution du CO₂", "ppm"), plotlyConfig);
   Plotly.react("pm25-chart", traces.pm25, makeCommonLayout("Concentration de PM2.5", "µg/m³"), plotlyConfig);
-  Plotly.react("comfort-chart", traces.comfort, Object.assign(makeCommonLayout("Température & Humidité", "Température (°C)"), { yaxis2: { title: "Humidité (%)", overlaying: "y", side: "right" }, legend: { orientation: "h", x: 0.5, xanchor: "center", y: -0.5, yanchor: "bottom" } }), plotlyConfig);
+  // Ensure extra right margin so the secondary y-axis (Humidité) labels fit inside the box
+  const baseComfortLayout = makeCommonLayout("Température & Humidité", "Température (°C)");
+  const isSmallScreen = (typeof window !== 'undefined') && (window.innerWidth <= 820);
+  const minComfortR = isSmallScreen ? 70 : 140;
+  const minComfortB = isSmallScreen ? 90 : 120;
+  baseComfortLayout.margin = Object.assign({}, baseComfortLayout.margin, { r: Math.max((baseComfortLayout.margin && baseComfortLayout.margin.r) || 50, minComfortR), b: Math.max((baseComfortLayout.margin && baseComfortLayout.margin.b) || 50, minComfortB) });
+  // ensure yaxis2 color matches primary yaxis color
+  baseComfortLayout.yaxis2 = Object.assign({}, { title: "Humidité (%)", overlaying: "y", side: "right" }, { color: baseComfortLayout.yaxis && baseComfortLayout.yaxis.color });
+  // remove x-axis labels (date) for comfort chart to declutter
+  baseComfortLayout.xaxis = Object.assign({}, baseComfortLayout.xaxis, { title: '', showticklabels: false });
+  // legend: place at bottom of chart (below plot). Use slightly different offsets for small vs large screens
+  const legend = isSmallScreen ? { orientation: "h", x: 0.5, xanchor: "center", y: -0.08, yanchor: "top" } : { orientation: "h", x: 0.5, xanchor: "center", y: -0.12, yanchor: "top" };
+  Plotly.react("comfort-chart", traces.comfort, Object.assign(baseComfortLayout, { legend: legend }), plotlyConfig);
   Plotly.react("tvoc-chart", traces.tvoc, makeCommonLayout("Concentration de TVOC", "mg/m³"), plotlyConfig);
 }
 
@@ -117,9 +148,29 @@ if (typeof window !== "undefined" && typeof Plotly !== "undefined") {
   window.addEventListener("resize", () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
+      // Recompute layouts (hides x-axis on small screens) then resize plots
+      try { if (typeof refreshChartsTheme === 'function') refreshChartsTheme(); } catch (e) { /* ignore */ }
       chartIds.forEach((id) => { const gd = document.getElementById(id); if (gd && typeof Plotly.Plots?.resize === "function") Plotly.Plots.resize(gd); });
     }, 150);
   });
+
+  // ResizeObserver: ensure Plotly resizes when container size changes (useful for responsive layout)
+  if (typeof ResizeObserver !== 'undefined') {
+    const ro = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const el = entry.target;
+        if (el && typeof Plotly.Plots?.resize === 'function') {
+          Plotly.Plots.resize(el);
+        }
+      }
+      // After batch of resize events, recompute layouts as well
+      try { if (typeof refreshChartsTheme === 'function') refreshChartsTheme(); } catch (e) { }
+    });
+    chartIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) ro.observe(el);
+    });
+  }
 } else {
   console.warn("Charts non initialisés : fenêtre ou Plotly introuvable.");
 }
@@ -146,7 +197,21 @@ function refreshChartsTheme() {
         case "tvoc-chart": title = "Concentration de TVOC"; yaxisTitle = "mg/m³"; break;
       }
       const newLayout = makeCommonLayout(title, yaxisTitle);
-      if (id === "comfort-chart" && gd.layout.yaxis2) { newLayout.yaxis2 = gd.layout.yaxis2; newLayout.legend = gd.layout.legend; }
+      if (id === "comfort-chart" && gd.layout.yaxis2) {
+        // keep legend settings
+        newLayout.legend = gd.layout.legend;
+        // Ensure yaxis2 exists and uses same color as primary yaxis
+        newLayout.yaxis2 = Object.assign({}, gd.layout.yaxis2, { color: newLayout.yaxis && newLayout.yaxis.color });
+        // Ensure sufficient right margin so the secondary y-axis (Humidité) fits inside the box
+        const existingR = (gd.layout && gd.layout.margin && gd.layout.margin.r) || (newLayout.margin && newLayout.margin.r) || 50;
+        const isSmallScreenR = (typeof window !== 'undefined') && (window.innerWidth <= 820);
+        const minR = isSmallScreenR ? 60 : 140;
+        const minB = isSmallScreenR ? 90 : 120;
+        newLayout.margin = Object.assign({}, newLayout.margin, { r: Math.max(existingR, minR), b: Math.max((gd.layout && gd.layout.margin && gd.layout.margin.b) || (newLayout.margin && newLayout.margin.b) || 50, minB) });
+        // Also preserve removal of date tick labels for the comfort chart (responsive/refresh cases)
+        // and respect small-screen logic for other charts
+        newLayout.xaxis = Object.assign({}, newLayout.xaxis, { title: '', showticklabels: false });
+      }
       Plotly.react(id, gd.data, newLayout, plotlyConfig);
     }
   });
