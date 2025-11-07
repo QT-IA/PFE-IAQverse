@@ -1329,6 +1329,7 @@ select.form-control::after {
     gap: 16px;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     margin-top: 12px;
+    padding: 5px;
 }
 
 /* Responsive locations grid */
