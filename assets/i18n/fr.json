@@ -1,0 +1,174 @@
+{
+  "brand": "IAQverse",
+  "nav": {
+    "home": "Accueil",
+    "digitalTwin": "Digital Twin",
+    "settings": "Paramètres"
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "aboutTitle": "À propos de cette page",
+    "aboutParagraph": "Cette interface Dashboard vous permet de visualiser l'évolution des composants principaux de la qualité de l'air.",
+    "co2": "Évolution du CO₂",
+    "pm25": "Concentration de PM2.5",
+    "comfort": "Température & Humidité",
+    "tvoc": "Concentration de TVOC"
+  },
+  "charts": {
+    "no_data": "Pas de données",
+    "trace": {
+      "co2": "CO₂ (ppm)",
+      "pm25": "PM2.5 (µg/m³)",
+      "temp": "Température (°C)",
+      "humidity": "Humidité (%)",
+      "tvoc": "TVOC (mg/m³)"
+    },
+    "co2Y": "ppm",
+    "pm25Y": "µg/m³",
+    "temperatureY": "Température (°C)",
+    "humidityY": "Humidité (%)",
+    "tvocY": "mg/m³"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "menu": {
+      "account": "Compte",
+      "display": "Affichage",
+      "notifications": "Notifications",
+      "locations": "Lieux",
+      "contact": "Contact"
+    },
+    "aboutTitle": "À propos de cette page",
+    "aboutParagraph": "Cette interface des paramètres vous permet de modifier vos réglages afin de les adapter pour une meilleure utilisation.",
+    "languageLabel": "Langue",
+    "summary": {
+      "you": "Vous",
+      "insurance": "Votre assurance",
+      "union": "Votre syndicat",
+      "mode": "Mode",
+      "langloc": "Langue & Localisation",
+      "technologies": "Technologies",
+      "type": "Type",
+      "manage_brands": "Gestion des enseignes",
+      "contact": "Contact"
+    },
+    "infoList": {
+      "account": "Gestion des informations du compte",
+      "display": "Gestion de l'affichage et de la langue",
+      "notifications": "Gestions de vos notifications",
+      "rooms": "Ajout et suppression des salles",
+      "contact": "Contactez nous"
+    },
+    "fields": {
+      "nom": "Nom",
+      "prenom": "Prénom",
+      "date_naissance": "Date de naissance",
+      "email": "Email",
+      "telephone": "Téléphone",
+      "adresse": "Adresse",
+      "mode_affichage": "Mode d'affichage",
+      "langue": "Langue",
+      "localisation": "Localisation",
+      "avatar": "Photo de profil",
+      "sms": "SMS",
+      "push": "Push",
+      "alertes": "Alertes",
+      "rappels": "Rappels",
+      "newsletters": "Newsletters"
+    }
+  },
+  "digitalTwin": {
+    "title": "Jumeaux numériques",
+    "visualisation": "Visualisation",
+    "aboutTitle": "À propos de cette page",
+    "aboutParagraph": "Cette interface Digital Twin vous permet de visualiser les alertes de qualité de l'air intérieur en temps réel.",
+    "actions": "Actions",
+    "details": "Détails",
+    "table": {
+      "state": "État",
+      "subject": "Sujet",
+      "action": "Action"
+    },
+    "tip": {
+      "table": "Le tableau à gauche montre les actions recommandées.",
+      "visual": "La visualisation indique les zones concernées dans la pièce.",
+      "details": "Les détails au centre expliquent les causes des alertes."
+    },
+    "sample": {
+      "window": {
+        "subject": "Fenêtre",
+        "action": "Fermer"
+      },
+      "board": {
+        "subject": "Tableau",
+        "action": "Dépoussiérer"
+      },
+      "floor": {
+        "subject": "Sol",
+        "action": "Dépoussiérer"
+      }
+    }
+  },
+  "buttons": {
+    "toggleTheme": "Changer le thème",
+    "frame": "Centrer"
+  },
+  "placeholders": {
+    "comma_list": "Séparer les valeurs par des virgules"
+  },
+  "languages": {
+    "fr": "Français",
+    "en": "English",
+    "es": "Español",
+    "de": "Deutsch",
+    "it": "Italiano"
+  },
+  "modes": {
+    "light": "Clair",
+    "dark": "Sombre"
+  },
+  "actions": {
+    "add_location": "Ajouter une pièce",
+    "add_brand": "Ajouter une enseigne",
+    "edit": "Modifier",
+    "remove": "Supprimer",
+    "confirm": "Confirmation",
+    "yes": "Oui",
+    "no": "Non",
+    "cancel": "Annuler",
+    "save": "Enregistrer"
+  },
+  "modals": {
+    "add_brand": "Ajouter une enseigne",
+    "add_room": "Ajouter une pièce",
+    "edit_brand": "Modifier l'enseigne",
+    "edit_title": "Modifier les paramètres",
+    "glb_label": "Modèle 3D (.glb)",
+    "glb_drop": "Glissez-déposez un fichier .glb ici"
+  },
+  "notifications": {
+    "saved": "Modification sauvegardée",
+    "save_error": "Erreur lors de la sauvegarde",
+    "order_saved": "Nouvel ordre enregistré",
+    "rooms_order_saved": "Ordre des pièces enregistré",
+    "location_exists": "Une enseigne avec ce nom existe déjà",
+    "add_success": "Enseigne ajoutée avec succès",
+    "add_error": "Erreur lors de l'ajout de l'enseigne",
+    "file_invalid": "Fichier .glb invalide",
+    "upload_error": "Erreur lors de l’upload du modèle 3D",
+    "piece_added": "Pièce ajoutée avec succès",
+    "piece_add_error": "Erreur lors de l'ajout de la pièce",
+    "update_success": "Enseigne modifiée avec succès",
+    "update_error": "Erreur lors de la modification de l'enseigne",
+    "delete_files_error": "Erreur lors de la suppression des fichiers 3D",
+    "delete_success": "Enseigne supprimée avec succès",
+    "delete_file_error": "Erreur lors de la suppression du fichier 3D",
+    "piece_deleted": "Pièce supprimée avec succès",
+    "config_saved": "Configuration sauvegardée avec succès",
+    "location_not_found": "Enseigne non trouvée",
+    "confirm_delete_message": "Voulez-vous vraiment supprimer ?",
+    "mode_updated": "Mode mis à jour",
+    "load_error": "Impossible de charger la configuration",
+    "load_failure": "Erreur lors du chargement de la configuration"
+  }
+}
