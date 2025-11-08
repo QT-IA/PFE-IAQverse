@@ -1,3 +1,73 @@
+// Génère les bandes de seuil avec une palette plus visible (info=vert, warning=orange, danger=rouge)
+// thresholds: { info, warning, danger, max }
+function getThresholdShapes(type, thresholds) {
+  const colors = {
+    info: 'rgba(40,167,69,0.15)',      // vert
+    warning: 'rgba(255,193,7,0.15)',   // jaune / orange
+    danger: 'rgba(220,53,69,0.15)'     // rouge
+  };
+  const shapes = [];
+  // On suppose une progression info < warning < danger
+  const info = thresholds.info;
+  const warn = thresholds.warning;
+  const danger = thresholds.danger;
+  const max = thresholds.max || (danger ? danger * 1.2 : (warn ? warn * 1.2 : (info ? info * 1.2 : 100))); // valeur haute pour fermer la zone danger
+  // Info: de 0 à info
+  if (typeof info === 'number') {
+    shapes.push({ type: 'rect', xref: 'paper', yref: 'y', x0: 0, x1: 1, y0: 0, y1: info, fillcolor: colors.info, line: { width: 1, color: 'rgba(40,167,69,0.7)', dash: 'dot' } });
+  }
+  // Warning: de info à danger
+  if (typeof warn === 'number' && typeof danger === 'number') {
+    shapes.push({ type: 'rect', xref: 'paper', yref: 'y', x0: 0, x1: 1, y0: info ?? warn, y1: danger, fillcolor: colors.warning, line: { width: 1, color: 'rgba(255,193,7,0.9)', dash: 'dot' } });
+  }
+  // Danger: au-delà de danger
+  if (typeof danger === 'number') {
+    shapes.push({ type: 'rect', xref: 'paper', yref: 'y', x0: 0, x1: 1, y0: danger, y1: max, fillcolor: colors.danger, line: { width: 1, color: 'rgba(220,53,69,0.9)', dash: 'dot' } });
+  }
+  return shapes;
+}
+
+// Génère les zones OMS pour température (gauche) et humidité (droite) sur le comfort chart
+function getComfortShapes(maxTemp, maxHum) {
+  const colors = {
+    info: 'rgba(40,167,69,0.15)',
+    warning: 'rgba(255,193,7,0.15)',
+    danger: 'rgba(220,53,69,0.15)'
+  };
+  const shapes = [];
+  
+  // Valeurs par défaut si non fournies
+  const tempMax = (typeof maxTemp === 'number') ? maxTemp : 35;
+  const humMax = (typeof maxHum === 'number') ? maxHum : 100;
+  const tempMin = Math.min(10, tempMax - 25); // zone basse adaptative
+  const humMin = Math.min(0, humMax - 100);
+  
+  // TEMPÉRATURE (yref='y', moitié gauche du graphe x0:0 -> x1:0.5)
+  // Danger: < 16°C
+  shapes.push({ type: 'rect', xref: 'paper', yref: 'y', x0: 0, x1: 0.5, y0: tempMin, y1: 16, fillcolor: colors.danger, line: { width: 1, color: 'rgba(220,53,69,0.9)', dash: 'dot' } });
+  // Warning: 16-18°C
+  shapes.push({ type: 'rect', xref: 'paper', yref: 'y', x0: 0, x1: 0.5, y0: 16, y1: 18, fillcolor: colors.warning, line: { width: 1, color: 'rgba(255,193,7,0.9)', dash: 'dot' } });
+  // Info: 18-22°C
+  shapes.push({ type: 'rect', xref: 'paper', yref: 'y', x0: 0, x1: 0.5, y0: 18, y1: 22, fillcolor: colors.info, line: { width: 1, color: 'rgba(40,167,69,0.7)', dash: 'dot' } });
+  // Warning: 24-28°C (zone neutre 22-24)
+  shapes.push({ type: 'rect', xref: 'paper', yref: 'y', x0: 0, x1: 0.5, y0: 24, y1: 28, fillcolor: colors.warning, line: { width: 1, color: 'rgba(255,193,7,0.9)', dash: 'dot' } });
+  // Danger: > 28°C
+  shapes.push({ type: 'rect', xref: 'paper', yref: 'y', x0: 0, x1: 0.5, y0: 28, y1: tempMax, fillcolor: colors.danger, line: { width: 1, color: 'rgba(220,53,69,0.9)', dash: 'dot' } });
+
+  // HUMIDITÉ (yref='y2', moitié droite du graphe x0:0.5 -> x1:1)
+  // Danger: < 20%
+  shapes.push({ type: 'rect', xref: 'paper', yref: 'y2', x0: 0.5, x1: 1, y0: humMin, y1: 20, fillcolor: colors.danger, line: { width: 1, color: 'rgba(220,53,69,0.9)', dash: 'dash' } });
+  // Warning: 20-30%
+  shapes.push({ type: 'rect', xref: 'paper', yref: 'y2', x0: 0.5, x1: 1, y0: 20, y1: 30, fillcolor: colors.warning, line: { width: 1, color: 'rgba(255,193,7,0.9)', dash: 'dash' } });
+  // Info: 40-60% (zone neutre 30-40)
+  shapes.push({ type: 'rect', xref: 'paper', yref: 'y2', x0: 0.5, x1: 1, y0: 40, y1: 60, fillcolor: colors.info, line: { width: 1, color: 'rgba(40,167,69,0.7)', dash: 'dash' } });
+  // Warning: 70-80% (zone neutre 60-70)
+  shapes.push({ type: 'rect', xref: 'paper', yref: 'y2', x0: 0.5, x1: 1, y0: 70, y1: 80, fillcolor: colors.warning, line: { width: 1, color: 'rgba(255,193,7,0.9)', dash: 'dash' } });
+  // Danger: > 80%
+  shapes.push({ type: 'rect', xref: 'paper', yref: 'y2', x0: 0.5, x1: 1, y0: 80, y1: humMax, fillcolor: colors.danger, line: { width: 1, color: 'rgba(220,53,69,0.9)', dash: 'dash' } });
+
+  return shapes;
+}
 // Configuration
 const REFRESH_MS = 3000; // 3s
 /* Fichier des graphiques IAQ - mise à jour dynamique sans rechargement de la page */
@@ -10,6 +80,77 @@ const plotlyConfig = { responsive: true, displayModeBar: false };
 var currentEnseigne = window.currentEnseigne || "Maison";
 var currentSalle = window.currentSalle || "Salon";
 let seenTimestamps = new Set(); // pour déduplication et append
+// Mémorise le dernier état de sévérité par chart (info | warning | danger)
+let chartSeverity = (typeof window !== 'undefined' && window.chartSeverity) ? window.chartSeverity : {};
+
+function computeSeverity(value, thresholds){
+  if (typeof value !== 'number' || isNaN(value)) return null; // ne pas changer l'état si valeur absente
+  if (value >= thresholds.danger) return 'danger';
+  if (value >= thresholds.warning) return 'warning';
+  if (value >= 0) return 'info';
+  return null;
+}
+
+// Seuils par graphe
+function getThresholdsForChart(id) {
+  switch (id) {
+    case 'co2-chart':
+      return { info: 800, warning: 1000, danger: 1200, max: 1500 };
+    case 'pm25-chart':
+      return { info: 5, warning: 15, danger: 35, max: 75 };
+    case 'tvoc-chart':
+      return { info: 300, warning: 800, danger: 1000, max: 1500 };
+    default:
+      return null;
+  }
+}
+
+// Récupère la borne max de l'axe (y ou y2) actuellement affichée dans la "case" Plotly
+function getAxisRangeMax(chartId, axisKey = 'y') {
+  try {
+    const gd = document.getElementById(chartId);
+    if (!gd) return undefined;
+    const fl = gd._fullLayout || gd.layout;
+    const ax = (axisKey === 'y2') ? fl.yaxis2 || fl[axisKey] : fl.yaxis || fl[axisKey];
+    if (ax && Array.isArray(ax.range)) return ax.range[1];
+  } catch (e) {}
+  return undefined;
+}
+
+// Recalcule et réapplique les shapes des seuils avec un max aligné sur la case visible
+function refreshThresholdBandsForChart(chartId) {
+  const th = getThresholdsForChart(chartId);
+  if (!th) return;
+  const max = getAxisRangeMax(chartId, 'y');
+  const shapes = getThresholdShapes(chartId, Object.assign({}, th, { max: (typeof max === 'number') ? max : th.max }));
+  try { Plotly.relayout(chartId, { shapes }); } catch (e) {}
+}
+
+// Programme une mise à jour des bandes après rendu (pour laisser Plotly calculer l'autorange)
+function scheduleThresholdMaxUpdate(chartId) {
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(() => refreshThresholdBandsForChart(chartId));
+  } else {
+    setTimeout(() => refreshThresholdBandsForChart(chartId), 0);
+  }
+}
+
+// Recalcule et réapplique les zones OMS du comfort chart avec max adaptatifs
+function refreshComfortShapes() {
+  const maxTemp = getAxisRangeMax('comfort-chart', 'y');
+  const maxHum = getAxisRangeMax('comfort-chart', 'y2');
+  const shapes = getComfortShapes(maxTemp, maxHum);
+  try { Plotly.relayout('comfort-chart', { shapes }); } catch (e) {}
+}
+
+// Programme une mise à jour des zones comfort après rendu
+function scheduleComfortShapesUpdate() {
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(() => refreshComfortShapes());
+  } else {
+    setTimeout(() => refreshComfortShapes(), 0);
+  }
+}
 
 // Affiche un message si aucune donnée
 function renderEmpty(id, message) {
@@ -28,13 +169,14 @@ function makeCommonLayout(title, yTitle) {
   const isSmallScreen = (typeof window !== 'undefined') && (window.innerWidth <= 820);
   return {
     autosize: true,
-  margin: { t: 40, r: (isSmallScreen ? 60 : 100), b: (isSmallScreen ? 100 : 90), l: 50 },
+    margin: { t: 40, r: (isSmallScreen ? 60 : 100), b: (isSmallScreen ? 100 : 90), l: 50 },
     xaxis: { title: (isSmallScreen ? '' : "Heure"), type: "date", showticklabels: !isSmallScreen, color: isDark ? '#a8b2c1' : '#2c3e50', gridcolor: isDark ? '#3a4049' : '#e2e8f0' },
     title: { text: title, font: { color: isDark ? '#e4e7eb' : '#2c3e50' } },
     yaxis: { title: yTitle, color: isDark ? '#a8b2c1' : '#2c3e50', gridcolor: isDark ? '#3a4049' : '#e2e8f0' },
     font: { family: "Segoe UI, sans-serif", color: isDark ? '#e4e7eb' : '#2c3e50' },
     paper_bgcolor: isDark ? '#252930' : '#ffffff',
-    plot_bgcolor: isDark ? '#252930' : '#ffffff'
+    plot_bgcolor: isDark ? '#252930' : '#ffffff',
+    shapes: [] // Zones de seuil injectées ensuite
   };
 }
 
@@ -102,22 +244,71 @@ function updateChartsWithData(data) {
   if (!Array.isArray(data) || data.length === 0) { chartIds.forEach(id => renderEmpty(id)); return; }
   const traces = buildTracesFromData(data);
   const t = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t : (()=>undefined);
-  Plotly.react("co2-chart", traces.co2, makeCommonLayout(t('dashboard.co2') || "Évolution du CO₂", t('charts.co2Y') || "ppm"), plotlyConfig);
-  Plotly.react("pm25-chart", traces.pm25, makeCommonLayout(t('dashboard.pm25') || "Concentration de PM2.5", t('charts.pm25Y') || "µg/m³"), plotlyConfig);
-  // Ensure extra right margin so the secondary y-axis (Humidité) labels fit inside the box
+  // Seuils à adapter selon la logique métier
+  // Seuils rétablis avec valeurs distinctes pour une bonne différenciation visuelle
+  const co2Thresholds = getThresholdsForChart('co2-chart');
+  const pm25Thresholds = getThresholdsForChart('pm25-chart');
+  const tvocThresholds = getThresholdsForChart('tvoc-chart');
+
+  // Ajout des shapes de seuils
+  let co2Layout = makeCommonLayout(t('dashboard.co2') || "Évolution du CO₂", t('charts.co2Y') || "ppm");
+  let pm25Layout = makeCommonLayout(t('dashboard.pm25') || "Concentration de PM2.5", t('charts.pm25Y') || "µg/m³");
+  let tvocLayout = makeCommonLayout(t('dashboard.tvoc') || "Concentration de TVOC", t('charts.tvocY') || "mg/m³");
+
+  // Coloration du fond si danger
+  const last = data[data.length-1] || {};
+  const co2Box = document.getElementById('co2-chart');
+  const pm25Box = document.getElementById('pm25-chart');
+  const tvocBox = document.getElementById('tvoc-chart');
+
+  const co2New = computeSeverity(last.co2, co2Thresholds);
+  const pm25New = computeSeverity(last.pm25, pm25Thresholds);
+  const tvocNew = computeSeverity(last.tvoc, tvocThresholds);
+
+  const co2Eff = (co2New ?? chartSeverity['co2-chart']) || null;
+  const pm25Eff = (pm25New ?? chartSeverity['pm25-chart']) || null;
+  const tvocEff = (tvocNew ?? chartSeverity['tvoc-chart']) || null;
+
+  if (co2Eff === 'danger') { co2Layout.plot_bgcolor = 'rgba(220,53,69,0.25)'; co2Box && co2Box.classList.add('chart-danger'); }
+  else if (co2New) { co2Box && co2Box.classList.remove('chart-danger'); }
+  if (pm25Eff === 'danger') { pm25Layout.plot_bgcolor = 'rgba(220,53,69,0.25)'; pm25Box && pm25Box.classList.add('chart-danger'); }
+  else if (pm25New) { pm25Box && pm25Box.classList.remove('chart-danger'); }
+  if (tvocEff === 'danger') { tvocLayout.plot_bgcolor = 'rgba(220,53,69,0.25)'; tvocBox && tvocBox.classList.add('chart-danger'); }
+  else if (tvocNew) { tvocBox && tvocBox.classList.remove('chart-danger'); }
+
+  if (co2New) chartSeverity['co2-chart'] = co2New;
+  if (pm25New) chartSeverity['pm25-chart'] = pm25New;
+  if (tvocNew) chartSeverity['tvoc-chart'] = tvocNew;
+
+  Plotly.react("co2-chart", traces.co2, co2Layout, plotlyConfig);
+  Plotly.react("pm25-chart", traces.pm25, pm25Layout, plotlyConfig);
+  
+  // Comfort chart avec zones OMS température et humidité
   const baseComfortLayout = makeCommonLayout(t('dashboard.comfort') || "Température & Humidité", t('charts.temperatureY') || "Température (°C)");
   const isSmallScreen = (typeof window !== 'undefined') && (window.innerWidth <= 820);
   const minComfortR = isSmallScreen ? 70 : 140;
   const minComfortB = isSmallScreen ? 90 : 120;
   baseComfortLayout.margin = Object.assign({}, baseComfortLayout.margin, { r: Math.max((baseComfortLayout.margin && baseComfortLayout.margin.r) || 50, minComfortR), b: Math.max((baseComfortLayout.margin && baseComfortLayout.margin.b) || 50, minComfortB) });
-  // ensure yaxis2 color matches primary yaxis color
   baseComfortLayout.yaxis2 = Object.assign({}, { title: (t && t('charts.humidityY')) || "Humidité (%)", overlaying: "y", side: "right" }, { color: baseComfortLayout.yaxis && baseComfortLayout.yaxis.color });
-  // remove x-axis labels (date) for comfort chart to declutter
   baseComfortLayout.xaxis = Object.assign({}, baseComfortLayout.xaxis, { title: '', showticklabels: false });
-  // legend: place at bottom of chart (below plot). Use slightly different offsets for small vs large screens
   const legend = isSmallScreen ? { orientation: "h", x: 0.5, xanchor: "center", y: -0.08, yanchor: "top" } : { orientation: "h", x: 0.5, xanchor: "center", y: -0.12, yanchor: "top" };
+  
+  // Suppression des bandes de zones (OMS) pour un affichage épuré
+  
+  // Coloration du fond comfort si danger (température ou humidité)
+  const comfortBox = document.getElementById('comfort-chart');
+  const tempDanger = last.temperature && (last.temperature < 16 || last.temperature > 28);
+  const humDanger = last.humidity && (last.humidity < 20 || last.humidity > 80);
+  if (tempDanger || humDanger) {
+    baseComfortLayout.plot_bgcolor = 'rgba(220,53,69,0.25)';
+    comfortBox && comfortBox.classList.add('chart-danger');
+  } else {
+    comfortBox && comfortBox.classList.remove('chart-danger');
+  }
+  
   Plotly.react("comfort-chart", traces.comfort, Object.assign(baseComfortLayout, { legend: legend }), plotlyConfig);
-  Plotly.react("tvoc-chart", traces.tvoc, makeCommonLayout(t('dashboard.tvoc') || "Concentration de TVOC", t('charts.tvocY') || "mg/m³"), plotlyConfig);
+  Plotly.react("tvoc-chart", traces.tvoc, tvocLayout, plotlyConfig);
+  
 }
 
 // Récupère les données depuis l’API
@@ -143,6 +334,25 @@ async function fetchAndUpdate() {
     Plotly.extendTraces("pm25-chart", { x: [xs], y: [fresh.map(d => d.pm25)] }, [0]);
     Plotly.extendTraces("comfort-chart", { x: [xs, xs], y: [fresh.map(d => d.temperature), fresh.map(d => d.humidity)] }, [0, 1]);
     Plotly.extendTraces("tvoc-chart", { x: [xs], y: [fresh.map(d => d.tvoc)] }, [0]);
+    // Après extension des traces, mettre à jour la sévérité seulement si nouvelle valeur numérique
+    try {
+      const co2Box = document.getElementById('co2-chart');
+      const pm25Box = document.getElementById('pm25-chart');
+      const tvocBox = document.getElementById('tvoc-chart');
+      const thCo2 = getThresholdsForChart('co2-chart');
+      const thPm = getThresholdsForChart('pm25-chart');
+      const thTvoc = getThresholdsForChart('tvoc-chart');
+      const lastCo2 = co2Box && co2Box.data && co2Box.data[0]?.y?.slice(-1)[0];
+      const lastPm = pm25Box && pm25Box.data && pm25Box.data[0]?.y?.slice(-1)[0];
+      const lastTvoc = tvocBox && tvocBox.data && tvocBox.data[0]?.y?.slice(-1)[0];
+      const sCo2 = computeSeverity(lastCo2, thCo2);
+      const sPm = computeSeverity(lastPm, thPm);
+      const sTvoc = computeSeverity(lastTvoc, thTvoc);
+      if (sCo2) { chartSeverity['co2-chart'] = sCo2; if (sCo2==='danger') co2Box.classList.add('chart-danger'); else co2Box && co2Box.classList.remove('chart-danger'); }
+      if (sPm) { chartSeverity['pm25-chart'] = sPm; if (sPm==='danger') pm25Box.classList.add('chart-danger'); else pm25Box && pm25Box.classList.remove('chart-danger'); }
+      if (sTvoc) { chartSeverity['tvoc-chart'] = sTvoc; if (sTvoc==='danger') tvocBox.classList.add('chart-danger'); else tvocBox && tvocBox.classList.remove('chart-danger'); }
+    } catch(e){}
+    // plus de bandes adaptatives: conserver uniquement la logique de danger
   } catch (err) {
     console.error("Erreur fetch IAQ :", err);
     chartIds.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = `<div style="padding:16px;color:#c00">Erreur: ${err.message}</div>`; });
@@ -209,6 +419,16 @@ function refreshChartsTheme() {
         case "tvoc-chart": title = t('dashboard.tvoc') || "Concentration de TVOC"; yaxisTitle = t('charts.tvocY') || "mg/m³"; break;
       }
       const newLayout = makeCommonLayout(title, yaxisTitle);
+      // Conserver uniquement la logique de fond rouge si danger (sans bandes de seuil)
+      const th = getThresholdsForChart(id);
+      if (th) {
+        try {
+          const lastY = Array.isArray(gd.data[0]?.y) ? gd.data[0].y.filter(v => v !== null && v !== undefined).slice(-1)[0] : undefined;
+          if (typeof lastY === 'number' && lastY >= th.danger) {
+            newLayout.plot_bgcolor = 'rgba(220,53,69,0.15)';
+          }
+        } catch (e) { }
+      }
       if (id === "comfort-chart" && gd.layout.yaxis2) {
         // keep legend settings
         newLayout.legend = gd.layout.legend;

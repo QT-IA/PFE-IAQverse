@@ -432,6 +432,8 @@ a:hover img {
     justify-content: center;
     align-items: center;
     box-shadow: var(--shadow-md);
+    /* Reserve border space (transparent by default) to avoid layout shift when highlighting danger */
+    border: 2px solid transparent;
     --chart-padding: 30px;
     padding: var(--chart-padding);
     min-width: 300px;
@@ -443,6 +445,11 @@ a:hover img {
     position: relative; /* allow absolute child sizing if needed */
     /* allow axis labels / legends to be visible outside the inner plot area */
     overflow: visible;
+}
+
+/* Danger highlight for charts */
+.chart-box.chart-danger {
+    border-color: var(--error-color);
 }
 
 /* Make comfort chart slightly taller on desktop so it matches other charts and
@@ -722,7 +729,7 @@ a:hover img {
 
 .alert-yellow td {
     background-color: #fff3cd; /* warning */
-    color: #fcc932;
+    color: #826203;
 }
 
 .alert-green td {
@@ -761,6 +768,28 @@ a:hover img {
     border: 2px solid #e74c3c;
     box-shadow: 0 0 6px rgba(231, 76, 60, 0.5);
     cursor: pointer;
+    /* Masquer par défaut, affiché seulement si data-active=true + warning/danger */
+    display: none !important;
+}
+
+/* Affiche l'alert-point quand actif ET en warning ou danger */
+.alert-point[data-active="true"][data-severity="warning"],
+.alert-point[data-active="true"][data-severity="danger"] {
+    display: block !important;
+}
+
+/* Couleur jaune/orange pour warning */
+.alert-point[data-severity="warning"] {
+    background-color: rgba(255, 193, 7, 0.8);
+    border-color: #ff9800;
+    box-shadow: 0 0 8px rgba(255, 193, 7, 0.6);
+}
+
+/* Couleur rouge pour danger (par défaut déjà rouge, on renforce) */
+.alert-point[data-severity="danger"] {
+    background-color: rgba(220, 53, 69, 0.85);
+    border-color: #dc3545;
+    box-shadow: 0 0 10px rgba(220, 53, 69, 0.7);
 }
 
 .room-label {

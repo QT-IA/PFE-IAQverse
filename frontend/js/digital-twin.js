@@ -65,7 +65,8 @@ function syncAlertPointsToTable() {
     // remove previously injected rows
     Array.from(tbody.querySelectorAll('tr.dynamic-alert')).forEach(r => r.remove());
 
-    const points = Array.from(document.querySelectorAll('.alert-point'));
+    // Only include active alert points (set by alerts-engine)
+    const points = Array.from(document.querySelectorAll('.alert-point[data-active="true"]'));
     if (!points || points.length === 0) return;
 
     const t = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t : (()=>undefined);
