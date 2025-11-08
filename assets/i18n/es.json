@@ -99,13 +99,17 @@
                 "subject": "Ventana",
                 "action": "Cerrar"
             },
-            "board": {
-                "subject": "Pizarra",
-                "action": "Quitar polvo"
+            "door": {
+                "subject": "Puerta",
+                "action": "Cerrar"
             },
-            "floor": {
-                "subject": "Suelo",
-                "action": "Quitar polvo"
+            "ventilation": {
+                "subject": "Ventilación",
+                "action": "Activar"
+            },
+            "radiator": {
+                "subject": "Radiador",
+                "action": "Bajar"
             }
         }
     },

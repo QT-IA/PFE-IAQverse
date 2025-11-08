@@ -99,13 +99,17 @@
                 "subject": "Finestra",
                 "action": "Chiudere"
             },
-            "board": {
-                "subject": "Lavagna",
-                "action": "Spolverare"
+            "door": {
+                "subject": "Porta",
+                "action": "Chiudere"
             },
-            "floor": {
-                "subject": "Pavimento",
-                "action": "Pulire"
+            "ventilation": {
+                "subject": "Ventilazione",
+                "action": "Attivare"
+            },
+            "radiator": {
+                "subject": "Radiatore",
+                "action": "Ridurre"
             }
         }
     },

@@ -99,13 +99,17 @@
         "subject": "Fenêtre",
         "action": "Fermer"
       },
-      "board": {
-        "subject": "Tableau",
-        "action": "Dépoussiérer"
+      "door": {
+        "subject": "Porte",
+        "action": "Fermer"
       },
-      "floor": {
-        "subject": "Sol",
-        "action": "Dépoussiérer"
+      "ventilation": {
+        "subject": "Ventilation",
+        "action": "Activer"
+      },
+      "radiator": {
+        "subject": "Radiateur",
+        "action": "Réduire"
       }
     }
   },
