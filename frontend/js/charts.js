@@ -271,7 +271,7 @@ function updateChartsWithData(data) {
 
   if (co2Eff === 'danger') { co2Layout.plot_bgcolor = 'rgba(220,53,69,0.25)'; co2Box && co2Box.classList.add('chart-danger'); }
   else if (co2New) { co2Box && co2Box.classList.remove('chart-danger'); }
-  if (pm25Eff === 'danger') { pm25Layout.plot_bgcolor = 'rgba(220,53,69,0.25)'; pm25Box && pm25Box.classList.add('chart-danger'); }
+  if (pm25Eff === 'danger') { pm25Box && pm25Box.classList.add('chart-danger'); }
   else if (pm25New) { pm25Box && pm25Box.classList.remove('chart-danger'); }
   if (tvocEff === 'danger') { tvocLayout.plot_bgcolor = 'rgba(220,53,69,0.25)'; tvocBox && tvocBox.classList.add('chart-danger'); }
   else if (tvocNew) { tvocBox && tvocBox.classList.remove('chart-danger'); }
@@ -424,7 +424,8 @@ function refreshChartsTheme() {
       if (th) {
         try {
           const lastY = Array.isArray(gd.data[0]?.y) ? gd.data[0].y.filter(v => v !== null && v !== undefined).slice(-1)[0] : undefined;
-          if (typeof lastY === 'number' && lastY >= th.danger) {
+          // Ne pas appliquer de fond rouge au graphique PM2.5 (bordure uniquement)
+          if (id !== 'pm25-chart' && typeof lastY === 'number' && lastY >= th.danger) {
             newLayout.plot_bgcolor = 'rgba(220,53,69,0.15)';
           }
         } catch (e) { }

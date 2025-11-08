@@ -94,7 +94,7 @@
             "visual": "La visualizzazione evidenzia le aree interessate nella stanza.",
             "details": "I dettagli al centro spiegano le cause degli avvisi."
         },
-        "sample": {
+    "sample": {
             "window": {
                 "subject": "Finestra",
                 "action": "Chiudere"
@@ -119,6 +119,14 @@
                 "subject": "Umidità",
                 "action": "Regolare"
             }
+        },
+        "actionVerbs": {
+            "open": "Aprire",
+            "close": "Chiudere",
+            "increase": "Aumentare",
+            "decrease": "Diminuire",
+            "turn_on": "Accendere",
+            "turn_off": "Spegnere"
         }
     },
     "buttons": {
