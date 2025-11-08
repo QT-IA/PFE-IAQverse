@@ -99,13 +99,17 @@
                 "subject": "Fenster",
                 "action": "Schließen"
             },
-            "board": {
-                "subject": "Tafel",
-                "action": "Abstauben"
+            "door": {
+                "subject": "Tür",
+                "action": "Schließen"
             },
-            "floor": {
-                "subject": "Boden",
-                "action": "Abstauben"
+            "ventilation": {
+                "subject": "Lüftung",
+                "action": "Aktivieren"
+            },
+            "radiator": {
+                "subject": "Heizkörper",
+                "action": "Reduzieren"
             }
         }
     },
