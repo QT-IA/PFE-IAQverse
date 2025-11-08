@@ -94,7 +94,7 @@
       "visual": "La visualisation indique les zones concernées dans la pièce.",
       "details": "Les détails au centre expliquent les causes des alertes."
     },
-    "sample": {
+  "sample": {
       "window": {
         "subject": "Fenêtre",
         "action": "Fermer"
@@ -119,6 +119,14 @@
         "subject": "Humidité",
         "action": "Réguler"
       }
+    },
+    "actionVerbs": {
+      "open": "Ouvrir",
+      "close": "Fermer",
+      "increase": "Augmenter",
+      "decrease": "Diminuer",
+      "turn_on": "Allumer",
+      "turn_off": "Éteindre"
     }
   },
   "buttons": {

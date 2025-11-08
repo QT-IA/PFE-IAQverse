@@ -2,6 +2,27 @@
 (function (window) {
     const REFRESH_MS = 5000; // polling frequency
     const API_URL_WINDOW = "http://localhost:8000/iaq/window";
+    // Centralise all thresholds here to avoid magic numbers
+    const THRESHOLDS = {
+        CO2: { WARNING: 800, DANGER: 1200 },
+        PM25: { WARNING: 5, WARNING_MED: 15, DANGER: 35 }, // keep 5 for conservative warn, 15 used in actions, 35 danger
+        TVOC: { WARNING: 300, DANGER: 1000 },
+        TEMP: {
+            INFO_MIN: 18, INFO_MAX: 22,
+            WARN_LOW_START: 16, WARN_LOW_END: 18,
+            WARN_MID_START: 22, WARN_MID_END: 24,
+            WARN_HIGH_START: 24, WARN_HIGH_END: 28,
+            DANGER_LOW: 16, DANGER_HIGH: 28,
+            ACTION_COLD: 18, ACTION_HOT: 24
+        },
+        HUM: {
+            INFO_MIN: 40, INFO_MAX: 60,
+            WARN_LOW_MIN: 20, WARN_LOW_MAX: 30,
+            WARN_HIGH_MIN: 70, WARN_HIGH_MAX: 80,
+            DANGER_LOW: 20, DANGER_HIGH: 80,
+            ACTION_TOO_DRY: 30, ACTION_TOO_HUMID: 60, ACTION_OPEN_THRESHOLD: 70
+        }
+    };
     // mémorise la dernière sévérité notifiée pour éviter le spam
     let lastNotified = { temp: null, hum: null };
 
@@ -12,34 +33,38 @@
     // Threshold evaluators
     function evalCO2(co2) {
         if (co2 == null || isNaN(co2)) return null;
-        if (co2 >= 1200) return "danger";
-        if (co2 >= 800) return "warning";
+        if (co2 >= THRESHOLDS.CO2.DANGER) return "danger";
+        if (co2 >= THRESHOLDS.CO2.WARNING) return "warning";
         return "info";
     }
     function evalPM25(pm) {
         if (pm == null || isNaN(pm)) return null;
-        if (pm >= 35) return "danger"; // OMS 2021 jour
-        if (pm >= 5) return "warning"; // OMS 2021 annuel
+        if (pm >= THRESHOLDS.PM25.DANGER) return "danger"; // OMS 2021 jour
+        if (pm >= THRESHOLDS.PM25.WARNING) return "warning"; // conservative warn
         return "info";
     }
     function evalTVOC(tvoc) {
         if (tvoc == null || isNaN(tvoc)) return null;
-        if (tvoc > 1000) return "danger";
-        if (tvoc >= 300) return "warning"; // <200 très bon
+        if (tvoc > THRESHOLDS.TVOC.DANGER) return "danger";
+        if (tvoc >= THRESHOLDS.TVOC.WARNING) return "warning"; // <200 très bon
         return "info";
     }
     function evalTemp(t) {
         if (t == null || isNaN(t)) return null;
-        if (t < 16 || t > 28) return "danger"; // zones OMS extrêmes
-        if ((t >= 16 && t < 18) || (t > 22 && t <= 24) || (t > 24 && t <= 28)) return "warning"; // bandes intermédiaires / inconfort léger
-        if (t >= 18 && t <= 22) return "info";
+        if (t < THRESHOLDS.TEMP.DANGER_LOW || t > THRESHOLDS.TEMP.DANGER_HIGH) return "danger"; // zones OMS extrêmes
+        if ((t >= THRESHOLDS.TEMP.WARN_LOW_START && t < THRESHOLDS.TEMP.WARN_LOW_END)
+            || (t > THRESHOLDS.TEMP.WARN_MID_START && t <= THRESHOLDS.TEMP.WARN_MID_END)
+            || (t > THRESHOLDS.TEMP.WARN_HIGH_START && t <= THRESHOLDS.TEMP.WARN_HIGH_END)) return "warning"; // bandes intermédiaires / inconfort léger
+        if (t >= THRESHOLDS.TEMP.INFO_MIN && t <= THRESHOLDS.TEMP.INFO_MAX) return "info";
         return null;
     }
     function evalHum(h) {
         if (h == null || isNaN(h)) return null;
-        if (h < 20 || h > 80) return "danger";
-        if ((h >= 20 && h < 30) || (h > 60 && h <= 70) || (h > 70 && h <= 80)) return "warning";
-        if (h >= 40 && h <= 60) return "info";
+        if (h < THRESHOLDS.HUM.DANGER_LOW || h > THRESHOLDS.HUM.DANGER_HIGH) return "danger";
+        if ((h >= THRESHOLDS.HUM.WARN_LOW_MIN && h < THRESHOLDS.HUM.WARN_LOW_MAX)
+            || (h > THRESHOLDS.HUM.INFO_MAX && h <= THRESHOLDS.HUM.WARN_HIGH_MIN)
+            || (h > THRESHOLDS.HUM.WARN_HIGH_MIN && h <= THRESHOLDS.HUM.WARN_HIGH_MAX)) return "warning";
+        if (h >= THRESHOLDS.HUM.INFO_MIN && h <= THRESHOLDS.HUM.INFO_MAX) return "info";
         return null;
     }
 
@@ -85,11 +110,12 @@
         return out;
     }
 
-    function applyAlertPointsActivation(map) {
+    function applyAlertPointsActivation(map, actionsMap) {
         // Deactivate all by default
         document.querySelectorAll(".alert-point").forEach((el) => {
             el.setAttribute("data-active", "false");
             el.removeAttribute("data-severity");
+            el.removeAttribute("data-action-key");
         });
         // Activate mapped ones
         Object.keys(map || {}).forEach((key) => {
@@ -98,6 +124,9 @@
             if (el) {
                 el.setAttribute("data-active", "true");
                 el.setAttribute("data-severity", sev);
+                if (actionsMap && actionsMap[key]) {
+                    el.setAttribute("data-action-key", actionsMap[key]);
+                }
             }
         });
         // Sync actions table
@@ -171,13 +200,59 @@
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
             if (!Array.isArray(data) || data.length === 0) {
-                applyAlertPointsActivation({});
+                applyAlertPointsActivation({}, {});
                 return;
             }
             data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
             const last = data[data.length - 1];
             const map = deriveAlertPointSeverities(last || {});
-            applyAlertPointsActivation(map);
+            // Build recommended actions per alert-point key
+            const suggestActionFor = (key, sev, last) => {
+                const t = Number(last.temperature);
+                const h = Number(last.humidity);
+                const co2 = Number(last.co2);
+                const pm = Number(last.pm25);
+                const tvoc = Number(last.tvoc);
+                // defaults by device
+                switch (key) {
+                    case 'window':
+                        // CO2 élevé => ouvrir; PM2.5 élevé sans CO2 => fermer; humidité élevée => ouvrir; humidité basse => fermer; trop chaud => ouvrir; trop froid => fermer
+                        if (!isNaN(pm) && pm >= THRESHOLDS.PM25.DANGER && (isNaN(co2) || co2 < THRESHOLDS.CO2.WARNING)) return 'close';
+                        if (!isNaN(h) && h < THRESHOLDS.HUM.ACTION_TOO_DRY) return 'close';
+                        if (!isNaN(t) && t < THRESHOLDS.TEMP.ACTION_COLD) return 'close';
+                        return 'open';
+                    case 'door':
+                        // CO2 élevé => ouvrir; sinon fermer par défaut
+                        if (!isNaN(co2) && co2 >= THRESHOLDS.CO2.WARNING) return 'open';
+                        return 'close';
+                    case 'ventilation':
+                        // CO2/TVOC/PM élevés ou humidité élevée => allumer/augmenter; humidité trop basse => réduire/éteindre
+                        if ((!isNaN(co2) && co2 >= THRESHOLDS.CO2.WARNING)
+                            || (!isNaN(tvoc) && tvoc >= THRESHOLDS.TVOC.WARNING)
+                            || (!isNaN(pm) && pm >= THRESHOLDS.PM25.WARNING_MED)
+                            || (!isNaN(h) && h > THRESHOLDS.HUM.ACTION_TOO_HUMID)) return 'turn_on';
+                        if (!isNaN(h) && h < THRESHOLDS.HUM.ACTION_TOO_DRY) return 'turn_off';
+                        return 'turn_on';
+                    case 'radiator':
+                        // Trop froid => augmenter; trop chaud => diminuer
+                        if (!isNaN(t) && t < THRESHOLDS.TEMP.ACTION_COLD) return 'increase';
+                        if (!isNaN(t) && t > THRESHOLDS.TEMP.ACTION_HOT) return 'decrease';
+                        return 'decrease';
+                    case 'temperature':
+                        if (!isNaN(t) && t < THRESHOLDS.TEMP.ACTION_COLD) return 'increase';
+                        if (!isNaN(t) && t > THRESHOLDS.TEMP.ACTION_HOT) return 'decrease';
+                        return 'decrease';
+                    case 'humidity':
+                        if (!isNaN(h) && h < THRESHOLDS.HUM.ACTION_TOO_DRY) return 'close'; // fermer fenêtres pour conserver l'humidité
+                        if (!isNaN(h) && h > THRESHOLDS.HUM.ACTION_OPEN_THRESHOLD) return 'open';
+                        return 'open';
+                    default:
+                        return 'turn_on';
+                }
+            };
+            const actionsMap = {};
+            Object.keys(map).forEach((key) => { actionsMap[key] = suggestActionFor(key, map[key], last); });
+            applyAlertPointsActivation(map, actionsMap);
             // Notifications push locales (UI) pour danger (et warning optionnel)
             try {
                 const t = (window.i18n && window.i18n.t) ? window.i18n.t : (k=>k);

@@ -94,7 +94,7 @@
             "visual": "La visualización resalta las zonas afectadas en la sala.",
             "details": "Los detalles en el centro explican las causas de las alertas."
         },
-        "sample": {
+    "sample": {
             "window": {
                 "subject": "Ventana",
                 "action": "Cerrar"
@@ -119,6 +119,14 @@
                 "subject": "Humedad",
                 "action": "Regular"
             }
+        },
+        "actionVerbs": {
+            "open": "Abrir",
+            "close": "Cerrar",
+            "increase": "Aumentar",
+            "decrease": "Disminuir",
+            "turn_on": "Encender",
+            "turn_off": "Apagar"
         }
     },
     "buttons": {
