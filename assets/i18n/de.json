@@ -94,7 +94,7 @@
             "visual": "Die Visualisierung hebt betroffene Bereiche im Raum hervor.",
             "details": "Die Details in der Mitte erklären die Ursachen der Warnungen."
         },
-        "sample": {
+    "sample": {
             "window": {
                 "subject": "Fenster",
                 "action": "Schließen"
@@ -119,6 +119,14 @@
                 "subject": "Luftfeuchtigkeit",
                 "action": "Regulieren"
             }
+        },
+        "actionVerbs": {
+            "open": "Öffnen",
+            "close": "Schließen",
+            "increase": "Erhöhen",
+            "decrease": "Verringern",
+            "turn_on": "Einschalten",
+            "turn_off": "Ausschalten"
         }
     },
     "buttons": {

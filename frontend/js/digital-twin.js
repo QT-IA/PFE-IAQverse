@@ -105,14 +105,20 @@ function syncAlertPointsToTable() {
 
         // If i18n keys exist, attach data-i18n so translations update automatically
         const subjTxt = (t && t(subjectKey)) || null;
-        const actTxt = (t && t(actionKey)) || null;
+        // Prefer dynamic action suggested by alerts-engine via data-action-key
+    const actionKeyDyn = pt.getAttribute('data-action-key');
+    const dynI18nKey = actionKeyDyn ? `digitalTwin.actionVerbs.${actionKeyDyn}` : null;
+        const dynActTxt = dynI18nKey && t ? t(dynI18nKey) : null;
+        const actTxtFallback = (t && t(actionKey)) || null;
+
         // Always attach data-i18n so later translation passes can update these cells
         tdSubj.setAttribute('data-i18n', subjectKey);
         tdSubj.textContent = (subjTxt) ? subjTxt : candidateRaw;
 
-    // Action column should display the translated action text directly
-    tdAct.setAttribute('data-i18n', actionKey);
-    tdAct.textContent = (actTxt) ? actTxt : ((t && t('digitalTwin.details')) || 'Détails');
+        // Action column shows dynamic recommendation when available, else subject default
+        if (actionKeyDyn) tdAct.setAttribute('data-i18n', dynI18nKey);
+        else tdAct.setAttribute('data-i18n', actionKey);
+        tdAct.textContent = (dynActTxt) ? dynActTxt : (actTxtFallback ? actTxtFallback : ((t && t('digitalTwin.details')) || 'Détails'));
 
         // Clicking the row should open details using the visible subject text
         tr.addEventListener('click', () => { const subj = tdSubj.textContent.trim(); showDetails(subj); });
