@@ -110,6 +110,14 @@
       "radiator": {
         "subject": "Radiator",
         "action": "Reduce"
+      },
+      "temperature": {
+        "subject": "Temperature",
+        "action": "Adjust"
+      },
+      "humidity": {
+        "subject": "Humidity",
+        "action": "Regulate"
       }
     }
   },
