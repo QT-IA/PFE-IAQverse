@@ -99,13 +99,17 @@
         "subject": "Window",
         "action": "Close"
       },
-      "board": {
-        "subject": "Board",
-        "action": "Dust"
+      "door": {
+        "subject": "Door",
+        "action": "Close"
       },
-      "floor": {
-        "subject": "Floor",
-        "action": "Dust"
+      "ventilation": {
+        "subject": "Ventilation",
+        "action": "Activate"
+      },
+      "radiator": {
+        "subject": "Radiator",
+        "action": "Reduce"
       }
     }
   },

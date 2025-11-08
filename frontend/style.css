@@ -720,6 +720,11 @@ a:hover img {
     color: #c0392b;
 }
 
+.alert-yellow td {
+    background-color: #fff3cd; /* warning */
+    color: #fcc932;
+}
+
 .alert-green td {
     background-color: #d4edda;
     color: #27ae60;
