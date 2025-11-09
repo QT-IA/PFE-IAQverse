@@ -2,10 +2,12 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IAQverse</title>
     <link rel="stylesheet" href="style.css">
     <script src="js/theme.js"></script>
     <script src="js/utils.js"></script>
+    <script src="js/i18n.js"></script>
     <script src="js/config-loader.js"></script>
     <script src="js/settings.js"></script>
 </head>
@@ -18,18 +20,18 @@
         <a href="index.html">
             <img src="/assets/icons/home.png" alt="Home" class="nav-icon">
         </a>
-        <h2>Accueil</h2>
+        <h2 data-i18n="nav.home">Accueil</h2>
     </div>
         <div class="section-title">
             <img src="/assets/icons/settings.png">
-            <h2>IAQverse</h2>
+            <h2 data-i18n="brand">IAQverse</h2>
         </div>
         <ul class="menu">
-            <li class="active" onclick="showSection('compte')">Compte</li>
-            <li onclick="showSection('affichage')">Affichage</li>
-            <li onclick="showSection('notifications')">Notifications</li>
-            <li onclick="showSection('lieux')">Lieux</li>
-            <li onclick="showSection('contact')">Contact</li>
+            <li class="active" onclick="showSection('compte')" data-section="compte" data-i18n="settings.menu.account">Compte</li>
+            <li onclick="showSection('affichage')" data-section="affichage" data-i18n="settings.menu.display">Affichage</li>
+            <li onclick="showSection('notifications')" data-section="notifications" data-i18n="settings.menu.notifications">Notifications</li>
+            <li onclick="showSection('lieux')" data-section="lieux" data-i18n="settings.menu.locations">Lieux</li>
+            <li onclick="showSection('contact')" data-section="contact" data-i18n="settings.menu.contact">Contact</li>
         </ul>
     </aside>
 
@@ -37,27 +39,28 @@
     <main class="settings-content">
 
         <header>
-        <h1>Paramètres</h1>
-        <div class="header-buttons">
-            <button class="theme-toggle-btn" onclick="toggleTheme()" title="Changer le thème">
+        <h1 data-i18n="settings.title">Paramètres</h1>
+            <div class="header-buttons">
+            <button class="theme-toggle-btn" onclick="toggleTheme()" title="Changer le thème" data-i18n-title="buttons.toggleTheme">
                 <img src="/assets/icons/theme.png" alt="Thème">
             </button>
             <button class="info-btn" onclick="openModal()">
                 <img src="/assets/icons/info.png">
             </button>
+            <!-- language selection is handled via the 'Langue & Localisation' edit modal; selector removed from header -->
         </div>
 
             <div id="infoModal" class="modal">
             <div class="modal-content">
             <span class="close" onclick="closeModal()">&times;</span>
-            <h2>À propos de cette page</h2>
-            <p>Cette interface des paramètres vous permet de modifier vos réglages afin de les adapter pour une meilleure utilisation.</p>
+            <h2 data-i18n="settings.aboutTitle">À propos de cette page</h2>
+            <p data-i18n="settings.aboutParagraph">Cette interface des paramètres vous permet de modifier vos réglages afin de les adapter pour une meilleure utilisation.</p>
             <ul>
-                <li>Gestion des informations du compte</li>
-                <li>Gestion de l'affichage et de la langue</li>
-                <li>Gestions de vos notifications</li>
-                <li>Ajout et suppression des salles</li>
-                <li>Contactez nous</li>
+                <li data-i18n="settings.infoList.account">Gestion des informations du compte</li>
+                <li data-i18n="settings.infoList.display">Gestion de l'affichage et de la langue</li>
+                <li data-i18n="settings.infoList.notifications">Gestions de vos notifications</li>
+                <li data-i18n="settings.infoList.rooms">Ajout et suppression des salles</li>
+                <li data-i18n="settings.infoList.contact">Contactez nous</li>
             </ul>
             </div>
             </div>
@@ -68,47 +71,47 @@
         <!-- Section du compte -->
         <div id="compte" class="active section">
             <details id="compte-list-vous" class="settings-section">
-                <summary>Vous
+                <summary><span data-i18n="settings.summary.you">Vous</span>
                 <button class="edit-btn" onclick="editSection('vous')">
                     <img src="/assets/icons/edit.png" alt="Modifier">
                 </button>
                 </summary>
                 <div class="details-content">
-                <p>Nom : <span data-path="vous.nom">—</span></p>
-                <p>Prénom : <span data-path="vous.prenom">—</span></p>
-                <p>Date de naissance : <span data-path="vous.date_naissance">—</span></p>
-                <p>Email : <span data-path="vous.email">—</span></p>
-                <p>Téléphone : <span data-path="vous.telephone">—</span></p>
-                <p>Adresse postale : <span data-path="vous.adresse">—</span></p>
-                <p>Photo de profil ou avatar : <span data-path="vous.avatar">—</span></p>
+                <p><span data-i18n="settings.fields.nom">Nom</span> : <span data-path="vous.nom">—</span></p>
+                <p><span data-i18n="settings.fields.prenom">Prénom</span> : <span data-path="vous.prenom">—</span></p>
+                <p><span data-i18n="settings.fields.date_naissance">Date de naissance</span> : <span data-path="vous.date_naissance">—</span></p>
+                <p><span data-i18n="settings.fields.email">Email</span> : <span data-path="vous.email">—</span></p>
+                <p><span data-i18n="settings.fields.telephone">Téléphone</span> : <span data-path="vous.telephone">—</span></p>
+                <p><span data-i18n="settings.fields.adresse">Adresse postale</span> : <span data-path="vous.adresse">—</span></p>
+                <p><span data-i18n="settings.fields.avatar">Photo de profil</span> : <span data-path="vous.avatar">—</span></p>
                 </div>
             </details>
 
             <details id="compte-list-assurance" class="settings-section">
-                <summary>Votre assurance
+                <summary><span data-i18n="settings.summary.insurance">Votre assurance</span>
                 <button class="edit-btn" onclick="editSection('assurance')">
                     <img src="/assets/icons/edit.png" alt="Modifier">
                 </button>
                 </summary>
                 <div class="details-content">
-                <p>Nom : <span data-path="assurance.nom">—</span></p>
-                <p>Email : <span data-path="assurance.email">—</span></p>
-                <p>Téléphone : <span data-path="assurance.telephone">—</span></p>
-                <p>Adresse Postale : <span data-path="assurance.adresse">—</span></p>
+                <p><span data-i18n="settings.fields.nom">Nom</span> : <span data-path="assurance.nom">—</span></p>
+                <p><span data-i18n="settings.fields.email">Email</span> : <span data-path="assurance.email">—</span></p>
+                <p><span data-i18n="settings.fields.telephone">Téléphone</span> : <span data-path="assurance.telephone">—</span></p>
+                <p><span data-i18n="settings.fields.adresse">Adresse postale</span> : <span data-path="assurance.adresse">—</span></p>
                 </div>
             </details>
 
             <details id="compte-list-syndicat" class="settings-section">
-                <summary>Votre syndicat
+                <summary><span data-i18n="settings.summary.union">Votre syndicat</span>
                 <button class="edit-btn" onclick="editSection('syndicat')">
                     <img src="/assets/icons/edit.png" alt="Modifier">
                 </button>
                 </summary>
                 <div class="details-content">
-                <p>Nom : <span data-path="syndicat.nom">—</span></p>
-                <p>Email : <span data-path="syndicat.email">—</span></p>
-                <p>Téléphone : <span data-path="syndicat.telephone">—</span></p>
-                <p>Adresse Postale : <span data-path="syndicat.adresse">—</span></p>
+                <p><span data-i18n="settings.fields.nom">Nom</span> : <span data-path="syndicat.nom">—</span></p>
+                <p><span data-i18n="settings.fields.email">Email</span> : <span data-path="syndicat.email">—</span></p>
+                <p><span data-i18n="settings.fields.telephone">Téléphone</span> : <span data-path="syndicat.telephone">—</span></p>
+                <p><span data-i18n="settings.fields.adresse">Adresse postale</span> : <span data-path="syndicat.adresse">—</span></p>
                 </div>
             </details>
         </div>
@@ -116,51 +119,51 @@
         <!-- Section de l'affichage -->
         <div id="affichage" class="section">
             <details id="affichage-list-mode" class="settings-section">
-                <summary>Mode
+                <summary><span data-i18n="settings.summary.mode">Mode</span>
                 </summary>
                 <div class="details-content">
-                <p><span data-path="affichage.mode">—</span></p>
+                <p><span data-i18n="settings.fields.mode_affichage">Mode</span> : <span data-path="affichage.mode">—</span></p>
                 </div>
             </details>
 
             <details id="affichage-list-langue-localisation" class="settings-section">
-                <summary>Langue & Localisation
+                <summary><span data-i18n="settings.summary.langloc">Langue & Localisation</span>
                 <button class="edit-btn" onclick="editSection('langue & localisation')">
                     <img src="/assets/icons/edit.png" alt="Modifier">
                 </button>
                 </summary>
-                <div class="details-content">
-                <p>Langue : <span data-path="affichage.langue">—</span></p>
-                <p>Localisation : <span data-path="affichage.localisation">—</span></p>
-                </div>
+                                                    <div class="details-content">
+                                                    <p><span data-i18n="settings.fields.langue">Langue</span> : <span data-path="affichage.langue">—</span></p>
+                                                    <p><span data-i18n="settings.fields.localisation">Localisation</span> : <span data-path="affichage.localisation">—</span></p>
+                                                    </div>
             </details>
         </div>
 
         <!-- Section des notifications -->
         <div id="notifications" class="section">
             <details id="notifications-list-technologies" class="settings-section">
-                <summary>Technologies
+                <summary><span data-i18n="settings.summary.technologies">Technologies</span>
                 <button class="edit-btn" onclick="editSection('technologies')">
                     <img src="/assets/icons/edit.png" alt="Modifier">
                 </button>
                 </summary>
                 <div class="details-content">
-                <p>Email : <span data-path="notifications.technologies.email">—</span></p>
-                <p>SMS : <span data-path="notifications.technologies.sms">—</span></p>
-                <p>Push : <span data-path="notifications.technologies.push">—</span></p>
+                <p><span data-i18n="settings.fields.email">Email</span> : <span data-path="notifications.technologies.email">—</span></p>
+                <p><span data-i18n="settings.fields.sms">SMS</span> : <span data-path="notifications.technologies.sms">—</span></p>
+                <p><span data-i18n="settings.fields.push">Push</span> : <span data-path="notifications.technologies.push">—</span></p>
                 </div>
             </details>
 
             <details id="notifications-list-type" class="settings-section">
-                <summary>Type
+                <summary><span data-i18n="settings.summary.type">Type</span>
                 <button class="edit-btn" onclick="editSection('type')">
                     <img src="/assets/icons/edit.png" alt="Modifier">
                 </button>
                 </summary>
                 <div class="details-content">
-                <p>Alertes : <span data-path="notifications.types.alertes">—</span></p>
-                <p>Rappels : <span data-path="notifications.types.rappels">—</span></p>
-                <p>Newsletters : <span data-path="notifications.types.newsletters">—</span></p>
+                <p><span data-i18n="settings.fields.alertes">Alertes</span> : <span data-path="notifications.types.alertes">—</span></p>
+                <p><span data-i18n="settings.fields.rappels">Rappels</span> : <span data-path="notifications.types.rappels">—</span></p>
+                <p><span data-i18n="settings.fields.newsletters">Newsletters</span> : <span data-path="notifications.types.newsletters">—</span></p>
                 </div>
             </details>
         </div>
@@ -168,8 +171,8 @@
         <!-- Section des lieux (gestion des enseignes & pièces) -->
         <div id="lieux" class="section">
             <details id="lieux-list" class="settings-section">
-                <summary>Gestion des enseignes
-                    <button class="add-btn" type="button" onclick="addEnseigne()" title="Ajouter une enseigne">
+                <summary><span data-i18n="settings.summary.manage_brands">Gestion des enseignes</span>
+                    <button class="add-btn" type="button" onclick="addEnseigne()" data-i18n-title="actions.add_brand" title="Ajouter une enseigne">
                         <img src="/assets/icons/add.png" alt="Ajouter">
                     </button>
                 </summary>
@@ -184,12 +187,12 @@
         <!-- Section des contacts -->
         <div id="contact" class="section">
             <details id="contact-list" class="settings-section">
-                <summary>Nous contacter
+                <summary><span data-i18n="settings.summary.contact">Nous contacter</span>
                 </summary>
                 <div class="details-content">
-                <p>Email : <span data-path="contact.email" data-readonly="true">—</span></p>
-                <p>Téléphone : <span data-path="contact.telephone" data-readonly="true">—</span></p>
-                <p>Adresse Postale : <span data-path="contact.adresse_postale" data-readonly="true">—</span></p>
+                <p><span data-i18n="settings.fields.email">Email</span> : <span data-path="contact.email" data-readonly="true">—</span></p>
+                <p><span data-i18n="settings.fields.telephone">Téléphone</span> : <span data-path="contact.telephone" data-readonly="true">—</span></p>
+                <p><span data-i18n="settings.fields.adresse">Adresse postale</span> : <span data-path="contact.adresse_postale" data-readonly="true">—</span></p>
                 </div>
             </details>
         </div>
@@ -198,13 +201,13 @@
     <div id="editModal" class="modal">
     <div class="modal-content">
         <span class="close">&times;</span>
-        <h2>Modifier les paramètres</h2>
+        <h2 data-i18n="modals.edit_title">Modifier les paramètres</h2>
         <form id="editForm">
             <!-- Les champs seront générés dynamiquement ici -->
         </form>
         <div class="form-actions">
-            <button type="button" class="btn-secondary close-modal">Annuler</button>
-            <button type="submit" form="editForm" class="btn-primary">Enregistrer</button>
+            <button type="button" class="btn-secondary close-modal" data-i18n="actions.cancel">Annuler</button>
+            <button type="submit" form="editForm" class="btn-primary" data-i18n="actions.save">Enregistrer</button>
         </div>
     </div>
     </div>
