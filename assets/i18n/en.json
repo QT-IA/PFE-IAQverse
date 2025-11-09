@@ -1,0 +1,194 @@
+{
+  "brand": "IAQverse",
+  "nav": {
+    "home": "Home",
+    "digitalTwin": "Digital Twin",
+    "settings": "Settings"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "aboutTitle": "About this page",
+    "aboutParagraph": "This Dashboard lets you visualize the main indoor air quality components over time.",
+    "co2": "CO₂ trend",
+    "pm25": "PM2.5 concentration",
+    "comfort": "Temperature & Humidity",
+    "tvoc": "TVOC concentration"
+  },
+  "charts": {
+    "no_data": "No data",
+    "trace": {
+      "co2": "CO₂ (ppm)",
+      "pm25": "PM2.5 (µg/m³)",
+      "temp": "Temperature (°C)",
+      "humidity": "Humidity (%)",
+      "tvoc": "TVOC (mg/m³)"
+    },
+    "co2Y": "ppm",
+    "pm25Y": "µg/m³",
+    "temperatureY": "Temperature (°C)",
+    "humidityY": "Humidity (%)",
+    "tvocY": "mg/m³"
+  },
+  "settings": {
+    "title": "Settings",
+    "menu": {
+      "account": "Account",
+      "display": "Display",
+      "notifications": "Notifications",
+      "locations": "Locations",
+      "contact": "Contact"
+    },
+    "aboutTitle": "About this page",
+    "aboutParagraph": "Use this settings panel to adjust your preferences for a better experience.",
+    "languageLabel": "Language",
+    "summary": {
+      "you": "You",
+      "insurance": "Your insurance",
+      "union": "Your union",
+      "mode": "Mode",
+      "langloc": "Language & Localization",
+      "technologies": "Technologies",
+      "type": "Type",
+      "manage_brands": "Manage locations",
+      "contact": "Contact"
+    },
+    "infoList": {
+      "account": "Account information management",
+      "display": "Display and language management",
+      "notifications": "Your notification settings",
+      "rooms": "Add and remove rooms",
+      "contact": "Contact us"
+    },
+    "fields": {
+      "nom": "Name",
+      "prenom": "First name",
+      "date_naissance": "Date of birth",
+      "email": "Email",
+      "telephone": "Phone",
+      "adresse": "Address",
+      "mode_affichage": "Display mode",
+      "langue": "Language",
+      "localisation": "Localization",
+      "avatar": "Profile photo",
+      "sms": "SMS",
+      "push": "Push",
+      "alertes": "Alerts",
+      "rappels": "Reminders",
+      "newsletters": "Newsletters"
+    }
+  },
+  "digitalTwin": {
+    "title": "Digital Twin",
+    "visualisation": "Visualization",
+    "aboutTitle": "About this page",
+    "aboutParagraph": "This Digital Twin view lets you visualize indoor air quality alerts in real time.",
+    "actions": "Actions",
+    "details": "Details",
+    "table": {
+      "state": "State",
+      "subject": "Subject",
+      "action": "Action"
+    },
+    "tip": {
+      "table": "The table on the left shows recommended actions.",
+      "visual": "The visualization highlights affected zones in the room.",
+      "details": "Center details explain the causes of alerts."
+    },
+  "sample": {
+      "window": {
+        "subject": "Window",
+        "action": "Close"
+      },
+      "door": {
+        "subject": "Door",
+        "action": "Close"
+      },
+      "ventilation": {
+        "subject": "Ventilation",
+        "action": "Activate"
+      },
+      "radiator": {
+        "subject": "Radiator",
+        "action": "Reduce"
+      },
+      "temperature": {
+        "subject": "Temperature",
+        "action": "Adjust"
+      },
+      "humidity": {
+        "subject": "Humidity",
+        "action": "Regulate"
+      }
+    },
+    "actionVerbs": {
+      "open": "Open",
+      "close": "Close",
+      "increase": "Increase",
+      "decrease": "Decrease",
+      "turn_on": "Turn on",
+      "turn_off": "Turn off"
+    }
+  },
+  "buttons": {
+    "toggleTheme": "Toggle theme",
+    "frame": "Center"
+  },
+  "placeholders": {
+    "comma_list": "Separate values with commas"
+  },
+  "languages": {
+    "fr": "Français",
+    "en": "English",
+    "es": "Español",
+    "de": "Deutsch",
+    "it": "Italiano"
+  },
+  "modes": {
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "actions": {
+    "add_location": "Add room",
+    "add_brand": "Add location",
+    "edit": "Edit",
+    "remove": "Remove",
+    "confirm": "Confirmation",
+    "yes": "Yes",
+    "no": "No",
+    "cancel": "Cancel",
+    "save": "Save"
+  },
+  "modals": {
+    "add_brand": "Add location",
+    "add_room": "Add room",
+    "edit_brand": "Edit location",
+    "edit_title": "Edit settings",
+    "glb_label": "3D model (.glb)",
+    "glb_drop": "Drag & drop a .glb file here"
+  },
+  "notifications": {
+    "saved": "Changes saved",
+    "save_error": "Error saving",
+    "order_saved": "New order saved",
+    "rooms_order_saved": "Rooms order saved",
+    "location_exists": "A location with this name already exists",
+    "add_success": "Location added successfully",
+    "add_error": "Error adding the location",
+    "file_invalid": "Invalid .glb file",
+    "upload_error": "Error uploading 3D model",
+    "piece_added": "Room added successfully",
+    "piece_add_error": "Error adding the room",
+    "update_success": "Location updated successfully",
+    "update_error": "Error updating the location",
+    "delete_files_error": "Error deleting 3D files",
+    "delete_success": "Location removed successfully",
+    "delete_file_error": "Error deleting 3D file",
+    "piece_deleted": "Room removed successfully",
+    "config_saved": "Configuration saved successfully",
+    "location_not_found": "Location not found",
+    "confirm_delete_message": "Are you sure you want to delete?",
+    "mode_updated": "Mode updated",
+    "load_error": "Unable to load configuration",
+    "load_failure": "Error loading configuration"
+  }
+}
