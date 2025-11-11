@@ -482,4 +482,41 @@ if (typeof window !== 'undefined'){
       refreshChartsTheme();
     }catch(e){}
   });
+  
+  // Fonction pour réinitialiser les bordures de danger des graphiques
+  window.clearChartDangerBorders = function() {
+    const chartIds = ['co2-chart', 'pm25-chart', 'tvoc-chart', 'comfort-chart'];
+    chartIds.forEach(id => {
+      const box = document.getElementById(id);
+      if (box) {
+        box.classList.remove('chart-danger');
+      }
+    });
+    // Réinitialiser aussi les plot_bgcolor
+    ['co2-chart', 'tvoc-chart'].forEach(id => {
+      const gd = document.getElementById(id);
+      if (gd && gd.layout) {
+        Plotly.relayout(gd, { 'plot_bgcolor': '' });
+      }
+    });
+  };
+  
+  // Écouter les changements d'onglet pour réinitialiser les bordures
+  document.addEventListener('roomChanged', () => {
+    try {
+      console.log('[charts] roomChanged event received, clearing borders');
+      if (typeof window.clearChartDangerBorders === 'function') {
+        window.clearChartDangerBorders();
+      }
+    } catch(e) {}
+  });
+  
+  document.addEventListener('enseigneChanged', () => {
+    try {
+      console.log('[charts] enseigneChanged event received, clearing borders');
+      if (typeof window.clearChartDangerBorders === 'function') {
+        window.clearChartDangerBorders();
+      }
+    } catch(e) {}
+  });
 }
