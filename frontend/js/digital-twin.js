@@ -59,23 +59,83 @@ window.showDetails = showDetails;
 
 // Sync alert-point elements into the actions table as rows
 function syncAlertPointsToTable() {
+    console.log('[digital-twin] syncAlertPointsToTable called');
+    
     const tbody = document.querySelector('.actions-table tbody');
-    if (!tbody) return;
+    if (!tbody) {
+        console.warn('[digital-twin] Actions table tbody not found');
+        return;
+    }
 
     // remove previously injected rows
     Array.from(tbody.querySelectorAll('tr.dynamic-alert')).forEach(r => r.remove());
 
-    // Only include active alert points (set by alerts-engine)
-    const points = Array.from(document.querySelectorAll('.alert-point[data-active="true"]'));
-    if (!points || points.length === 0) return;
+    // Get active context (enseigne + salle)
+    const getActiveContext = () => {
+        try {
+            const cfg = (typeof window.getConfig === 'function') ? window.getConfig() : (window.config || null);
+            const activeEnseigneId = (typeof window.getActiveEnseigne === 'function') 
+                ? window.getActiveEnseigne() 
+                : (cfg && cfg.lieux && cfg.lieux.active);
+            
+            // Essayer de récupérer activeRoomId depuis le tab actif
+            const tab = document.querySelector('.room-tabs .tab.active');
+            let activeRoomId = tab ? tab.getAttribute('data-room-id') : null;
+            
+            // Si pas de tab actif, prendre la première pièce de l'enseigne active
+            if (!activeRoomId && cfg && cfg.lieux && cfg.lieux.enseignes) {
+                const ens = cfg.lieux.enseignes.find(e => e.id === activeEnseigneId);
+                if (ens && ens.pieces && ens.pieces.length > 0) {
+                    activeRoomId = ens.pieces[0].id;
+                    console.log(`[digital-twin] No active tab, using first room: ${activeRoomId}`);
+                }
+            }
+            
+            return { activeEnseigneId, activeRoomId };
+        } catch(e) {
+            console.error('[digital-twin] Error getting active context:', e);
+            return { activeEnseigneId: null, activeRoomId: null };
+        }
+    };
+    
+    const { activeEnseigneId, activeRoomId } = getActiveContext();
+    console.log(`[digital-twin] Active context: ${activeEnseigneId}/${activeRoomId}`);
+
+    // Only include active alert points that belong to the current enseigne/salle
+    const allActivePoints = Array.from(document.querySelectorAll('.alert-point[data-active="true"]'));
+    console.log(`[digital-twin] Found ${allActivePoints.length} active alert-points`);
+    
+    const points = allActivePoints.filter(pt => {
+        const ptEnseigne = pt.getAttribute('data-enseigne');
+        const ptPiece = pt.getAttribute('data-piece');
+        const matches = (ptEnseigne === activeEnseigneId && ptPiece === activeRoomId);
+        if (!matches) {
+            console.log(`[digital-twin] Filtering out: ${ptEnseigne}/${ptPiece}`);
+        }
+        return matches;
+    });
+    
+    console.log(`[digital-twin] Filtered to ${points.length} alert-points for active context`);
+    
+    if (!points || points.length === 0) {
+        console.log('[digital-twin] No alert-points to display in table');
+        return;
+    }
 
     const t = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t : (()=>undefined);
 
     const builtRows = [];
 
-    points.forEach(pt => { const explicitKey = pt.getAttribute('data-i18n-key');
+    points.forEach(pt => { 
+        const explicitKey = pt.getAttribute('data-i18n-key');
+        const severity = pt.getAttribute('data-severity');
+        console.log(`[digital-twin] Processing alert-point: ${explicitKey}, severity: ${severity}, active: ${pt.getAttribute('data-active')}`);
+        
         const names = (pt.getAttribute('data-target-names') || '').split('|').map(s => s.trim()).filter(Boolean);
-        if (!explicitKey && names.length === 0) return;
+        if (!explicitKey && names.length === 0) {
+            console.log('[digital-twin] Skipping alert-point: no key or names');
+            return;
+        }
         // Candidate key: use first name, sanitized to ascii lowercase
         const candidateRaw = explicitKey || names[0];
             const sanitize = (s) => {
@@ -88,13 +148,14 @@ function syncAlertPointsToTable() {
         const actionKey = `digitalTwin.sample.${candidate}.action`;
 
         // determine severity
-        const severity = (pt.getAttribute('data-severity') || 'danger').toLowerCase();
+        const severityLower = (severity || 'danger').toLowerCase();
         const severityMap = {
             'danger': { emoji: '🔴', cls: 'alert-red' },
             'warning': { emoji: '🟠', cls: 'alert-yellow' },
             'info': { emoji: '🟢', cls: 'alert-green' }
         };
-        const sev = severityMap[severity] || severityMap['danger'];
+        const sev = severityMap[severityLower] || severityMap['danger'];
+        console.log(`[digital-twin] Alert ${explicitKey}: severity ${severityLower} -> emoji ${sev.emoji}`);
 
     const tr = document.createElement('tr');
         tr.className = `dynamic-alert ${sev.cls}`;
@@ -128,7 +189,8 @@ function syncAlertPointsToTable() {
         tr.appendChild(tdAct);
 
         // queue row with severity weight for sorting
-        const weight = severity === 'danger' ? 0 : (severity === 'warning' ? 1 : 2);
+        const weight = severityLower === 'danger' ? 0 : (severityLower === 'warning' ? 1 : 2);
+        console.log(`[digital-twin] Adding row for ${explicitKey} with weight ${weight}`);
         builtRows.push({ tr, weight });
     });
 
