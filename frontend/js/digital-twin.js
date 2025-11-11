@@ -26,14 +26,25 @@ function showDetails(sujet, detail) {
 
     const t = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t : (()=>undefined);
 
-    // Helper to format a single issue
+    // Icônes par paramètre (alignées avec les graphiques)
+        // Codes de paramètre pour appliquer une couleur dédiée via CSS (pas d'emoji)
+        const knownParams = new Set(['co2','pm25','tvoc','temperature','humidity']);
+
+    // Helper pour formatter un item de détail avec style riche
     const formatIssue = (it) => {
         if (!it) return null;
-        const dirTxt = it.direction === 'low' ? (t('details.low') || 'trop bas') : (it.direction === 'high' ? (t('details.high') || 'trop élevé') : (t('details.out_of_range') || 'hors plage'));
+        const dirTxt = it.direction === 'low' ? (t('details.low') || 'trop bas')
+            : (it.direction === 'high' ? (t('details.high') || 'trop élevé') : (t('details.out_of_range') || 'hors plage'));
         const name = it.name || it.code || 'Paramètre';
         const unit = it.unit ? ` ${it.unit}` : '';
-        const thrTxt = (typeof it.threshold === 'number') ? ` (seuil ${it.direction === 'low' ? 'min' : 'max'}: ${it.threshold}${unit})` : '';
-        return `${name} ${dirTxt} : ${it.value}${unit}${thrTxt}`;
+        const thrTxt = (typeof it.threshold === 'number')
+            ? ` <span class="param-threshold">(seuil ${it.direction === 'low' ? 'min' : 'max'}: ${it.threshold}${unit})</span>`
+            : '';
+        return {
+            html: `<span class="param-value">${name} ${dirTxt} : ${it.value}${unit}</span>${thrTxt}`,
+            severity: it.severity || 'info',
+            code: (it.code || '').toLowerCase()
+        };
     };
 
     const issues = (detail && Array.isArray(detail.issues)) ? detail.issues : [];
@@ -42,20 +53,33 @@ function showDetails(sujet, detail) {
     if (hasIssues) {
         issues.forEach(it => {
             const li = document.createElement('li');
-            li.textContent = formatIssue(it);
+            const formatted = formatIssue(it);
+            if (formatted) {
+                li.innerHTML = formatted.html;
+                const sevClass = formatted.severity === 'danger' ? 'issue-danger'
+                    : (formatted.severity === 'warning' ? 'issue-warning' : 'issue-info');
+                li.className = sevClass;
+                    const pcode = formatted.code;
+                    if (pcode && knownParams.has(pcode)) {
+                        li.classList.add(`param-${pcode}`);
+                    }
+            }
             list.appendChild(li);
         });
-        // Action recommandée
+        // Action recommandée stylisée
         const actionKey = detail && detail.actionKey;
         if (actionKey) {
             const li = document.createElement('li');
+            li.className = 'issue-action';
             const actionLabel = t && t(`digitalTwin.actionVerbs.${actionKey}`);
             li.innerHTML = `<strong>${t('digitalTwin.recommendedAction') || 'Action recommandée'}:</strong> ${actionLabel || actionKey}`;
             list.appendChild(li);
         }
     } else {
         // Fallback
-        list.innerHTML = `<li>${t('digitalTwin.noDetails') || 'Aucun détail disponible'}</li>`;
+        const li = document.createElement('li');
+        li.textContent = t('digitalTwin.noDetails') || 'Aucun détail disponible';
+        list.appendChild(li);
     }
 }
 
