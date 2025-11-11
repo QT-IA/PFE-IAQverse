@@ -81,28 +81,28 @@
     const sTVOC = evalTVOC(Number(last.tvoc));
     const sTemp = evalTemp(Number(last.temperature));
     const sHum = evalHum(Number(last.humidity));
-        // CO2: ventil + window (and door as secondary) when warning/danger
-        if (sCO2 && sCO2 !== "info") {
+        // CO2: ventil + window (and door as secondary) - toujours afficher, même en info
+        if (sCO2) {
             push("ventilation", sCO2);
             push("window", sCO2);
             push("door", sCO2);
         }
-        // PM2.5: ventil
-        if (sPM && sPM !== "info") {
+        // PM2.5: ventil - toujours afficher
+        if (sPM) {
             push("window", sPM);
             push("ventilation", sPM);
         }
-        // TVOC: ventil
-        if (sTVOC && sTVOC !== "info") {
+        // TVOC: ventil - toujours afficher
+        if (sTVOC) {
             push("ventilation", sTVOC);
         }
-        // Température: radiator (chauffage) & window (aération) selon extrêmes
-        if (sTemp && sTemp !== 'info') {
+        // Température: radiator (chauffage) & window (aération) - toujours afficher
+        if (sTemp) {
             push('radiator', sTemp);
             push('window', sTemp);
         }
-        // Humidité: ventilation & window (aérer ou déshumidifier) hors plage de confort
-        if (sHum && sHum !== 'info') {
+        // Humidité: ventilation & window (aérer ou déshumidifier) - toujours afficher
+        if (sHum) {
             push('ventilation', sHum);
             push('radiator', sHum);
             push('window', sHum);
@@ -183,6 +183,16 @@
                     : null;
             activeEnseigneName = ens ? ens.nom || ens.id : activeEnseigneName;
             activeRoomName = piece ? piece.nom || piece.id : activeRoomName;
+            // Rafraîchir immédiatement les alertes pour la nouvelle pièce
+            fetchLatestIAQ();
+        } catch (e) { }
+    });
+
+    window.addEventListener("enseigneChanged", (ev) => {
+        try {
+            initActiveContext();
+            // Rafraîchir immédiatement les alertes pour la nouvelle enseigne
+            fetchLatestIAQ();
         } catch (e) { }
     });
 

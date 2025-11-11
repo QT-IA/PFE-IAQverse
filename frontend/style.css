@@ -768,14 +768,21 @@ a:hover img {
     border: 2px solid #e74c3c;
     box-shadow: 0 0 6px rgba(231, 76, 60, 0.5);
     cursor: pointer;
-    /* Masquer par défaut, affiché seulement si data-active=true + warning/danger */
+    /* Masquer par défaut, affiché seulement pour warning/danger sur la 3D */
     display: none !important;
 }
 
-/* Affiche l'alert-point quand actif ET en warning ou danger */
+/* Affiche l'alert-point quand actif ET en warning ou danger (pas info sur la 3D) */
 .alert-point[data-active="true"][data-severity="warning"],
 .alert-point[data-active="true"][data-severity="danger"] {
     display: block !important;
+}
+
+/* Couleur verte pour info (utilisé dans le tableau seulement) */
+.alert-point[data-severity="info"] {
+    background-color: rgba(40, 167, 69, 0.8);
+    border-color: #28a745;
+    box-shadow: 0 0 8px rgba(40, 167, 69, 0.6);
 }
 
 /* Couleur jaune/orange pour warning */
