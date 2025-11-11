@@ -48,13 +48,61 @@
                         "id": "piece_1762418101133",
                         "nom": "Salon",
                         "type": "salon",
-                        "glbModel": "/assets/rooms/ens_1762004765975_piece_1762418101133.glb"
+                        "glbModel": "/assets/rooms/ens_1762004765975_piece_1762418101133.glb",
+                        "capteurs": ["Salon1"],
+                        "modules": {
+                            "fenetre": {
+                                "available": true,
+                                "controllable": true,
+                                "current_state": "fermé"
+                            },
+                            "ventilation": {
+                                "available": true,
+                                "controllable": true,
+                                "current_state": "inactif",
+                                "power_levels": [0, 1, 2, 3, 4]
+                            },
+                            "purificateur": {
+                                "available": false,
+                                "controllable": false,
+                                "current_state": "inactif"
+                            },
+                            "clim": {
+                                "available": true,
+                                "controllable": true,
+                                "current_state": "inactif"
+                            }
+                        }
                     },
                     {
                         "id": "piece_1762418120951",
                         "nom": "Bureau",
                         "type": "bureau",
-                        "glbModel": "/assets/rooms/ens_1762004765975_piece_1762418120951.glb"
+                        "glbModel": "/assets/rooms/ens_1762004765975_piece_1762418120951.glb",
+                        "capteurs": ["Bureau1","Bureau2","Bureau3","Bureau4"],
+                        "modules": {
+                            "fenetre": {
+                                "available": true,
+                                "controllable": true,
+                                "current_state": "fermé"
+                            },
+                            "ventilation": {
+                                "available": true,
+                                "controllable": true,
+                                "current_state": "inactif",
+                                "power_levels": [0, 1, 2, 3]
+                            },
+                            "purificateur": {
+                                "available": true,
+                                "controllable": true,
+                                "current_state": "inactif"
+                            },
+                            "clim": {
+                                "available": false,
+                                "controllable": false,
+                                "current_state": "inactif"
+                            }
+                        }
                     }
                 ]
             },
@@ -67,7 +115,31 @@
                         "id": "piece_1762418052257",
                         "nom": "Chambre",
                         "type": "chambre",
-                        "glbModel": "/assets/rooms/ens_boutique1_piece_1762418052257.glb"
+                        "glbModel": "/assets/rooms/ens_boutique1_piece_1762418052257.glb",
+                        "capteurs": ["Chambre1"],
+                        "modules": {
+                            "fenetre": {
+                                "available": true,
+                                "controllable": false,
+                                "current_state": "fermé"
+                            },
+                            "ventilation": {
+                                "available": false,
+                                "controllable": false,
+                                "current_state": "inactif",
+                                "power_levels": []
+                            },
+                            "purificateur": {
+                                "available": true,
+                                "controllable": true,
+                                "current_state": "inactif"
+                            },
+                            "clim": {
+                                "available": true,
+                                "controllable": true,
+                                "current_state": "inactif"
+                            }
+                        }
                     }
                 ]
             }
