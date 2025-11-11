@@ -265,7 +265,7 @@
             activeEnseigneName = ens ? ens.nom || ens.id : null;
             
             // room: try selected tab with data-room-id
-            const tab = document.querySelector(".room-tabs .tab.active");
+            const tab = document.querySelector("#room-tabs .room-tab.active");
             const roomId = tab ? tab.getAttribute("data-room-id") : null;
             const piece = ens && ens.pieces && roomId 
                 ? ens.pieces.find(p => p.id === roomId)
@@ -466,25 +466,32 @@
         
         initActiveContext();
         
-        // Générer les alert-points pour la pièce active initiale
-        if (activeEnseigneId && activeRoomId) {
-            console.log(`[alerts-engine] Generating initial alert-points for ${activeEnseigneId}/${activeRoomId}`);
-            renderAlertPoints(activeEnseigneId, activeRoomId);
-        } else {
-            console.warn('[alerts-engine] No context at start, will retry in 500ms');
-            // Réessayer après un délai si pas de contexte
-            setTimeout(() => {
-                initActiveContext();
-                if (activeEnseigneId && activeRoomId) {
-                    console.log(`[alerts-engine] Retry: generating alert-points for ${activeEnseigneId}/${activeRoomId}`);
-                    renderAlertPoints(activeEnseigneId, activeRoomId);
-                    fetchLatestIAQ();
-                }
-            }, 500);
-        }
+        // Attendre le premier roomChanged pour être sûr que le contexte est correctement restauré
+        let isFirstLoad = true;
+        const handleFirstRoomChange = () => {
+            if (isFirstLoad) {
+                isFirstLoad = false;
+                console.log('[alerts-engine] First roomChanged received, starting alert checks');
+                fetchLatestIAQ();
+                setInterval(fetchLatestIAQ, REFRESH_MS);
+            }
+        };
         
-        fetchLatestIAQ();
-        setInterval(fetchLatestIAQ, REFRESH_MS);
+        // Écouter le premier roomChanged
+        document.addEventListener('roomChanged', handleFirstRoomChange, { once: true });
+        
+        // Fallback: si aucun roomChanged après 1 seconde, démarrer quand même
+        setTimeout(() => {
+            if (isFirstLoad) {
+                console.log('[alerts-engine] No roomChanged after 1s, starting anyway');
+                // Générer les alert-points pour la pièce active
+                if (activeEnseigneId && activeRoomId) {
+                    console.log(`[alerts-engine] Generating alert-points for ${activeEnseigneId}/${activeRoomId}`);
+                    renderAlertPoints(activeEnseigneId, activeRoomId);
+                }
+                handleFirstRoomChange();
+            }
+        }, 1000);
     }
 
     if (typeof window !== "undefined") {

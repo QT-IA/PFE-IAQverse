@@ -50,6 +50,11 @@ document.addEventListener('roomChanged', (event) => {
     if (typeof window.loadPieceModel === 'function') {
         window.loadPieceModel(roomId);
     }
+    try { syncAlertPointsToTable(); } catch(e) {}
+});
+
+document.addEventListener('enseigneChanged', () => {
+    try { syncAlertPointsToTable(); } catch(e) {}
 });
 
 // Export des fonctions
@@ -79,7 +84,7 @@ function syncAlertPointsToTable() {
                 : (cfg && cfg.lieux && cfg.lieux.active);
             
             // Essayer de récupérer activeRoomId depuis le tab actif
-            const tab = document.querySelector('.room-tabs .tab.active');
+            const tab = document.querySelector('#room-tabs .room-tab.active');
             let activeRoomId = tab ? tab.getAttribute('data-room-id') : null;
             
             // Si pas de tab actif, prendre la première pièce de l'enseigne active
