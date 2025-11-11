@@ -2,6 +2,8 @@
 (function (window) {
     const REFRESH_MS = 5000; // polling frequency
     const API_URL_WINDOW = "http://localhost:8000/iaq/window";
+    // last IAQ sample for current context
+    let latestSample = null;
     // Centralise all thresholds here to avoid magic numbers
     const THRESHOLDS = {
         CO2: { WARNING: 800, DANGER: 1200 },
@@ -133,6 +135,61 @@
         }
         
         let activatedCount = 0;
+        // Helper: build details for a given device key based on latestSample
+        function buildDetailsForKey(deviceKey) {
+            const issues = [];
+            if (!latestSample) return { issues, actionKey: actionsMap && actionsMap[deviceKey] };
+            const last = latestSample;
+            const pushIssue = (code, name, unit, sev, value, dir, threshold) => {
+                if (!sev || sev === 'info') return;
+                issues.push({ code, name, unit, severity: sev, value, direction: dir, threshold });
+            };
+            // Compute severities
+            const sCO2 = evalCO2(Number(last.co2));
+            const sPM = evalPM25(Number(last.pm25));
+            const sTVOC = evalTVOC(Number(last.tvoc));
+            const sTemp = evalTemp(Number(last.temperature));
+            const sHum = evalHum(Number(last.humidity));
+
+            const addCO2 = () => {
+                if (!sCO2 || sCO2 === 'info') return; const thr = (sCO2 === 'danger') ? THRESHOLDS.CO2.DANGER : THRESHOLDS.CO2.WARNING; pushIssue('co2', 'CO₂', 'ppm', sCO2, Number(last.co2), 'high', thr);
+            };
+            const addPM = () => {
+                if (!sPM || sPM === 'info') return; const thr = (sPM === 'danger') ? THRESHOLDS.PM25.DANGER : THRESHOLDS.PM25.WARNING; pushIssue('pm25', 'PM2.5', 'µg/m³', sPM, Number(last.pm25), 'high', thr);
+            };
+            const addTVOC = () => {
+                if (!sTVOC || sTVOC === 'info') return; const thr = (sTVOC === 'danger') ? THRESHOLDS.TVOC.DANGER : THRESHOLDS.TVOC.WARNING; pushIssue('tvoc', 'TVOC', 'mg/m³', sTVOC, Number(last.tvoc), 'high', thr);
+            };
+            const addTemp = () => {
+                if (!sTemp || sTemp === 'info') return; const t = Number(last.temperature);
+                let dir = null, thr = null;
+                if (t < THRESHOLDS.TEMP.WARN_LOW_END) { dir = 'low'; thr = THRESHOLDS.TEMP.WARN_LOW_END; }
+                else if (t > THRESHOLDS.TEMP.WARN_HIGH_START) { dir = 'high'; thr = THRESHOLDS.TEMP.WARN_HIGH_START; }
+                pushIssue('temperature', 'Température', '°C', sTemp, t, dir, thr);
+            };
+            const addHum = () => {
+                if (!sHum || sHum === 'info') return; const h = Number(last.humidity);
+                let dir = null, thr = null;
+                if (h < THRESHOLDS.HUM.WARN_LOW_MAX) { dir = 'low'; thr = THRESHOLDS.HUM.WARN_LOW_MAX; }
+                else if (h > THRESHOLDS.HUM.WARN_HIGH_MIN) { dir = 'high'; thr = THRESHOLDS.HUM.WARN_HIGH_MIN; }
+                pushIssue('humidity', 'Humidité', '%', sHum, h, dir, thr);
+            };
+
+            switch (deviceKey) {
+                case 'window':
+                    addCO2(); addPM(); addTemp(); addHum(); break;
+                case 'ventilation':
+                    addCO2(); addPM(); addTVOC(); addHum(); break;
+                case 'radiator':
+                    addTemp(); addHum(); break;
+                case 'door':
+                    addCO2(); break;
+                default:
+                    addCO2(); addPM(); addTVOC(); addTemp(); addHum(); break;
+            }
+            return { issues, actionKey: actionsMap && actionsMap[deviceKey] };
+        }
+
         // Filtrer et activer uniquement les alert-points de la pièce active
         allAlertPoints.forEach((el) => {
             const pointEnseigne = el.getAttribute('data-enseigne');
@@ -155,6 +212,10 @@
                 if (actionsMap && actionsMap[key]) {
                     el.setAttribute("data-action-key", actionsMap[key]);
                 }
+                try {
+                    const det = buildDetailsForKey(key);
+                    el.setAttribute('data-details', JSON.stringify(det));
+                } catch (e) { /* ignore JSON issues */ }
                 
                 // Masquer les alert-points de type "info" dans la 3D (mais garder data-active pour le tableau)
                 if (severity === 'info') {
@@ -169,6 +230,7 @@
                 el.setAttribute("data-active", "false");
                 el.removeAttribute("data-severity");
                 el.removeAttribute("data-action-key");
+                el.removeAttribute("data-details");
                 el.style.display = 'none';
             }
         });
@@ -372,6 +434,8 @@
             }
             data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
             const last = data[data.length - 1];
+            latestSample = last;
+            try { window.latestIAQLastSample = last; } catch(e){}
             const map = deriveAlertPointSeverities(last || {});
             // Build recommended actions per alert-point key
             const suggestActionFor = (key, sev, last) => {

@@ -2,34 +2,60 @@
  * Script spécifique pour la page Digital Twin
  */
 
+let currentDetailsSubject = null;
 /**
  * Affiche les détails d'une alerte
- * @param {string} sujet - Le sujet de l'alerte
+ * @param {string} sujet - Le sujet de l'alerte (ex. Fenêtre, Ventilation, etc.)
+ * @param {object} detail - Détails optionnels { issues: [{code,name,unit,severity,value,direction,threshold}], actionKey }
  */
-function showDetails(sujet) {
+function showDetails(sujet, detail) {
     const panel = document.getElementById("details-panel");
     const list = document.getElementById("details-list");
-    
     if (!panel || !list) return;
-    
+    // Toggle: si on reclique sur le même sujet, on masque les détails
+    if (!panel.classList.contains('hidden') && currentDetailsSubject === sujet) {
+        panel.classList.add('hidden');
+        list.innerHTML = '';
+        currentDetailsSubject = null;
+        return;
+    }
+
     panel.classList.remove("hidden");
     list.innerHTML = "";
+    currentDetailsSubject = sujet;
 
-    switch(sujet) {
-        case "Fenêtre":
-            list.innerHTML = `
-                <li>Taux anormal de CO₂ au niveau de la fenêtre</li>
-                <li>Forte concentration de PM2.5</li>
-            `;
-            break;
-        case "Tableau":
-            list.innerHTML = `<li>Légère accumulation de poussière détectée</li>`;
-            break;
-        case "Sol":
-            list.innerHTML = `<li>Sol propre, aucune alerte détectée</li>`;
-            break;
-        default:
-            list.innerHTML = `<li>Aucun détail disponible</li>`;
+    const t = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t : (()=>undefined);
+
+    // Helper to format a single issue
+    const formatIssue = (it) => {
+        if (!it) return null;
+        const dirTxt = it.direction === 'low' ? (t('details.low') || 'trop bas') : (it.direction === 'high' ? (t('details.high') || 'trop élevé') : (t('details.out_of_range') || 'hors plage'));
+        const name = it.name || it.code || 'Paramètre';
+        const unit = it.unit ? ` ${it.unit}` : '';
+        const thrTxt = (typeof it.threshold === 'number') ? ` (seuil ${it.direction === 'low' ? 'min' : 'max'}: ${it.threshold}${unit})` : '';
+        return `${name} ${dirTxt} : ${it.value}${unit}${thrTxt}`;
+    };
+
+    const issues = (detail && Array.isArray(detail.issues)) ? detail.issues : [];
+    const hasIssues = issues.length > 0;
+
+    if (hasIssues) {
+        issues.forEach(it => {
+            const li = document.createElement('li');
+            li.textContent = formatIssue(it);
+            list.appendChild(li);
+        });
+        // Action recommandée
+        const actionKey = detail && detail.actionKey;
+        if (actionKey) {
+            const li = document.createElement('li');
+            const actionLabel = t && t(`digitalTwin.actionVerbs.${actionKey}`);
+            li.innerHTML = `<strong>${t('digitalTwin.recommendedAction') || 'Action recommandée'}:</strong> ${actionLabel || actionKey}`;
+            list.appendChild(li);
+        }
+    } else {
+        // Fallback
+        list.innerHTML = `<li>${t('digitalTwin.noDetails') || 'Aucun détail disponible'}</li>`;
     }
 }
 
@@ -186,8 +212,17 @@ function syncAlertPointsToTable() {
         else tdAct.setAttribute('data-i18n', actionKey);
         tdAct.textContent = (dynActTxt) ? dynActTxt : (actTxtFallback ? actTxtFallback : ((t && t('digitalTwin.details')) || 'Détails'));
 
-        // Clicking the row should open details using the visible subject text
-        tr.addEventListener('click', () => { const subj = tdSubj.textContent.trim(); showDetails(subj); });
+        // Prepare detail object from alert-point
+        let detailObj = null;
+        try {
+            const raw = pt.getAttribute('data-details');
+            detailObj = raw ? JSON.parse(raw) : null;
+        } catch(e) { detailObj = null; }
+        // Clicking the row should open details using the visible subject text and detail object
+        tr.addEventListener('click', () => {
+            const subj = tdSubj.textContent.trim();
+            showDetails(subj, detailObj);
+        });
 
         tr.appendChild(tdState);
         tr.appendChild(tdSubj);
