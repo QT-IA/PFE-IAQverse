@@ -13,8 +13,8 @@ import numpy as np
 import asyncio
 import logging
 
-from modelsAPI import IAQData, PreventiveAction, ActionExecution
-from utils import (
+from .modelsAPI import IAQData, PreventiveAction, ActionExecution
+from .utils import (
     sanitize_for_storage,
     load_dataset_df,
     load_config,
