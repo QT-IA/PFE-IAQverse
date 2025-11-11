@@ -1,2 +1,5 @@
 __pycache__/
 *.pyc
+
+# Large ML model files (use Git LFS or download separately)
+assets/ml_models/generic_multi_output.joblib
