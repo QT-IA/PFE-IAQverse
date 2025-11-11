@@ -169,7 +169,8 @@ function makeCommonLayout(title, yTitle) {
   const isSmallScreen = (typeof window !== 'undefined') && (window.innerWidth <= 820);
   return {
     autosize: true,
-    margin: { t: 40, r: (isSmallScreen ? 60 : 100), b: (isSmallScreen ? 100 : 90), l: 50 },
+    // Increase bottom margin to avoid truncating date labels
+    margin: { t: 40, r: (isSmallScreen ? 60 : 100), b: (isSmallScreen ? 110 : 130), l: 50 },
     xaxis: { title: (isSmallScreen ? '' : "Heure"), type: "date", showticklabels: !isSmallScreen, color: isDark ? '#a8b2c1' : '#2c3e50', gridcolor: isDark ? '#3a4049' : '#e2e8f0' },
     title: { text: title, font: { color: isDark ? '#e4e7eb' : '#2c3e50' } },
     yaxis: { title: yTitle, color: isDark ? '#a8b2c1' : '#2c3e50', gridcolor: isDark ? '#3a4049' : '#e2e8f0' },
@@ -201,12 +202,14 @@ function initEmptyCharts() {
       const minR = isSmallScreen ? 70 : 140; // increase desktop right margin to avoid truncation
       const minL = isSmallScreen ? 60 : 100;
       const minB = isSmallScreen ? 90 : 120; // reserve space for legend + gap
-      // remove x-axis labels (date) for comfort chart to declutter
-      base.xaxis = Object.assign({}, base.xaxis, { title: '', showticklabels: false });
+  // retirer le titre 'Heure' pour libérer de l'espace pour la légende tout en gardant les ticks visibles
+  base.xaxis = Object.assign({}, base.xaxis, { title: '', showticklabels: true });
       // ensure yaxis2 uses same color as primary yaxis for title/ticks
       const y2 = { title: humidityTitle, overlaying: "y", side: "right", color: base.yaxis && base.yaxis.color };
-      // position legend: always at the bottom of the chart (below the plot)
-      const legend = isSmallScreen ? { orientation: "h", x: 0.5, xanchor: "center", y: -0.08, yanchor: "top" } : { orientation: "h", x: 0.5, xanchor: "center", y: -0.12, yanchor: "top" };
+      // position legend: bottom; increase the gap from the plot by lowering 'y'
+      const legend = isSmallScreen
+        ? { orientation: "h", x: 0.5, xanchor: "center", y: -0.12, yanchor: "bottom" } // plus d'espace sous le graphe en mobile
+        : { orientation: "h", x: 0.5, xanchor: "center", y: -0.18, yanchor: "bottom" }; // plus d'espace sous le graphe desktop
       return Object.assign(base, { margin: { r: minR, l: minL, b: minB }, yaxis2: y2, legend: legend });
     })(),
     plotlyConfig
@@ -290,8 +293,11 @@ function updateChartsWithData(data) {
   const minComfortB = isSmallScreen ? 90 : 120;
   baseComfortLayout.margin = Object.assign({}, baseComfortLayout.margin, { r: Math.max((baseComfortLayout.margin && baseComfortLayout.margin.r) || 50, minComfortR), b: Math.max((baseComfortLayout.margin && baseComfortLayout.margin.b) || 50, minComfortB) });
   baseComfortLayout.yaxis2 = Object.assign({}, { title: (t && t('charts.humidityY')) || "Humidité (%)", overlaying: "y", side: "right" }, { color: baseComfortLayout.yaxis && baseComfortLayout.yaxis.color });
-  baseComfortLayout.xaxis = Object.assign({}, baseComfortLayout.xaxis, { title: '', showticklabels: false });
-  const legend = isSmallScreen ? { orientation: "h", x: 0.5, xanchor: "center", y: -0.08, yanchor: "top" } : { orientation: "h", x: 0.5, xanchor: "center", y: -0.12, yanchor: "top" };
+  // retirer le titre 'Heure' pour libérer de l'espace pour la légende tout en gardant les ticks visibles
+  baseComfortLayout.xaxis = Object.assign({}, baseComfortLayout.xaxis, { title: '', showticklabels: true });
+  const legend = isSmallScreen
+    ? { orientation: "h", x: 0.5, xanchor: "center", y: -0.12, yanchor: "top" }
+    : { orientation: "h", x: 0.5, xanchor: "center", y: -0.18, yanchor: "top" }; // plus d'espace sous le graphe desktop
   
   // Suppression des bandes de zones (OMS) pour un affichage épuré
   
@@ -362,8 +368,29 @@ async function fetchAndUpdate() {
 /* Initialisation */
 if (typeof window !== "undefined" && typeof Plotly !== "undefined") {
   initEmptyCharts();
-  fetchAndUpdate();
-  setInterval(fetchAndUpdate, REFRESH_MS);
+  
+  // Attendre que tabs-manager ait restauré le contexte avant de charger les données
+  let isFirstLoad = true;
+  const handleFirstRoomChange = () => {
+    if (isFirstLoad) {
+      isFirstLoad = false;
+      console.log('[charts] First roomChanged received, starting data fetch');
+      fetchAndUpdate();
+      setInterval(fetchAndUpdate, REFRESH_MS);
+    }
+  };
+  
+  // Écouter le premier événement roomChanged pour savoir que le contexte est prêt
+  document.addEventListener('roomChanged', handleFirstRoomChange, { once: true });
+  
+  // Fallback: si aucun roomChanged n'est émis après 1 seconde, démarrer quand même
+  setTimeout(() => {
+    if (isFirstLoad) {
+      console.log('[charts] No roomChanged after 1s, starting data fetch anyway');
+      handleFirstRoomChange();
+    }
+  }, 1000);
+  
   let resizeTimer = null;
   window.addEventListener("resize", () => {
     clearTimeout(resizeTimer);
@@ -449,7 +476,8 @@ function refreshChartsTheme() {
         newLayout.margin = Object.assign({}, newLayout.margin, { r: Math.max(existingR, minR), b: Math.max((gd.layout && gd.layout.margin && gd.layout.margin.b) || (newLayout.margin && newLayout.margin.b) || 50, minB) });
         // Also preserve removal of date tick labels for the comfort chart (responsive/refresh cases)
         // and respect small-screen logic for other charts
-        newLayout.xaxis = Object.assign({}, newLayout.xaxis, { title: '', showticklabels: false });
+  // conserver absence de titre x mais garder les tick labels visibles
+  newLayout.xaxis = Object.assign({}, newLayout.xaxis, { title: '', showticklabels: true });
       }
       Plotly.react(id, gd.data, newLayout, plotlyConfig);
     }
