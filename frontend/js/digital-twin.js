@@ -101,10 +101,28 @@ document.addEventListener('roomChanged', (event) => {
         window.loadPieceModel(roomId);
     }
     try { syncAlertPointsToTable(); } catch(e) {}
+    
+    // Fermer le panneau de détails lors du changement de pièce
+    const panel = document.getElementById('details-panel');
+    if (panel && !panel.classList.contains('hidden')) {
+        panel.classList.add('hidden');
+        const list = document.getElementById('details-list');
+        if (list) list.innerHTML = '';
+        currentDetailsSubject = null;
+    }
 });
 
 document.addEventListener('enseigneChanged', () => {
     try { syncAlertPointsToTable(); } catch(e) {}
+    
+    // Fermer le panneau de détails lors du changement d'enseigne
+    const panel = document.getElementById('details-panel');
+    if (panel && !panel.classList.contains('hidden')) {
+        panel.classList.add('hidden');
+        const list = document.getElementById('details-list');
+        if (list) list.innerHTML = '';
+        currentDetailsSubject = null;
+    }
 });
 
 // Export des fonctions
