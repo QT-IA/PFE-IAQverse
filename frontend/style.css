@@ -738,9 +738,97 @@ a:hover img {
 }
 
 .details-panel ul {
-    list-style: disc;
-    padding-left: 20px;
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
 }
+
+.details-panel li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    line-height: 1.3;
+    position: relative;
+}
+
+/* Petit bandeau en haut de chaque item coloré selon le paramètre */
+.details-panel li::before { content: none; }
+
+.param-icon {
+    width: 1.25rem;
+    flex: 0 0 1.25rem;
+    text-align: center;
+}
+
+.param-value {
+    font-weight: 600;
+}
+
+.param-threshold {
+    color: var(--text-secondary);
+    margin-left: 6px;
+    font-size: 0.9em;
+}
+
+/* Couleurs par sévérité pour le panneau de détails */
+.issue-danger {
+    background: #fdecea; /* rouge très pâle */
+    border-left: 4px solid #e74c3c;
+    color: #7f1d1d;
+}
+
+[data-theme="sombre"] .issue-danger {
+    background: rgba(231, 76, 60, 0.12);
+    border-left-color: #ff7b6e;
+    color: #ffb3aa;
+}
+
+.issue-warning {
+    background: #fff8e1; /* jaune pâle */
+    border-left: 4px solid #ff9800;
+    color: #7a4b00;
+}
+
+[data-theme="sombre"] .issue-warning {
+    background: rgba(255, 152, 0, 0.12);
+    border-left-color: #ffb547;
+    color: #ffd18a;
+}
+
+.issue-info {
+    background: #e6f4ea; /* vert pâle */
+    border-left: 4px solid #27ae60;
+    color: #1b5e20;
+}
+
+[data-theme="sombre"] .issue-info {
+    background: rgba(39, 174, 96, 0.12);
+    border-left-color: #49d483;
+    color: #b8f0c0;
+}
+
+.issue-action {
+    background: linear-gradient(90deg, rgba(74, 144, 226, 0.12), rgba(74, 144, 226, 0.05));
+    border-left: 4px solid #4a90e2;
+    color: #123b7a;
+}
+
+[data-theme="sombre"] .issue-action {
+    background: linear-gradient(90deg, rgba(74, 144, 226, 0.18), rgba(74, 144, 226, 0.08));
+    border-left-color: #6ab0ff;
+    color: #cfe3ff;
+}
+
+/* Couleurs de paramètre alignées avec les graphiques */
+/* Bandeau retiré: on conserve les classes param-* inactives au cas où on souhaite réactiver plus tard */
+/* .param-co2 { --param-color: green; }
+.param-pm25 { --param-color: orange; }
+.param-tvoc { --param-color: purple; }
+.param-temperature { --param-color: red; }
+.param-humidity { --param-color: blue; } */
 
 .room-visual {
     position: relative;
