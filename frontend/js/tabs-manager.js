@@ -20,21 +20,30 @@ async function initTabsManager() {
 
         renderLocationTabs();
         
-        // Activer la première enseigne par défaut ou l'ancienne sélectionnée
+        // Restaurer l'enseigne et la pièce sauvegardées AVANT de rendre les tabs
         const savedEnseigne = localStorage.getItem('activeEnseigne');
         const savedRoom = localStorage.getItem('activeRoom');
+        console.log('[tabs-manager] Restauration depuis localStorage:', { savedEnseigne, savedRoom });
 
         if (config.lieux.enseignes.length > 0) {
             const defaultEnseigne = savedEnseigne ||
                 (config.lieux.enseignes.find(e => e.id === config.lieux.active) || config.lieux.enseignes[0]).id;
 
-            switchEnseigne(defaultEnseigne);
+            // Définir activeRoom AVANT d'appeler switchEnseigne pour éviter l'auto-sélection de la première pièce
+            const enseigne = config.lieux.enseignes.find(e => e.id === defaultEnseigne);
+            if (savedRoom && enseigne?.pieces?.some(p => p.id === savedRoom)) {
+                activeRoom = savedRoom;
+                    console.log('[tabs-manager] activeRoom défini avant switchEnseigne:', activeRoom);
+            }
 
-            if (savedRoom) {
-                const enseigne = config.lieux.enseignes.find(e => e.id === defaultEnseigne);
-                if (enseigne?.pieces?.some(p => p.id === savedRoom)) {
-                    switchRoom(savedRoom);
-                }
+                // Passer keepActiveRoom=true pour ne pas écraser activeRoom qui vient d'être restauré
+                switchEnseigne(defaultEnseigne, activeRoom !== null);
+
+            // Si savedRoom a été défini, émettre roomChanged explicitement
+            if (activeRoom) {
+                document.dispatchEvent(new CustomEvent('roomChanged', { 
+                    detail: { roomId: activeRoom, enseigneId: defaultEnseigne } 
+                }));
             }
         }
     } catch (error) {
@@ -66,6 +75,7 @@ function renderLocationTabs() {
  * @param {string} enseigneId - L'ID de l'enseigne
  */
 function renderRoomTabs(enseigneId) {
+    console.log('[tabs-manager] renderRoomTabs:', { enseigneId, currentActiveRoom: activeRoom });
     const roomTabs = document.getElementById('room-tabs');
     if (!roomTabs) return;
 
@@ -80,26 +90,37 @@ function renderRoomTabs(enseigneId) {
     roomTabs.innerHTML = enseigne.pieces.map(piece => `
         <div class="room-tab${piece.id === activeRoom ? ' active' : ''}" 
              onclick="switchRoom('${piece.id}')"
-             data-id="${piece.id}">
+             data-id="${piece.id}"
+             data-room-id="${piece.id}">
             <img src="/assets/icons/${piece.type || 'room'}.png" alt="${piece.type || 'Pièce'}">
             ${escapeHtml(piece.nom)}
         </div>
     `).join('');
 
-    // Si aucune pièce n'est active, activer la première
+    // Si aucune pièce n'est active, activer la première SEULEMENT si pas en cours de restauration localStorage
     if (!activeRoom && enseigne.pieces.length > 0) {
+        console.log('[tabs-manager] No activeRoom, auto-selecting first piece');
+        // N'auto-sélectionner que si on n'est pas en train de restaurer depuis localStorage
+        // (activeRoom sera déjà défini par initTabsManager dans ce cas)
         switchRoom(enseigne.pieces[0].id);
+    } else {
+        console.log('[tabs-manager] activeRoom already set, skipping auto-selection');
     }
 }
 
 /**
  * Change l'enseigne active
  * @param {string} enseigneId - L'ID de l'enseigne
+ * @param {boolean} keepActiveRoom - Si true, ne pas réinitialiser activeRoom (utilisé lors de la restauration depuis localStorage)
  */
-function switchEnseigne(enseigneId) {
+function switchEnseigne(enseigneId, keepActiveRoom = false) {
+    console.log('[tabs-manager] switchEnseigne:', { enseigneId, keepActiveRoom, currentActiveRoom: activeRoom });
     activeEnseigne = enseigneId;
-    activeRoom = null; // Réinitialiser la pièce active
+    if (!keepActiveRoom) {
+        activeRoom = null; // Réinitialiser la pièce active (sauf si on restaure depuis localStorage)
+    }
     localStorage.setItem('activeEnseigne', enseigneId);
+    console.log('[tabs-manager] After switchEnseigne, activeRoom:', activeRoom);
     
     // Mettre à jour l'apparence des onglets d'enseignes
     document.querySelectorAll('.location-tab').forEach(tab => {

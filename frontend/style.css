@@ -2,6 +2,11 @@
 Fichier CSS pour le dashboard IAQverse
 */
 
+/* Reset et box-sizing pour éviter les débordements */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
 /* Variables CSS pour le mode clair et sombre */
 :root {
     /* Mode clair (par défaut) */
@@ -55,7 +60,9 @@ body {
     color: var(--text-primary);
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    min-height: 100vh; /* Permet au contenu de dépasser */
+    overflow-y: auto; /* Permet le scroll vertical */
+    overflow-x: hidden; /* Évite le scroll horizontal */
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
@@ -77,6 +84,35 @@ header h1 {
     justify-content: center;
     font-size: 24px;
     color: var(--text-primary);
+}
+
+/* Responsive header */
+@media (max-width: 768px) {
+    header {
+        padding: 12px 10px;
+    }
+    
+    header h1 {
+        font-size: 18px;
+    }
+    
+    .header-buttons {
+        right: 10px;
+        gap: 6px;
+    }
+    
+    .theme-toggle-btn,
+    .info-btn {
+        width: 36px;
+        height: 36px;
+        padding: 6px;
+    }
+    
+    .theme-toggle-btn img,
+    .info-btn img {
+        width: 20px;
+        height: 20px;
+    }
 }
 
 .header-buttons {
@@ -174,6 +210,30 @@ header h1 {
     position: relative;
 }
 
+/* Responsive modal */
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+        max-width: 100%;
+        margin: 2% auto;
+        padding: 16px;
+        max-height: 90vh;
+    }
+    
+    .form-group {
+        margin-bottom: 0.75rem;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .form-actions button {
+        width: 100%;
+    }
+}
+
 .close {
     float: right;
     font-size: 24px;
@@ -200,6 +260,36 @@ header h1 {
     flex-direction: column;
     gap: 15px;
     margin: 20px;
+}
+
+/* Responsive tabs */
+@media (max-width: 768px) {
+    .tabs-container {
+        margin: 10px;
+        gap: 10px;
+    }
+    
+    .location-tabs,
+    .room-tabs {
+        padding: 10px;
+        gap: 6px;
+    }
+    
+    .location-tab {
+        padding: 8px 12px;
+        font-size: 0.85em;
+    }
+    
+    .room-tab {
+        padding: 6px 10px;
+        font-size: 0.8em;
+    }
+    
+    .location-tab img,
+    .room-tab img {
+        width: 12px;
+        height: 12px;
+    }
 }
 
 .location-tabs {
@@ -322,7 +412,16 @@ a:hover img {
     align-content: stretch;
     align-items: center;
     justify-items: stretch;
-    padding-bottom: 70px /* pour laisser de la place à la nav-bar */;
+    padding-bottom: 70px; /* pour laisser de la place à la nav-bar */;
+}
+
+/* Responsive grid (dashboard) */
+@media (max-width: 768px) {
+    .grid {
+        padding: 10px;
+        gap: 12px;
+        padding-bottom: 80px;
+    }
 }
 
 .chart-box {
@@ -333,22 +432,62 @@ a:hover img {
     justify-content: center;
     align-items: center;
     box-shadow: var(--shadow-md);
-    padding: 20px;
+    /* Reserve border space (transparent by default) to avoid layout shift when highlighting danger */
+    border: 2px solid transparent;
+    --chart-padding: 30px;
+    padding: var(--chart-padding);
     min-width: 300px;
     /* remplacer width fixe par flex pour gérer automatiquement le wrapping */
     flex: 1 1 45%;
     height: 300px;
     transition: background-color 0.3s ease;
+    margin-bottom: 10px;
+    position: relative; /* allow absolute child sizing if needed */
+    /* allow axis labels / legends to be visible outside the inner plot area */
+    overflow: visible;
+}
+
+/* Danger highlight for charts */
+.chart-box.chart-danger {
+    border-color: var(--error-color);
+}
+
+/* Make comfort chart slightly taller on desktop so it matches other charts and
+   leaves room for the legend without shrinking the plot area */
+/* Removed custom height for #comfort-chart: use the standard .chart-box size */
+
+/* Ensure Plotly root divs fill their chart-box container */
+.chart-box > .js-plotly-plot,
+.chart-box > .plotly {
+    /* position the Plotly root inside the chart padding so axes/legends stay visible
+       Use absolute positioning relative to .chart-box (which is position:relative) */
+    position: absolute !important;
+    top: var(--chart-padding);
+    left: var(--chart-padding);
+    right: var(--chart-padding);
+    bottom: var(--chart-padding);
+    width: auto !important;
+    height: auto !important;
+}
+
+/* Also make svg containers responsive */
+.chart-box .svg-container,
+.chart-box svg {
+    width: 100% !important;
+    height: 100% !important;
 }
 
 
 /* Quand l'espace ne permet plus 2 boxes par ligne -> occuper 100% */
 @media (max-width: 820px) {
     .chart-box {
+    /* reduce padding on smaller screens and update the plot inset */
+    --chart-padding: 12px;
     flex-basis: 100%;
     max-width: 100%;
     width: 100%;
     min-width: 0;
+    height: 320px;
     }
 }
 
@@ -365,6 +504,31 @@ a:hover img {
     border-radius: 10px;
     box-shadow: 0 -4px 4px rgba(0, 0, 0, 0.2);
     z-index: 500;
+}
+
+/* Responsive nav-bar */
+@media (max-width: 768px) {
+    .nav-bar {
+        bottom: 8px;
+        left: 8px;
+        right: 8px;
+        padding: 8px 10px;
+        border-radius: 8px;
+    }
+    
+    .nav-left,
+    .nav-right {
+        gap: 40px;
+    }
+    
+    .nav-bar img {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .brand {
+        font-size: 14px;
+    }
 }
 
 .nav-left,
@@ -399,9 +563,103 @@ a:hover img {
 .twin-layout {
     display: flex;
     flex-wrap: wrap;
-    height: 100%;
+    align-items: stretch; /* Force tous les panneaux à avoir la même hauteur */
+    min-height: 100%; /* Permet au contenu de dépasser */
     gap: 20px;
     padding: 20px;
+    padding-bottom: 80px; /* Espace pour nav-bar */
+}
+
+/* Responsive pour Digital Twin */
+@media (max-width: 768px) {
+    .twin-layout {
+        padding: 10px;
+        gap: 10px;
+        padding-bottom: 100px; /* Grand espace pour nav-bar en mobile */
+        flex-direction: column;
+        flex-wrap: nowrap;
+        align-items: stretch;
+        min-height: auto; /* Permet au contenu de définir la hauteur */
+    }
+    
+    /* Room-panel (Visualisation) en PREMIER - TOUJOURS VISIBLE */
+    .room-panel {
+        order: -1;
+        flex: 0 0 auto;
+        min-width: 0; /* Permet au contenu de se rétracter */
+        width: 100%;
+        max-width: 100%; /* Évite le débordement */
+        padding: 15px;
+        margin-bottom: 10px;
+        display: block !important;
+    }
+    
+    /* Actions-panel en SECOND - TOUJOURS VISIBLE */
+    .actions-panel {
+        order: 1;
+        flex: 0 0 auto;
+        min-width: 0; /* Permet au contenu de se rétracter */
+        width: 100%;
+        max-width: 100%; /* Évite le débordement */
+        padding: 15px;
+        margin-bottom: 10px;
+        display: block !important;
+    }
+    
+    .details-panel {
+        order: 2;
+        flex: 0 0 auto;
+        min-width: 0; /* Permet au contenu de se rétracter */
+        width: 100%;
+        max-width: 100%; /* Évite le débordement */
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .room-visual {
+        height: 300px;
+        position: relative;
+        width: 100%;
+    }
+    
+    #blender-viewer {
+        height: 300px;
+        width: 100%;
+    }
+    
+    .actions-table {
+        width: 100%;
+        overflow-x: auto;
+        display: table !important; /* Force l'affichage du tableau */
+    }
+    
+    .actions-table th,
+    .actions-table td {
+        padding: 8px 4px;
+        font-size: 0.85em;
+    }
+    
+    /* Room-label TOUJOURS VISIBLE avec bon contraste */
+    .room-label {
+        position: absolute;
+        bottom: 15px;
+        right: 15px;
+        font-size: 0.95em;
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 6px 12px;
+        border-radius: 6px;
+        color: #000;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        z-index: 10;
+        display: block !important;
+    }
+    
+    [data-theme="sombre"] .room-label {
+        background: rgba(37, 41, 48, 0.95);
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
 }
 
 .actions-panel {
@@ -412,8 +670,10 @@ a:hover img {
     padding: 20px;
     border-radius: 10px;
     box-shadow: var(--shadow-md);
-    margin-bottom: 50px;
+    margin-bottom: 0px;
     transition: background-color 0.3s ease;
+    display: flex;
+    flex-direction: column;
 }
 
 .details-panel {
@@ -425,6 +685,8 @@ a:hover img {
     border-radius: 10px;
     box-shadow: var(--shadow-md);
     transition: background-color 0.3s ease;
+    display: flex;
+    flex-direction: column;
 }
 
 .details-panel.hidden {
@@ -439,8 +701,10 @@ a:hover img {
     padding: 20px;
     border-radius: 10px;
     box-shadow: var(--shadow-md);
-    margin-bottom: 50px;
+    margin-bottom: 0px;
     transition: background-color 0.3s ease;
+    display: flex;
+    flex-direction: column;
 }
 
 .actions-table {
@@ -463,19 +727,113 @@ a:hover img {
     color: #c0392b;
 }
 
+.alert-yellow td {
+    background-color: #fff3cd; /* warning */
+    color: #826203;
+}
+
 .alert-green td {
     background-color: #d4edda;
     color: #27ae60;
 }
 
 .details-panel ul {
-    list-style: disc;
-    padding-left: 20px;
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
 }
+
+.details-panel li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    line-height: 1.3;
+    position: relative;
+}
+
+/* Petit bandeau en haut de chaque item coloré selon le paramètre */
+.details-panel li::before { content: none; }
+
+.param-icon {
+    width: 1.25rem;
+    flex: 0 0 1.25rem;
+    text-align: center;
+}
+
+.param-value {
+    font-weight: 600;
+}
+
+.param-threshold {
+    color: var(--text-secondary);
+    margin-left: 6px;
+    font-size: 0.9em;
+}
+
+/* Couleurs par sévérité pour le panneau de détails */
+.issue-danger {
+    background: #fdecea; /* rouge très pâle */
+    border-left: 4px solid #e74c3c;
+    color: #7f1d1d;
+}
+
+[data-theme="sombre"] .issue-danger {
+    background: rgba(231, 76, 60, 0.12);
+    border-left-color: #ff7b6e;
+    color: #ffb3aa;
+}
+
+.issue-warning {
+    background: #fff8e1; /* jaune pâle */
+    border-left: 4px solid #ff9800;
+    color: #7a4b00;
+}
+
+[data-theme="sombre"] .issue-warning {
+    background: rgba(255, 152, 0, 0.12);
+    border-left-color: #ffb547;
+    color: #ffd18a;
+}
+
+.issue-info {
+    background: #e6f4ea; /* vert pâle */
+    border-left: 4px solid #27ae60;
+    color: #1b5e20;
+}
+
+[data-theme="sombre"] .issue-info {
+    background: rgba(39, 174, 96, 0.12);
+    border-left-color: #49d483;
+    color: #b8f0c0;
+}
+
+.issue-action {
+    background: linear-gradient(90deg, rgba(74, 144, 226, 0.12), rgba(74, 144, 226, 0.05));
+    border-left: 4px solid #4a90e2;
+    color: #123b7a;
+}
+
+[data-theme="sombre"] .issue-action {
+    background: linear-gradient(90deg, rgba(74, 144, 226, 0.18), rgba(74, 144, 226, 0.08));
+    border-left-color: #6ab0ff;
+    color: #cfe3ff;
+}
+
+/* Couleurs de paramètre alignées avec les graphiques */
+/* Bandeau retiré: on conserve les classes param-* inactives au cas où on souhaite réactiver plus tard */
+/* .param-co2 { --param-color: green; }
+.param-pm25 { --param-color: orange; }
+.param-tvoc { --param-color: purple; }
+.param-temperature { --param-color: red; }
+.param-humidity { --param-color: blue; } */
 
 .room-visual {
     position: relative;
-    height: 400px;
+    flex: 1; /* Prend toute la hauteur disponible */
+    min-height: 400px; /* Hauteur minimale */
     background-color: var(--info-bg);
     border-radius: 8px;
     overflow: hidden;
@@ -484,7 +842,8 @@ a:hover img {
 
 #blender-viewer {
     width: 100%;
-    height: 400px;
+    height: 100%; /* Prend toute la hauteur du parent */
+    min-height: 400px;
     margin-bottom: 20px;
 }
 
@@ -497,19 +856,165 @@ a:hover img {
     border: 2px solid #e74c3c;
     box-shadow: 0 0 6px rgba(231, 76, 60, 0.5);
     cursor: pointer;
+    /* Masquer par défaut, affiché seulement pour warning/danger sur la 3D */
+    display: none !important;
+}
+
+/* Affiche l'alert-point quand actif ET en warning ou danger (pas info sur la 3D) */
+.alert-point[data-active="true"][data-severity="warning"],
+.alert-point[data-active="true"][data-severity="danger"] {
+    display: block !important;
+}
+
+/* Couleur verte pour info (utilisé dans le tableau seulement) */
+.alert-point[data-severity="info"] {
+    background-color: rgba(40, 167, 69, 0.8);
+    border-color: #28a745;
+    box-shadow: 0 0 8px rgba(40, 167, 69, 0.6);
+}
+
+/* Couleur jaune/orange pour warning */
+.alert-point[data-severity="warning"] {
+    background-color: rgba(255, 193, 7, 0.8);
+    border-color: #ff9800;
+    box-shadow: 0 0 8px rgba(255, 193, 7, 0.6);
+}
+
+/* Couleur rouge pour danger (par défaut déjà rouge, on renforce) */
+.alert-point[data-severity="danger"] {
+    background-color: rgba(220, 53, 69, 0.85);
+    border-color: #dc3545;
+    box-shadow: 0 0 10px rgba(220, 53, 69, 0.7);
 }
 
 .room-label {
     position: absolute;
-    bottom: 360px;
-    right: 550px;
+    bottom: 10px;
+    right: 10px;
     font-weight: bold;
+    font-size: 0.9em;
     color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.9);
+    padding: 6px 12px;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    z-index: 10;
+}
+
+[data-theme="sombre"] .room-label {
+    background: rgba(37, 41, 48, 0.9);
+    color: #fff;
 }
 
 .settings-layout {
     display: flex;
     height: 100vh;
+}
+
+.sidebar {
+    width: 300px;
+    background-color: #2c3e50;
+    color: white;
+    padding: 0px 20px;
+    flex-shrink: 0; /* Empêche la sidebar de rétrécir */
+}
+
+.settings-content {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+    transition: background-color 0.3s ease;
+    overflow-y: auto; /* Permet scroll du contenu */
+}
+
+.settings-layout {
+    display: flex;
+    height: 100vh;
+}
+
+.sidebar {
+    width: 300px;
+    background-color: #2c3e50;
+    color: white;
+    padding: 0px 20px;
+    flex-shrink: 0; /* Empêche la sidebar de rétrécir */
+    overflow-y: auto; /* Permet scroll si contenu trop long */
+}
+
+.settings-content {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+    transition: background-color 0.3s ease;
+    overflow-y: auto; /* Permet scroll du contenu */
+}
+
+/* Responsive Settings: sidebar RESTE À GAUCHE sur toutes tailles */
+@media (max-width: 1024px) {
+    .sidebar {
+        width: 240px;
+    }
+    
+    .settings-content {
+        padding: 15px;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Sur mobile/tablette : on cache la sidebar et on affiche tout le contenu */
+    .settings-layout {
+        flex-direction: column;
+    }
+    
+    .sidebar {
+        display: none; /* Cache complètement la sidebar pour éviter le bazar */
+    }
+    
+    .settings-content {
+        width: 100%;
+        max-width: 100%; /* Évite le débordement */
+        padding: 15px;
+        padding-bottom: 100px; /* Plus d'espace pour nav-bar */
+        overflow-x: hidden; /* Évite le scroll horizontal */
+    }
+    
+    .settings-content h1 {
+        font-size: 20px;
+    }
+    
+    .settings-section {
+        padding: 12px;
+        margin-top: 12px;
+        max-width: 100%; /* Évite le débordement */
+    }
+    
+    .settings-section summary {
+        font-size: 0.95em;
+    }
+    
+    /* Améliorer les boutons et inputs sur mobile */
+    .btn-add,
+    .edit-btn,
+    .btn-delete {
+        padding: 6px 10px;
+        font-size: 0.85em;
+    }
+    
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="date"],
+    select {
+        font-size: 16px; /* Évite le zoom automatique sur iOS */
+    }
 }
 
 .header-home {
@@ -866,6 +1371,18 @@ select.form-control::after {
     max-width: 400px;
 }
 
+/* Responsive notifications */
+@media (max-width: 768px) {
+    .notification {
+        bottom: 70px;
+        right: 10px;
+        left: 10px;
+        max-width: calc(100% - 20px);
+        padding: 10px 16px;
+        font-size: 13px;
+    }
+}
+
 .notification.success {
     background: #27ae60;
 }
@@ -941,6 +1458,32 @@ select.form-control::after {
     gap: 16px;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     margin-top: 12px;
+    padding: 5px;
+}
+
+/* Responsive locations grid */
+@media (max-width: 768px) {
+    .locations-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .location-card {
+        padding: 12px;
+    }
+    
+    .location-card h3 {
+        font-size: 0.95rem;
+    }
+    
+    .rooms {
+        gap: 6px;
+    }
+    
+    .room-tag {
+        padding: 4px 8px;
+        font-size: 0.8em;
+    }
 }
 
 .location-card {

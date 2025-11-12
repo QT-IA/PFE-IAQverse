@@ -2,10 +2,12 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>IAQverse</title>
   <link rel="stylesheet" href="style.css">
   <script src="js/theme.js"></script>
   <script src="js/utils.js"></script>
+  <script src="js/i18n.js"></script>
   <script src="js/config-loader.js"></script>
   <script src="js/tabs-manager.js"></script>
   <script src="js/dashboard.js"></script>
@@ -13,7 +15,7 @@
 </head>
 <body>
   <header>
-    <h1>Dashboard</h1>
+  <h1 data-i18n="dashboard.title">Dashboard</h1>
     <div class="header-buttons">
       <button class="theme-toggle-btn" onclick="toggleTheme()" title="Changer le thème">
         <img src="/assets/icons/theme.png" alt="Thème">
@@ -24,15 +26,15 @@
     </div>
 
     <div id="infoModal" class="modal">
-    <div class="modal-content">
+      <div class="modal-content">
       <span class="close" onclick="closeModal()">&times;</span>
-      <h2>À propos de cette page</h2>
-      <p>Cette interface Dashboard vous permet de visualiser l'évolution des composants principaux de la qualité de l'air.</p>
+      <h2 data-i18n="dashboard.aboutTitle">À propos de cette page</h2>
+      <p data-i18n="dashboard.aboutParagraph">Cette interface Dashboard vous permet de visualiser l'évolution des composants principaux de la qualité de l'air.</p>
       <ul>
-        <li>Évolution du CO₂</li>
-        <li>Concentration de PM2.5</li>
-        <li>Température & Humidité</li>
-        <li>Concentration de TVOC</li>
+        <li data-i18n="dashboard.co2">Évolution du CO₂</li>
+        <li data-i18n="dashboard.pm25">Concentration de PM2.5</li>
+        <li data-i18n="dashboard.comfort">Température & Humidité</li>
+        <li data-i18n="dashboard.tvoc">Concentration de TVOC</li>
       </ul>
     </div>
     </div>
@@ -65,7 +67,7 @@
   </div>
 
   <div class="nav-center">
-    <span class="brand">IAQverse</span>
+    <span class="brand" data-i18n="brand">IAQverse</span>
   </div>
 
   <div class="nav-right">
