@@ -1,9 +1,7 @@
 /* Alerts Engine: evaluates IAQ data against thresholds and toggles alert-points visibility/severity */
 (function (window) {
     const REFRESH_MS = 5000; // polling frequency
-    const API_URL_WINDOW = "http://localhost:8000/iaq/window";
-    // last IAQ sample for current context
-    let latestSample = null;
+    const API_URL_DATA = "http://localhost:8000/iaq/data";
     // Centralise all thresholds here to avoid magic numbers
     const THRESHOLDS = {
         CO2: { WARNING: 800, DANGER: 1200 },
@@ -83,28 +81,28 @@
     const sTVOC = evalTVOC(Number(last.tvoc));
     const sTemp = evalTemp(Number(last.temperature));
     const sHum = evalHum(Number(last.humidity));
-        // CO2: ventil + window (and door as secondary)
-        if (sCO2) {
+        // CO2: ventil + window (and door as secondary) when warning/danger
+        if (sCO2 && sCO2 !== "info") {
             push("ventilation", sCO2);
             push("window", sCO2);
             push("door", sCO2);
         }
-        // PM2.5: ventil + window
-        if (sPM) {
+        // PM2.5: ventil
+        if (sPM && sPM !== "info") {
             push("window", sPM);
             push("ventilation", sPM);
         }
         // TVOC: ventil
-        if (sTVOC) {
+        if (sTVOC && sTVOC !== "info") {
             push("ventilation", sTVOC);
         }
         // Température: radiator (chauffage) & window (aération) selon extrêmes
-        if (sTemp) {
+        if (sTemp && sTemp !== 'info') {
             push('radiator', sTemp);
             push('window', sTemp);
         }
         // Humidité: ventilation & window (aérer ou déshumidifier) hors plage de confort
-        if (sHum) {
+        if (sHum && sHum !== 'info') {
             push('ventilation', sHum);
             push('radiator', sHum);
             push('window', sHum);
@@ -405,30 +403,18 @@
 
     async function fetchLatestIAQ() {
         try {
-            if (!activeEnseigneName || !activeRoomName) {
-                console.log('[alerts-engine] fetchLatestIAQ: No context, re-initializing...');
-                initActiveContext();
-            }
-            
-            console.log(`[alerts-engine] fetchLatestIAQ for: ${activeEnseigneName}/${activeRoomName} (${activeEnseigneId}/${activeRoomId})`);
-            
+            if (!activeEnseigneName || !activeRoomName) initActiveContext();
             const params = new URLSearchParams({
                 enseigne: activeEnseigneName || "",
                 salle: activeRoomName || "",
                 hours: "1",
                 step: "5min",
             });
-            const url = `${API_URL_WINDOW}?${params.toString()}`;
-            console.log(`[alerts-engine] API URL: ${url}`);
-            
+            const url = `${API_URL_DATA}?${params.toString()}`;
             const res = await fetch(url, { cache: "no-store" });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
-            
-            console.log(`[alerts-engine] Received ${data.length} data points`);
-            
             if (!Array.isArray(data) || data.length === 0) {
-                console.log('[alerts-engine] No data, deactivating all alert-points');
                 applyAlertPointsActivation({}, {});
                 return;
             }
