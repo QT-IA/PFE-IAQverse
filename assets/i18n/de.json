@@ -1,0 +1,194 @@
+{
+    "brand": "IAQverse",
+    "nav": {
+        "home": "Panel",
+        "digitalTwin": "Digitaler Zwilling",
+        "settings": "Einstellungen"
+    },
+    "dashboard": {
+        "title": "Panel",
+        "aboutTitle": "Über diese Seite",
+        "aboutParagraph": "Dieses Panel ermöglicht die Visualisierung der wichtigsten Komponenten der Innenraumluftqualität über die Zeit.",
+        "co2": "CO₂-Verlauf",
+        "pm25": "PM2.5-Konzentration",
+        "comfort": "Temperatur & Luftfeuchtigkeit",
+        "tvoc": "TVOC-Konzentration"
+    },
+    "charts": {
+        "no_data": "Keine Daten",
+        "trace": {
+            "co2": "CO₂ (ppm)",
+            "pm25": "PM2.5 (µg/m³)",
+            "temp": "Temperatur (°C)",
+            "humidity": "Luftfeuchtigkeit (%)",
+            "tvoc": "TVOC (mg/m³)"
+        },
+        "co2Y": "ppm",
+        "pm25Y": "µg/m³",
+        "temperatureY": "Temperatur (°C)",
+        "humidityY": "Luftfeuchtigkeit (%)",
+        "tvocY": "mg/m³"
+    },
+    "settings": {
+        "title": "Einstellungen",
+        "menu": {
+            "account": "Konto",
+            "display": "Anzeige",
+            "notifications": "Benachrichtigungen",
+            "locations": "Standorte",
+            "contact": "Kontakt"
+        },
+        "aboutTitle": "Über diese Seite",
+        "aboutParagraph": "Verwenden Sie dieses Einstellungsfeld, um Ihre Präferenzen anzupassen.",
+        "languageLabel": "Sprache",
+        "summary": {
+            "you": "Sie",
+            "insurance": "Ihre Versicherung",
+            "union": "Ihre Gewerkschaft",
+            "mode": "Modus",
+            "langloc": "Sprache & Lokalisierung",
+            "technologies": "Technologien",
+            "type": "Typ",
+            "manage_brands": "Standorte verwalten",
+            "contact": "Kontakt"
+        },
+        "infoList": {
+            "account": "Kontoinformationen verwalten",
+            "display": "Anzeige- und Spracheinstellungen",
+            "notifications": "Ihre Benachrichtigungseinstellungen",
+            "rooms": "Räume hinzufügen und entfernen",
+            "contact": "Kontaktieren Sie uns"
+        },
+        "fields": {
+            "nom": "Name",
+            "prenom": "Vorname",
+            "date_naissance": "Geburtsdatum",
+            "email": "E-Mail",
+            "telephone": "Telefon",
+            "adresse": "Adresse",
+            "mode_affichage": "Anzeige-Modus",
+            "langue": "Sprache",
+            "localisation": "Lokalisierung",
+            "avatar": "Profilbild",
+            "sms": "SMS",
+            "push": "Push",
+            "alertes": "Warnungen",
+            "rappels": "Erinnerungen",
+            "newsletters": "Newsletter"
+        }
+    },
+    "digitalTwin": {
+        "title": "Digitaler Zwilling",
+        "visualisation": "Visualisierung",
+        "aboutTitle": "Über diese Seite",
+        "aboutParagraph": "Diese Digitaler Zwilling-Ansicht zeigt Ihnen Echtzeit-Warnungen zur Innenraumluftqualität.",
+        "actions": "Aktionen",
+        "details": "Details",
+        "table": {
+            "state": "Zustand",
+            "subject": "Betreff",
+            "action": "Aktion"
+        },
+        "tip": {
+            "table": "Die Tabelle links zeigt empfohlene Maßnahmen.",
+            "visual": "Die Visualisierung hebt betroffene Bereiche im Raum hervor.",
+            "details": "Die Details in der Mitte erklären die Ursachen der Warnungen."
+        },
+    "sample": {
+            "window": {
+                "subject": "Fenster",
+                "action": "Schließen"
+            },
+            "door": {
+                "subject": "Tür",
+                "action": "Schließen"
+            },
+            "ventilation": {
+                "subject": "Lüftung",
+                "action": "Aktivieren"
+            },
+            "radiator": {
+                "subject": "Heizkörper",
+                "action": "Reduzieren"
+            },
+            "temperature": {
+                "subject": "Temperatur",
+                "action": "Anpassen"
+            },
+            "humidity": {
+                "subject": "Luftfeuchtigkeit",
+                "action": "Regulieren"
+            }
+        },
+        "actionVerbs": {
+            "open": "Öffnen",
+            "close": "Schließen",
+            "increase": "Erhöhen",
+            "decrease": "Verringern",
+            "turn_on": "Einschalten",
+            "turn_off": "Ausschalten"
+        }
+    },
+    "buttons": {
+        "toggleTheme": "Thema wechseln",
+        "frame": "Zentrieren"
+    },
+    "placeholders": {
+        "comma_list": "Werte durch Kommas trennen"
+    },
+    "languages": {
+        "fr": "Français",
+        "en": "English",
+        "es": "Español",
+        "de": "Deutsch",
+        "it": "Italiano"
+    },
+    "modes": {
+        "light": "Hell",
+        "dark": "Dunkel"
+    },
+    "actions": {
+        "add_location": "Raum hinzufügen",
+        "add_brand": "Standort hinzufügen",
+        "edit": "Bearbeiten",
+        "remove": "Entfernen",
+        "confirm": "Bestätigung",
+        "yes": "Ja",
+        "no": "Nein",
+        "cancel": "Abbrechen",
+        "save": "Speichern"
+    },
+    "modals": {
+        "add_brand": "Standort hinzufügen",
+        "add_room": "Raum hinzufügen",
+        "edit_brand": "Standort bearbeiten",
+        "edit_title": "Einstellungen bearbeiten",
+        "glb_label": "3D-Modell (.glb)",
+        "glb_drop": "Ziehen Sie eine .glb-Datei hierher"
+    },
+    "notifications": {
+        "saved": "Änderungen gespeichert",
+        "save_error": "Fehler beim Speichern",
+        "order_saved": "Neue Reihenfolge gespeichert",
+        "rooms_order_saved": "Raumreihenfolge gespeichert",
+        "location_exists": "Ein Standort mit diesem Namen existiert bereits",
+        "add_success": "Standort erfolgreich hinzugefügt",
+        "add_error": "Fehler beim Hinzufügen des Standorts",
+        "file_invalid": "Ungültige .glb-Datei",
+        "upload_error": "Fehler beim Hochladen des 3D-Modells",
+        "piece_added": "Raum erfolgreich hinzugefügt",
+        "piece_add_error": "Fehler beim Hinzufügen des Raums",
+        "update_success": "Standort erfolgreich aktualisiert",
+        "update_error": "Fehler beim Aktualisieren des Standorts",
+        "delete_files_error": "Fehler beim Löschen von 3D-Dateien",
+        "delete_success": "Standort erfolgreich entfernt",
+        "delete_file_error": "Fehler beim Löschen der 3D-Datei",
+        "piece_deleted": "Raum erfolgreich entfernt",
+        "config_saved": "Konfiguration erfolgreich gespeichert",
+        "location_not_found": "Standort nicht gefunden",
+        "confirm_delete_message": "Möchten Sie dies wirklich löschen?",
+        "mode_updated": "Modus aktualisiert",
+        "load_error": "Konfiguration kann nicht geladen werden",
+        "load_failure": "Fehler beim Laden der Konfiguration"
+    }
+}

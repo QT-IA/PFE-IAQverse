@@ -2,13 +2,16 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>IAQverse</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="digitalTwin.title">Digital Twin</title>
     <link rel="stylesheet" href="style.css">
     <script src="js/theme.js"></script>
     <script src="js/utils.js"></script>
+    <script src="js/i18n.js"></script>
     <script src="js/config-loader.js"></script>
     <script src="js/tabs-manager.js"></script>
     <script src="js/digital-twin.js"></script>
+    <script src="js/alerts-engine.js"></script>
     <script async src="https://unpkg.com/es-module-shims/dist/es-module-shims.js"></script>
     <script type="importmap">
     {
@@ -21,7 +24,7 @@
 </head>
 <body>
     <header>
-    <h1>Digital Twin</h1>
+    <h1 data-i18n="digitalTwin.title">Digital Twin</h1>
     <div class="header-buttons">
         <button class="theme-toggle-btn" onclick="toggleTheme()" title="Changer le thème">
         <img src="/assets/icons/theme.png" alt="Thème">
@@ -34,12 +37,12 @@
     <div id="infoModal" class="modal">
     <div class="modal-content">
         <span class="close" onclick="closeModal()">&times;</span>
-        <h2>À propos de cette page</h2>
-        <p>Cette interface Digital Twin vous permet de visualiser les alertes de qualité de l'air intérieur en temps réel.</p>
+    <h2 data-i18n="digitalTwin.aboutTitle">À propos de cette page</h2>
+    <p data-i18n="digitalTwin.aboutParagraph">Cette interface Digital Twin vous permet de visualiser les alertes de qualité de l'air intérieur en temps réel.</p>
         <ul>
-            <li>Le tableau à gauche montre les actions recommandées.</li>
-            <li>La visualisation indique les zones concernées dans la pièce.</li>
-            <li>Les détails au centre expliquent les causes des alertes.</li>
+            <li data-i18n="digitalTwin.tip.table">Le tableau à gauche montre les actions recommandées.</li>
+            <li data-i18n="digitalTwin.tip.visual">La visualisation indique les zones concernées dans la pièce.</li>
+            <li data-i18n="digitalTwin.tip.details">Les détails au centre expliquent les causes des alertes.</li>
         </ul>
     </div>
     </div>
@@ -52,33 +55,35 @@
     </div>
 
     <main class="twin-layout">
-    <!-- Colonne gauche : Tableau d'actions -->
+    <!-- Visualisation pièce en premier (haut sur mobile) -->
+    <section class="room-panel">
+    <h2 data-i18n="digitalTwin.visualisation">Visualisation</h2>
+        <div class="room-tabs" id="room-tabs">
+            <!-- Les onglets des pièces seront générés dynamiquement ici -->
+        </div>
+        <div class="room-visual">
+            <div id="blender-viewer"></div>
+            <!-- Bouton pour recentrer / cadrer le modèle -->
+            <button id="frame-btn" title="Centrer la pièce (touche F)" data-i18n-title="buttons.frame" data-i18n="buttons.frame" style="position:absolute; top:8px; right:8px; z-index:10; padding:6px 8px; background:#fff; border-radius:4px; border:1px solid #ccc; cursor:pointer;">Centrer</button>
+
+                <!-- Les alert-points seront générés dynamiquement pour chaque pièce -->
+                <div id="alert-points-container"></div>
+            <div class="room-label">2 Alertes</div>
+        </div>
+    </section>
+
+    <!-- Tableau d'actions en second (bas sur mobile) -->
     <section class="actions-panel">
-        <h2>Actions</h2>
+    <h2 data-i18n="digitalTwin.actions">Actions</h2>
         <table class="actions-table">
             <thead>
                 <tr>
-                    <th>État</th>
-                    <th>Sujet</th>
-                    <th>Action</th>
+                    <th data-i18n="digitalTwin.table.state">État</th>
+                    <th data-i18n="digitalTwin.table.subject">Sujet</th>
+                    <th data-i18n="digitalTwin.table.action">Action</th>
                 </tr>
             </thead>
             <tbody>
-                <tr class="alert-red" onclick="showDetails('Fenêtre')">
-                    <td>🔴</td>
-                    <td>Fenêtre</td>
-                    <td>Fermer</td>
-                </tr>
-                <tr class="alert-green" onclick="showDetails('Tableau')">
-                    <td>🟢</td>
-                    <td>Tableau</td>
-                    <td>Dépoussiérer</td>
-                </tr>
-                <tr class="alert-green" onclick="showDetails('Sol')">
-                    <td>🟢</td>
-                    <td>Sol</td>
-                    <td>Dépoussiérer</td>
-                </tr>
             </tbody>
         </table>
 
@@ -86,24 +91,6 @@
         <div id="details-panel" class="details-panel hidden">
             <h3>Détails</h3>
             <ul id="details-list"></ul>
-        </div>
-    </section>
-
-    <!-- Colonne droite : Visualisation pièce -->
-    <section class="room-panel">
-        <h2>Visualisation</h2>
-        <div class="room-tabs" id="room-tabs">
-            <!-- Les onglets des pièces seront générés dynamiquement ici -->
-        </div>
-        <div class="room-visual">
-            <div id="blender-viewer"></div>
-            <!-- Bouton pour recentrer / cadrer le modèle -->
-            <button id="frame-btn" title="Centrer la pièce (touche F)" style="position:absolute; top:8px; right:8px; z-index:10; padding:6px 8px; background:#fff; border-radius:4px; border:1px solid #ccc; cursor:pointer;">Centrer</button>
-
-                <!-- data-target-names: liste de noms de noeuds dans le GLB (séparés par |) -->
-                <div class="alert-point" data-target-names="Window|Fenetre|Fenêtre|window|fenetre" style="top: 20%; left: 30%; transform: translate(-50%, -50%);"></div>
-                <div class="alert-point" data-target-names="Door|Porte|door|porte" style="top: 20%; left: 20%; transform: translate(-50%, -50%);"></div>
-            <div class="room-label">2 Alertes</div>
         </div>
     </section>
     </main>
@@ -119,7 +106,7 @@
     </div>
 
     <div class="nav-center">
-        <span class="brand">IAQverse</span>
+    <span class="brand" data-i18n="brand">IAQverse</span>
     </div>
 
     <div class="nav-right">
