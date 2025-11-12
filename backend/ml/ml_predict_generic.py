@@ -257,8 +257,20 @@ class RealtimeGenericPredictor:
         df_features = self.create_features(df)
         
         # Préparer les features pour la prédiction
-        feature_cols = [col for col in df_features.columns 
-                       if col not in ['timestamp', 'enseigne', 'salle', 'capteur_id']]
+        # Utiliser l'ordre des features enregistré dans la config si disponible
+        if self.config and 'feature_columns' in self.config:
+            # Les colonnes de features attendues par le modèle sont la moyenne des colonnes listées
+            feature_cols = [c for c in df_features.columns 
+                            if c not in ['timestamp', 'enseigne', 'salle', 'capteur_id']]
+            # S'assurer que les colonnes de base (co2, pm25, tvoc, temperature, humidity) sont présentes
+            expected_base = list(self.config.get('feature_columns', []))
+            # Recréer l'ordre: prendre d'abord les expected_base s'ils existent, puis le reste
+            ordered = [c for c in expected_base if c in feature_cols]
+            remaining = [c for c in feature_cols if c not in ordered]
+            feature_cols = ordered + remaining
+        else:
+            feature_cols = [col for col in df_features.columns 
+                           if col not in ['timestamp', 'enseigne', 'salle', 'capteur_id']]
         
         # Prendre la moyenne des dernières lignes (lookback window)
         lookback = min(self.config['lookback_minutes'], len(df_features))
@@ -269,25 +281,43 @@ class RealtimeGenericPredictor:
         if self.scaler:
             X_input = self.scaler.transform(X_input)
         
-        # Prédiction avec le modèle multi-output (4 cibles en une fois)
+        # Prédiction avec le modèle multi-output
         model = self.models.get("multi_output")
         if not model:
             return {"error": "Multi-output model not loaded"}
-        
-        # Une seule prédiction pour les 4 cibles
-        preds_array = model.predict(X_input)[0]  # Shape: (4,)
-        
+
+        preds = model.predict(X_input)
+
+        # preds peut être de forme (1, n_targets) ou (n_targets,) selon l'API du modèle
+        if preds is None:
+            return {"error": "Model returned no prediction"}
+
+        preds_array = np.asarray(preds)
+        if preds_array.ndim == 1:
+            # forme (n_targets,)
+            preds_vector = preds_array
+        elif preds_array.ndim == 2 and preds_array.shape[0] == 1:
+            preds_vector = preds_array[0]
+        else:
+            # Cas inattendu
+            logger.error(f"Prediction shape unexpected: {preds_array.shape}")
+            return {"error": f"Unexpected prediction shape: {preds_array.shape}"}
+
+        # Valider que le nombre de targets correspond à la config
+        target_cols = self.config.get('target_columns', []) if self.config else []
+        if len(preds_vector) != len(target_cols):
+            logger.error(f"Nombre de prédictions ({len(preds_vector)}) != targets attendues ({len(target_cols)})")
+            return {"error": "Model output size mismatch with config target_columns"}
+
         # Associer les prédictions aux noms de cibles
-        predictions = {
-            target: float(preds_array[idx]) 
-            for idx, target in enumerate(self.config['target_columns'])
-        }
+        predictions = {target: float(preds_vector[idx]) for idx, target in enumerate(target_cols)}
         
         # Valeurs actuelles
         current_values = {
             "co2": float(df['co2'].iloc[-1]) if 'co2' in df.columns else None,
             "pm25": float(df['pm25'].iloc[-1]) if 'pm25' in df.columns else None,
             "tvoc": float(df['tvoc'].iloc[-1]) if 'tvoc' in df.columns else None,
+            "humidity": float(df['humidity'].iloc[-1]) if 'humidity' in df.columns else None,
         }
         
         # Analyser les risques
@@ -300,7 +330,8 @@ class RealtimeGenericPredictor:
             "capteur_id": capteur_id,
             "current_values": current_values,
             "predicted_values": predictions,
-            "forecast_minutes": self.config['forecast_minutes'] * 5,  # Convertir en minutes
+            # `forecast_minutes` est le nombre de pas (5min) prévus ; convertir en minutes
+            "forecast_minutes": int(self.config.get('forecast_minutes', 0)) * 5,
             "risk_analysis": risk_analysis
         }
         
