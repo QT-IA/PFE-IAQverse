@@ -7,6 +7,11 @@ Fichier CSS pour le dashboard IAQverse
     box-sizing: border-box;
 }
 
+/* Reset et box-sizing pour éviter les débordements */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
 /* Variables CSS pour le mode clair et sombre */
 :root {
     /* Mode clair (par défaut) */

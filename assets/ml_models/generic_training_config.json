@@ -1,0 +1,56 @@
+{
+  "lookback_minutes": 12,
+  "forecast_minutes": 6,
+  "feature_columns": [
+    "co2",
+    "pm25",
+    "tvoc",
+    "temperature",
+    "humidity"
+  ],
+  "target_columns": [
+    "co2",
+    "pm25",
+    "tvoc",
+    "humidity"
+  ],
+  "model_type": "voting_multi_output",
+  "metrics_by_target": {
+    "co2": {
+      "mse": 670.4667819841582,
+      "mae": 16.96452939832873,
+      "r2": 0.976054116410981
+    },
+    "pm25": {
+      "mse": 29.691588149242804,
+      "mae": 1.0183641978232452,
+      "r2": 0.6893979716924628
+    },
+    "tvoc": {
+      "mse": 2697.3187391882275,
+      "mae": 40.40417006700049,
+      "r2": 0.25930247117830174
+    },
+    "humidity": {
+      "mse": 2.616431979796062,
+      "mae": 1.1289560407727406,
+      "r2": 0.49810346553489904
+    }
+  },
+  "metrics_global": {
+    "mse": 850.0233853253567,
+    "mae": 14.87900492598129,
+    "r2": 0.6057145062041622
+  },
+  "salles_trained": [
+    "Bureau"
+  ],
+  "capteurs_trained": [
+    "Bureau1",
+    "Bureau2",
+    "Bureau3",
+    "Bureau4"
+  ],
+  "training_date": "2025-11-11T17:51:09.100420",
+  "version": "3.0"
+}
