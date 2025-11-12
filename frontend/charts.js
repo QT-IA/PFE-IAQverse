@@ -1,7 +1,7 @@
 // Configuration
 const REFRESH_MS = 3000; // 3s
 /* Fichier des graphiques IAQ - mise à jour dynamique sans rechargement de la page */
-const API_URL_WINDOW = "http://localhost:8000/iaq/window";
+const API_URL_DATA = "http://localhost:8000/iaq/data";
 const chartIds = ["co2-chart", "pm25-chart", "comfort-chart", "tvoc-chart"];
 // Evite le conflit avec la variable globale "config" utilisée par index.html
 const plotlyConfig = { responsive: true, displayModeBar: false };
@@ -198,7 +198,7 @@ async function fetchAndUpdate() {
       hours: String(1),
       step: "5min",
     });
-    const url = `${API_URL_WINDOW}?${params.toString()}`;
+    const url = `${API_URL_DATA}?${params.toString()}`;
     console.debug("IAQ fetch:", url);
     const res = await window.fetch(url, { cache: "no-store" });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
