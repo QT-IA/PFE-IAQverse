@@ -21,6 +21,7 @@ from .utils import (
     save_config,
     extract_sensors_from_config
 )
+from .action_selector import IAQScoreCalculator
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -150,6 +151,28 @@ def get_iaq_data(
         df = df.sort_values("timestamp")
         df["timestamp"] = df["timestamp"].dt.strftime("%Y-%m-%dT%H:%M:%S")
         out = df.to_dict(orient="records")
+        
+        # Calculer global_score pour les données brutes aussi
+        for record in out:
+            try:
+                predictions = {
+                    "co2": record.get("co2"),
+                    "pm25": record.get("pm25"),
+                    "tvoc": record.get("tvoc"),
+                    "humidity": record.get("humidity")
+                }
+                # Ne calculer que si on a au moins une valeur
+                if any(v is not None for v in predictions.values()):
+                    # Remplacer None par 0 pour le calcul (valeurs neutres)
+                    clean_predictions = {k: (v if v is not None else 0) for k, v in predictions.items()}
+                    score_data = IAQScoreCalculator.calculate_global_score(clean_predictions)
+                    record["global_score"] = score_data["global_score"]
+                    record["global_level"] = score_data["global_level"]
+            except Exception as e:
+                logger.warning(f"Erreur calcul score raw: {e}")
+                record["global_score"] = None
+                record["global_level"] = None
+        
         return [sanitize_for_storage(r) for r in out]
     
     step_l = step.lower()
@@ -208,6 +231,28 @@ def get_iaq_data(
     resampled["timestamp"] = resampled["timestamp"].dt.strftime("%Y-%m-%dT%H:%M:%S")
     
     out = resampled.to_dict(orient="records")
+    
+    # Calculer global_score pour chaque enregistrement
+    for record in out:
+        try:
+            predictions = {
+                "co2": record.get("co2"),
+                "pm25": record.get("pm25"),
+                "tvoc": record.get("tvoc"),
+                "humidity": record.get("humidity")
+            }
+            # Ne calculer que si on a au moins une valeur
+            if any(v is not None for v in predictions.values()):
+                # Remplacer None par 0 pour le calcul (valeurs neutres)
+                clean_predictions = {k: (v if v is not None else 0) for k, v in predictions.items()}
+                score_data = IAQScoreCalculator.calculate_global_score(clean_predictions)
+                record["global_score"] = score_data["global_score"]
+                record["global_level"] = score_data["global_level"]
+        except Exception as e:
+            logger.warning(f"Erreur calcul score: {e}")
+            record["global_score"] = None
+            record["global_level"] = None
+    
     return [sanitize_for_storage(r) for r in out]
 
 

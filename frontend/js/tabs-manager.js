@@ -226,46 +226,6 @@ window.renderRoomTabs = renderRoomTabs;
  */
 let monitoringInterval = null;
 
-function calculateGlobalScore(values) {
-    const weights = { co2: 0.35, pm25: 0.30, tvoc: 0.25, humidity: 0.10 };
-    
-    function getPollutantScore(pollutant, value) {
-        if (pollutant === 'humidity') {
-            if (value >= 40 && value <= 50) return 100;
-            if (value >= 30 && value <= 60) return 80;
-            if (value >= 20 && value <= 70) return 60;
-            if (value >= 10 && value <= 80) return 40;
-            return 20;
-        }
-        
-        const thresholds = {
-            co2: { excellent: 600, good: 1000, moderate: 1400, poor: 2000 },
-            pm25: { excellent: 12, good: 25, moderate: 50, poor: 100 },
-            tvoc: { excellent: 200, good: 300, moderate: 500, poor: 1000 }
-        };
-        
-        const th = thresholds[pollutant];
-        if (!th) return 100;
-        
-        if (value <= th.excellent) return 100;
-        if (value <= th.good) return 80;
-        if (value <= th.moderate) return 60;
-        if (value <= th.poor) return 40;
-        return 20;
-    }
-    
-    let weightedScore = 0;
-    for (const [pollutant, weight] of Object.entries(weights)) {
-        const value = values[pollutant];
-        if (typeof value === 'number') {
-            const score = getPollutantScore(pollutant, value);
-            weightedScore += score * weight;
-        }
-    }
-    
-    return Math.round(weightedScore * 10) / 10;
-}
-
 async function fetchRoomScore(enseigneNom, roomNom) {
     try {
         const url = `http://localhost:8000/iaq/data?enseigne=${encodeURIComponent(enseigneNom)}&salle=${encodeURIComponent(roomNom)}&hours=1`;
@@ -288,20 +248,18 @@ async function fetchRoomScore(enseigneNom, roomNom) {
         const latest = data[data.length - 1];
         console.log(`[tabs-manager] Latest data for ${enseigneNom}:${roomNom}:`, latest);
         
-        if (latest.co2 != null && latest.pm25 != null && latest.tvoc != null && latest.humidity != null) {
-            const score = calculateGlobalScore({
-                co2: latest.co2,
-                pm25: latest.pm25,
-                tvoc: latest.tvoc,
-                humidity: latest.humidity
-            });
-            console.log(`[tabs-manager] Calculated score for ${enseigneNom}:${roomNom}: ${score}`);
-            return score;
+        // Utiliser global_score de l'API backend
+        if (typeof latest.global_score === 'number') {
+            console.log(`[tabs-manager] ✅ Score from API for ${enseigneNom}:${roomNom}: ${latest.global_score}`);
+            return latest.global_score;
         } else {
-            console.warn(`[tabs-manager] Incomplete data for ${enseigneNom}:${roomNom}:`, latest);
+            console.warn(`[tabs-manager] ⚠️ No global_score in API response for ${enseigneNom}:${roomNom}`);
+            console.warn(`[tabs-manager] Available data:`, Object.keys(latest));
+            // Retourner null pour éviter de bloquer le monitoring, mais logger clairement le problème
+            return null;
         }
     } catch (error) {
-        console.error(`[tabs-manager] Error fetching score for ${enseigneNom}:${roomNom}:`, error);
+        console.error(`[tabs-manager] ❌ Error fetching score for ${enseigneNom}:${roomNom}:`, error);
     }
     return null;
 }
