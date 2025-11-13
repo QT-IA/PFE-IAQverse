@@ -31,6 +31,9 @@ Fichier CSS pour le dashboard IAQverse
     --success-color: #27ae60;
     --error-color: #e74c3c;
     --info-bg: #ecf0f1;
+    /* Horizontal inset used to align panel content with chart inner padding
+       Combined value of .grid padding (20px) + .chart-box --chart-padding (30px) */
+    --content-inset: 50px;
 }
 
 /* Mode sombre */
@@ -420,6 +423,86 @@ a:hover img {
     padding-bottom: 70px; /* pour laisser de la place à la nav-bar */;
 }
 
+/* Score panel above charts */
+.score-panel {
+    /* Full width within grid, similar to chart-box but spanning 100% */
+    width: 100%;
+    flex-basis: 100%;
+    background: linear-gradient(180deg, var(--bg-secondary), rgba(255,255,255,0.02));
+    border-radius: 8px;
+    box-shadow: var(--shadow-sm);
+    padding: 14px 20px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center; /* center the main score */
+    position: relative; /* allow meta to be placed on the right */
+    min-height: 80px;
+}
+
+.score-panel .score-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* center the value and label */
+    text-align: center;
+}
+
+.score-value {
+    font-size: 44px; /* larger, prominent */
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1;
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.score-max {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
+
+.score-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 6px;
+}
+
+/* Keep the meta (trend/note) visible on the right without affecting centering */
+.score-right {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    display:flex;
+    align-items:center;
+    gap:12px;
+    min-width: 140px;
+    justify-content: flex-end;
+}
+
+.score-trend {
+    width: 44px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+}
+
+.score-note {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+/* Trend color hints */
+.trend-good { background: rgba(39,174,96,0.12); color: #1b7a3b; border: 1px solid rgba(39,174,96,0.2); }
+.trend-ok   { background: rgba(255,193,7,0.12); color: #8a5a00; border: 1px solid rgba(255,193,7,0.18); }
+.trend-bad  { background: rgba(220,53,69,0.12); color: #7f1d1d; border: 1px solid rgba(220,53,69,0.18); }
+
 /* Responsive grid (dashboard) */
 @media (max-width: 768px) {
     .grid {
@@ -493,6 +576,12 @@ a:hover img {
     width: 100%;
     min-width: 0;
     height: 320px;
+    }
+
+    /* Match the smaller padding on narrow screens */
+    .score-panel {
+        padding: 12px 15px;
+        min-height: 70px;
     }
 }
 
