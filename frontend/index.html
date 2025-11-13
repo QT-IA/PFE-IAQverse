@@ -111,7 +111,7 @@
         if (trend === 'good') trendEl().classList.add('trend-good');
         else if (trend === 'ok') trendEl().classList.add('trend-ok');
         else if (trend === 'bad') trendEl().classList.add('trend-bad');
-        trendEl().textContent = options.trendLabel || (v!==null ? (v > 75 ? 'A' : (v>50 ? 'B' : 'C')) : '');
+        trendEl().textContent = options.trendLabel || (v!==null ? (v >= 90 ? 'A' : (v >= 70 ? 'B' : 'C')) : '');
       }
 
       if (noteEl()) noteEl().textContent = options.note || '';
