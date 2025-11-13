@@ -363,10 +363,12 @@ function updateChartsWithData(data) {
   if (last.co2 != null && last.pm25 != null && last.tvoc != null && last.humidity != null) {
     const globalScore = calculateGlobalScore({ co2: last.co2, pm25: last.pm25, tvoc: last.tvoc, humidity: last.humidity });
     if (window.setRoomScore) {
-      const trend = globalScore >= 80 ? 'good' : globalScore >= 60 ? 'ok' : 'bad';
-      const trendLabel = globalScore >= 80 ? 'A' : globalScore >= 60 ? 'B' : 'C';
+      const trend = globalScore >= 90 ? 'good' : globalScore >= 70 ? 'ok' : 'bad';
+      const trendLabel = globalScore >= 90 ? 'A' : globalScore >= 70 ? 'B' : 'C';
       window.setRoomScore(globalScore, { trend, trendLabel, note: '' });
     }
+    // Update tab alerts
+    if (window.updateTabAlerts) window.updateTabAlerts(globalScore);
   }
   
 }
@@ -418,10 +420,12 @@ async function fetchAndUpdate() {
       if (typeof lastCo2 === 'number' && typeof lastPm === 'number' && typeof lastTvoc === 'number' && typeof lastHumidity === 'number') {
         const globalScore = calculateGlobalScore({ co2: lastCo2, pm25: lastPm, tvoc: lastTvoc, humidity: lastHumidity });
         if (window.setRoomScore) {
-          const trend = globalScore >= 80 ? 'good' : globalScore >= 60 ? 'ok' : 'bad';
-          const trendLabel = globalScore >= 80 ? 'A' : globalScore >= 60 ? 'B' : 'C';
+          const trend = globalScore >= 90 ? 'good' : globalScore >= 70 ? 'ok' : 'bad';
+          const trendLabel = globalScore >= 90 ? 'A' : globalScore >= 70 ? 'B' : 'C';
           window.setRoomScore(globalScore, { trend, trendLabel, note: '' });
         }
+        // Update tab alerts
+        if (window.updateTabAlerts) window.updateTabAlerts(globalScore);
       }
     } catch(e){}
     // plus de bandes adaptatives: conserver uniquement la logique de danger

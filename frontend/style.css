@@ -360,6 +360,58 @@ header h1 {
     opacity: 1;
 }
 
+.room-tab.has-alert {
+    border: 2px solid #e74c3c;
+    background-color: #fff5f5;
+    box-shadow: 0 0 8px rgba(231, 76, 60, 0.35);
+    animation: pulse-tab-alert 2s ease-in-out infinite;
+}
+
+.room-tab.has-alert img {
+    filter: brightness(0) invert(1);
+}
+
+.room-tab.active.has-alert {
+    background-color: #ffe8e8;
+    border-color: #dc3545;
+    box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
+}
+
+.room-tab.active.has-alert img {
+    filter: brightness(0) invert(1);
+}
+
+[data-theme="sombre"] .room-tab.has-alert {
+    background-color: rgba(231, 76, 60, 0.10);
+    border-color: #ff6b6b;
+    color: #ffcccc;
+}
+
+[data-theme="sombre"] .room-tab.has-alert img {
+    filter: brightness(0) invert(1);
+}
+
+[data-theme="sombre"] .room-tab.active.has-alert {
+    background-color: rgba(231, 76, 60, 0.18);
+    border-color: #ff6b6b;
+    color: #ffdddd;
+}
+
+[data-theme="sombre"] .room-tab.active.has-alert img {
+    filter: brightness(0) invert(1);
+}
+
+@keyframes pulse-tab-alert {
+    0%, 100% { 
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 0.85;
+        transform: scale(1.02);
+    }
+}
+
 a.active-page img {
     opacity: 1;
     transform: scale(1.15);
@@ -397,6 +449,17 @@ a:hover img {
     background-color: #2c3e50;
     color: white;
     border-color: #2c3e50;
+}
+
+.location-tab.has-alert {
+    border: 2px solid #e74c3c;
+    box-shadow: 0 0 10px rgba(231, 76, 60, 0.4);
+    animation: pulse-tab-alert 2s ease-in-out infinite;
+}
+
+.location-tab.active.has-alert {
+    border-color: #ff6b6b;
+    box-shadow: 0 0 12px rgba(231, 76, 60, 0.6);
 }
 
 .location-tab img {
