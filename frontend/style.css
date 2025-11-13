@@ -367,18 +367,10 @@ header h1 {
     animation: pulse-tab-alert 2s ease-in-out infinite;
 }
 
-.room-tab.has-alert img {
-    filter: brightness(0) invert(1);
-}
-
 .room-tab.active.has-alert {
     background-color: #ffe8e8;
     border-color: #dc3545;
     box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
-}
-
-.room-tab.active.has-alert img {
-    filter: brightness(0) invert(1);
 }
 
 [data-theme="sombre"] .room-tab.has-alert {
