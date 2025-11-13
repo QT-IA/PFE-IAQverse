@@ -17,6 +17,7 @@
       "title": "Score de qualité de l'air",
       "label": "Score global",
       "roomLabel": "Score de la salle",
+      "predicted": "Dans 30 min",
       "legend": "Légende",
       "excellent": "Excellent",
       "good": "Bon",

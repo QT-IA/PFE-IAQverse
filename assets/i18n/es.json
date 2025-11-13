@@ -17,6 +17,7 @@
             "title": "Puntuación de calidad del aire",
             "label": "Puntuación global",
             "roomLabel": "Puntuación de la sala",
+            "predicted": "En 30 min",
             "legend": "Leyenda",
             "excellent": "Excelente",
             "good": "Bueno",

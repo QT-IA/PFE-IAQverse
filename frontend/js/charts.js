@@ -83,6 +83,37 @@ let seenTimestamps = new Set(); // pour déduplication et append
 // Mémorise le dernier état de sévérité par chart (info | warning | danger)
 let chartSeverity = (typeof window !== 'undefined' && window.chartSeverity) ? window.chartSeverity : {};
 
+// Historique des scores pour calcul de moyenne (dernière minute)
+// Charger depuis sessionStorage pour persister lors des changements de thème
+function loadScoreHistory() {
+  try {
+    const stored = sessionStorage.getItem('scoreHistory');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Filtrer pour garder seulement les scores de la dernière minute
+      const oneMinuteAgo = Date.now() - 60000;
+      return parsed.filter(s => s.timestamp > oneMinuteAgo);
+    }
+  } catch (e) {
+    console.error('Error loading score history:', e);
+  }
+  return [];
+}
+
+function saveScoreHistory(history) {
+  try {
+    sessionStorage.setItem('scoreHistory', JSON.stringify(history));
+  } catch (e) {
+    console.error('Error saving score history:', e);
+  }
+}
+
+// Utiliser window.scoreHistory pour partager entre reloads
+if (!window.scoreHistory) {
+  window.scoreHistory = loadScoreHistory();
+}
+let scoreHistory = window.scoreHistory;
+
 function computeSeverity(value, thresholds){
   if (typeof value !== 'number' || isNaN(value)) return null; // ne pas changer l'état si valeur absente
   if (value >= thresholds.danger) return 'danger';
@@ -325,6 +356,15 @@ function updateChartsWithData(data) {
       const trend = globalScore >= 90 ? 'good' : globalScore >= 70 ? 'ok' : 'bad';
       const trendLabel = globalScore >= 90 ? 'A' : globalScore >= 70 ? 'B' : 'C';
       window.setRoomScore(globalScore, { trend, trendLabel, note: '' });
+      
+      // Ajouter le score à l'historique avec timestamp
+      scoreHistory.push({ score: globalScore, timestamp: Date.now() });
+      // Garder seulement les scores de la dernière minute (60 secondes)
+      const oneMinuteAgo = Date.now() - 60000;
+      scoreHistory = scoreHistory.filter(s => s.timestamp > oneMinuteAgo);
+      // Sauvegarder dans sessionStorage et window
+      window.scoreHistory = scoreHistory;
+      saveScoreHistory(scoreHistory);
     }
     // Update tab alerts
     if (globalScore !== null && window.updateTabAlerts) window.updateTabAlerts(globalScore);
@@ -384,6 +424,15 @@ async function fetchAndUpdate() {
           const trend = globalScore >= 90 ? 'good' : globalScore >= 70 ? 'ok' : 'bad';
           const trendLabel = globalScore >= 90 ? 'A' : globalScore >= 70 ? 'B' : 'C';
           window.setRoomScore(globalScore, { trend, trendLabel, note: '' });
+          
+          // Ajouter le score à l'historique avec timestamp
+          scoreHistory.push({ score: globalScore, timestamp: Date.now() });
+          // Garder seulement les scores de la dernière minute (60 secondes)
+          const oneMinuteAgo = Date.now() - 60000;
+          scoreHistory = scoreHistory.filter(s => s.timestamp > oneMinuteAgo);
+          // Sauvegarder dans sessionStorage et window
+          window.scoreHistory = scoreHistory;
+          saveScoreHistory(scoreHistory);
         }
         // Update tab alerts
         if (globalScore !== null && window.updateTabAlerts) window.updateTabAlerts(globalScore);
@@ -393,6 +442,125 @@ async function fetchAndUpdate() {
   } catch (err) {
     console.error("Erreur fetch IAQ :", err);
     chartIds.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = `<div style="padding:16px;color:#c00">Erreur: ${err.message}</div>`; });
+  }
+}
+
+// Fetch predicted score from ML model
+async function fetchPredictedScore() {
+  try {
+    const params = new URLSearchParams({
+      enseigne: currentEnseigne || "Maison",
+      salle: currentSalle || "Salon"
+    });
+    const url = `http://localhost:8000/api/predict/score?${params.toString()}`;
+    console.debug("ML Prediction fetch:", url);
+    
+    const res = await window.fetch(url, { cache: "no-store" });
+    if (!res.ok) {
+      console.warn(`ML Prediction API returned ${res.status}`);
+      updatePredictedScoreUI(null);
+      return;
+    }
+    
+    const data = await res.json();
+    
+    if (data.error || data.predicted_score === null) {
+      console.warn("ML Prediction not available:", data.error || "No score");
+      updatePredictedScoreUI(null);
+      return;
+    }
+    
+    // Sauvegarder la prédiction avec timestamp dans sessionStorage
+    const predictionData = {
+      ...data,
+      fetchedAt: Date.now()
+    };
+    sessionStorage.setItem('lastPrediction', JSON.stringify(predictionData));
+    
+    updatePredictedScoreUI(data);
+    
+  } catch (err) {
+    console.error("Erreur fetch ML prediction:", err);
+    // En cas d'erreur, essayer de charger la dernière prédiction sauvegardée
+    try {
+      const stored = sessionStorage.getItem('lastPrediction');
+      if (stored) {
+        const predictionData = JSON.parse(stored);
+        // Utiliser la prédiction sauvegardée si elle a moins de 30 secondes
+        if (Date.now() - predictionData.fetchedAt < 30000) {
+          console.log('Using cached prediction');
+          updatePredictedScoreUI(predictionData);
+          return;
+        }
+      }
+    } catch (e) {}
+    updatePredictedScoreUI(null);
+  }
+}
+
+// Update predicted score UI
+function updatePredictedScoreUI(data) {
+  const valueEl = document.getElementById('predicted-score-value');
+  const trendEl = document.getElementById('predicted-score-trend');
+  const predictedContainer = document.querySelector('.score-predicted');
+  
+  if (!valueEl || !trendEl) return;
+  
+  if (!data || data.predicted_score === null) {
+    valueEl.textContent = '—';
+    trendEl.textContent = '';
+    trendEl.className = 'predicted-trend';
+    if (predictedContainer) {
+      predictedContainer.classList.remove('predicted-danger', 'predicted-warning');
+    }
+    return;
+  }
+  
+  const predictedScore = Math.round(data.predicted_score);
+  valueEl.textContent = predictedScore;
+  
+  // Styliser selon le niveau prédit (A = vert, B = orange, C = rouge)
+  if (predictedContainer) {
+    predictedContainer.classList.remove('predicted-excellent', 'predicted-warning', 'predicted-danger');
+    if (predictedScore >= 90) {
+      predictedContainer.classList.add('predicted-excellent');
+    } else if (predictedScore >= 70) {
+      predictedContainer.classList.add('predicted-warning');
+    } else {
+      predictedContainer.classList.add('predicted-danger');
+    }
+  }
+  
+  // Calculer la moyenne des scores de la dernière minute
+  // Toujours utiliser window.scoreHistory pour avoir les données à jour
+  const currentHistory = window.scoreHistory || scoreHistory || [];
+  let avgScore = null;
+  if (currentHistory.length > 0) {
+    // Filtrer les scores de la dernière minute
+    const oneMinuteAgo = Date.now() - 60000;
+    const recentScores = currentHistory.filter(s => s.timestamp > oneMinuteAgo);
+    if (recentScores.length > 0) {
+      const sum = recentScores.reduce((acc, s) => acc + s.score, 0);
+      avgScore = sum / recentScores.length;
+    }
+  }
+  
+  // Comparer la prédiction avec la moyenne récente
+  if (avgScore !== null) {
+    const diff = predictedScore - avgScore;
+    if (diff > 2) {
+      trendEl.textContent = '↑';
+      trendEl.className = 'predicted-trend up';
+    } else if (diff < -2) {
+      trendEl.textContent = '↓';
+      trendEl.className = 'predicted-trend down';
+    } else {
+      trendEl.textContent = '→';
+      trendEl.className = 'predicted-trend stable';
+    }
+  } else {
+    trendEl.textContent = '';
+    trendEl.className = 'predicted-trend';
   }
 }
 
@@ -407,12 +575,34 @@ if (typeof window !== "undefined" && typeof Plotly !== "undefined") {
       isFirstLoad = false;
       console.log('[charts] First roomChanged received, starting data fetch');
       fetchAndUpdate();
+      fetchPredictedScore(); // Récupérer le score prédit initial
       setInterval(fetchAndUpdate, REFRESH_MS);
+      setInterval(fetchPredictedScore, 60000); // Mettre à jour le score prédit toutes les minutes
     }
   };
   
   // Écouter le premier événement roomChanged pour savoir que le contexte est prêt
   document.addEventListener('roomChanged', handleFirstRoomChange, { once: true });
+  
+  // Également écouter les changements de pièce pour mettre à jour le score prédit
+  document.addEventListener('roomChanged', () => {
+    if (!isFirstLoad) {
+      fetchPredictedScore();
+    }
+  });
+  
+  // Charger la dernière prédiction sauvegardée au démarrage
+  try {
+    const stored = sessionStorage.getItem('lastPrediction');
+    if (stored) {
+      const predictionData = JSON.parse(stored);
+      // Utiliser la prédiction sauvegardée si elle a moins de 30 secondes
+      if (Date.now() - predictionData.fetchedAt < 30000) {
+        console.log('Loading cached prediction at startup');
+        updatePredictedScoreUI(predictionData);
+      }
+    }
+  } catch (e) {}
   
   // Fallback: si aucun roomChanged n'est émis après 1 seconde, démarrer quand même
   setTimeout(() => {

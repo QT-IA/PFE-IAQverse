@@ -14,9 +14,10 @@
     "comfort": "Temperature & Humidity",
     "tvoc": "TVOC concentration",
     "score": {
-      "title": "Air quality score",
-      "label": "Overall score",
-      "roomLabel": "Room score",
+      "title": "Air Quality Score",
+      "label": "Global Score",
+      "roomLabel": "Room Score",
+      "predicted": "In 30 min",
       "legend": "Legend",
       "excellent": "Excellent",
       "good": "Good",

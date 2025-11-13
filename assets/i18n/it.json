@@ -17,6 +17,7 @@
             "title": "Punteggio di qualità dell'aria",
             "label": "Punteggio complessivo",
             "roomLabel": "Punteggio della stanza",
+            "predicted": "Tra 30 min",
             "legend": "Legenda",
             "excellent": "Eccellente",
             "good": "Buono",

@@ -17,6 +17,7 @@
             "title": "Luftqualitätsbewertung",
             "label": "Gesamtpunktzahl",
             "roomLabel": "Raumpunktzahl",
+            "predicted": "In 30 Min",
             "legend": "Legende",
             "excellent": "Ausgezeichnet",
             "good": "Gut",
