@@ -47,6 +47,23 @@ DATA_DF = load_dataset_df()
 posting_task: Optional[asyncio.Task] = None
 INTERVAL_SECONDS = 3
 
+# Prédicteur ML (initialisé paresseusement)
+ml_predictor = None
+
+def get_ml_predictor():
+    """Initialise le prédicteur ML une seule fois."""
+    global ml_predictor
+    if ml_predictor is None:
+        try:
+            from .ml.ml_predict_generic import RealtimeGenericPredictor
+            model_dir = Path(__file__).parent.parent / "assets" / "ml_models"
+            ml_predictor = RealtimeGenericPredictor(model_dir=model_dir)
+            logger.info("✅ ML Predictor initialized")
+        except Exception as e:
+            logger.error(f"❌ Failed to load ML predictor: {e}")
+            ml_predictor = False  # Marquer comme échoué pour ne pas réessayer
+    return ml_predictor if ml_predictor is not False else None
+
 
 # ============================================================================
 # ENDPOINTS IAQ DATA
@@ -254,6 +271,94 @@ def get_iaq_data(
             record["global_level"] = None
     
     return [sanitize_for_storage(r) for r in out]
+
+
+# ============================================================================
+# ENDPOINT ML PREDICTION
+# ============================================================================
+
+@app.get("/api/predict/score")
+def get_predicted_score(
+    enseigne: Optional[str] = None,
+    salle: Optional[str] = None,
+    capteur_id: Optional[str] = None
+):
+    """
+    Retourne le score IAQ prédit dans 30 minutes par le modèle ML.
+    
+    Args:
+        enseigne: Nom de l'enseigne (défaut: "Maison")
+        salle: Nom de la salle (défaut: première salle trouvée)
+        capteur_id: ID du capteur (défaut: premier capteur trouvé)
+        
+    Returns:
+        {
+            "predicted_score": float (0-100),
+            "predicted_level": str,
+            "forecast_minutes": int,
+            "predictions": {...},
+            "error": str (si erreur)
+        }
+    """
+    try:
+        predictor = get_ml_predictor()
+        if not predictor:
+            return {
+                "error": "ML model not available",
+                "predicted_score": None,
+                "predicted_level": None
+            }
+        
+        # Valeurs par défaut
+        if not enseigne:
+            enseigne = "Maison"
+        
+        # Faire la prédiction
+        prediction_result = predictor.predict(
+            enseigne=enseigne,
+            salle=salle,
+            capteur_id=capteur_id
+        )
+        
+        # Vérifier s'il y a une erreur
+        if "error" in prediction_result:
+            return {
+                "error": prediction_result["error"],
+                "predicted_score": None,
+                "predicted_level": None
+            }
+        
+        # Calculer le score global à partir des prédictions
+        predicted_values = prediction_result.get("predicted_values", {})
+        
+        if predicted_values:
+            # Utiliser le même calculateur de score que pour les données actuelles
+            score_data = IAQScoreCalculator.calculate_global_score(predicted_values)
+            
+            return {
+                "predicted_score": score_data["global_score"],
+                "predicted_level": score_data["global_level"],
+                "forecast_minutes": prediction_result.get("forecast_minutes", 30),
+                "predictions": predicted_values,
+                "enseigne": prediction_result.get("enseigne"),
+                "salle": prediction_result.get("salle"),
+                "capteur_id": prediction_result.get("capteur_id"),
+                "timestamp": prediction_result.get("timestamp")
+            }
+        else:
+            return {
+                "error": "No predictions available",
+                "predicted_score": None,
+                "predicted_level": None
+            }
+            
+    except Exception as e:
+        logger.error(f"Error in predict score endpoint: {e}")
+        return {
+            "error": str(e),
+            "predicted_score": None,
+            "predicted_level": None
+        }
 
 
 @app.get("/iaq/debug")
