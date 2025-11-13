@@ -50,6 +50,20 @@
   </div>
 
   <main class="grid">
+    <!-- Score panel: affiche le score de la salle active -->
+    <div id="room-score-panel" class="score-panel" aria-live="polite">
+      <div class="score-left">
+        <div class="score-value">
+          <span id="room-score-value">—</span><span class="score-max">/100</span>
+        </div>
+        <div class="score-label" data-i18n="digitalTwin.roomScore">Score salle</div>
+      </div>
+      <div class="score-right" id="room-score-meta">
+        <div class="score-trend" id="room-score-trend">&nbsp;</div>
+        <div class="score-note" id="room-score-note">—</div>
+      </div>
+    </div>
+    
     <div class="chart-box" id="co2-chart"></div>
     <div class="chart-box" id="pm25-chart"></div>
     <div class="chart-box" id="comfort-chart"></div>
@@ -78,5 +92,46 @@
 </footer>
 
 <script src="js/charts.js"></script>
+<script>
+  // Small helper to update the room score panel.
+  (function(){
+    const valueEl = () => document.getElementById('room-score-value');
+    const trendEl = () => document.getElementById('room-score-trend');
+    const noteEl = () => document.getElementById('room-score-note');
+
+    window.setRoomScore = function(score, options={}){
+      // score: number 0-100 or null
+      const v = (typeof score === 'number') ? Math.round(score) : null;
+      if (valueEl()) valueEl().textContent = (v===null) ? '—' : String(v);
+
+      // Trend / color
+      const trend = (options.trend || 'neutral'); // 'good' | 'ok' | 'bad' | 'neutral'
+      if (trendEl()){
+        trendEl().className = 'score-trend';
+        if (trend === 'good') trendEl().classList.add('trend-good');
+        else if (trend === 'ok') trendEl().classList.add('trend-ok');
+        else if (trend === 'bad') trendEl().classList.add('trend-bad');
+        trendEl().textContent = options.trendLabel || (v!==null ? (v > 75 ? 'A' : (v>50 ? 'B' : 'C')) : '');
+      }
+
+      if (noteEl()) noteEl().textContent = options.note || '';
+    };
+
+    // Close/reset panel on room/enseigne change
+    document.addEventListener('roomChanged', ()=> window.setRoomScore(null));
+    document.addEventListener('enseigneChanged', ()=> window.setRoomScore(null));
+
+    // Example: if some other script fires a custom event with detail {score, global_score, trend, note}
+    document.addEventListener('roomScoreUpdated', (e)=>{
+      const d = e.detail || {};
+      // Support payloads that use `score` or backend `global_score` key.
+      const score = (typeof d.score === 'number') ? d.score : (typeof d.global_score === 'number' ? d.global_score : null);
+      window.setRoomScore(score, { trend: d.trend, trendLabel: d.trendLabel, note: d.note });
+    });
+
+    // Expose a convenience setter if charts compute a score
+    window.updateRoomScore = window.setRoomScore;
+  })();
+</script>
 </body>
 </html>
