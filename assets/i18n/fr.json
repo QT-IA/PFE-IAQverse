@@ -12,7 +12,17 @@
     "co2": "Évolution du CO₂",
     "pm25": "Concentration de PM2.5",
     "comfort": "Température & Humidité",
-    "tvoc": "Concentration de TVOC"
+    "tvoc": "Concentration de TVOC",
+    "score": {
+      "title": "Score de qualité de l'air",
+      "label": "Score global",
+      "roomLabel": "Score de la salle",
+      "legend": "Légende",
+      "excellent": "Excellent",
+      "good": "Bon",
+      "moderate": "Moyen",
+      "poor": "Mauvais"
+    }
   },
   "charts": {
     "no_data": "Pas de données",
@@ -27,7 +37,8 @@
     "pm25Y": "µg/m³",
     "temperatureY": "Température (°C)",
     "humidityY": "Humidité (%)",
-    "tvocY": "mg/m³"
+    "tvocY": "mg/m³",
+    "timeX": "Heure"
   },
   "settings": {
     "title": "Paramètres",
@@ -93,6 +104,27 @@
       "table": "Le tableau à gauche montre les actions recommandées.",
       "visual": "La visualisation indique les zones concernées dans la pièce.",
       "details": "Les détails au centre expliquent les causes des alertes."
+    },
+    "noDetails": "Aucun détail disponible",
+    "recommendedAction": "Action recommandée",
+    "details": {
+      "low": "trop bas",
+      "high": "trop élevé",
+      "out_of_range": "hors plage",
+      "thresholdMin": "seuil min",
+      "thresholdMax": "seuil max",
+      "parameters": {
+        "co2": "CO₂",
+        "pm25": "PM2.5",
+        "tvoc": "TVOC",
+        "temperature": "Température",
+        "humidity": "Humidité"
+      }
+    },
+    "alertCount": {
+      "zero": "Aucune alerte",
+      "one": "1 Alerte",
+      "multiple": "{{count}} Alertes"
     },
   "sample": {
       "window": {

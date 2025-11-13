@@ -52,11 +52,25 @@
   <main class="grid">
     <!-- Score panel: affiche le score de la salle active -->
     <div id="room-score-panel" class="score-panel" aria-live="polite">
-      <div class="score-left">
+      <div class="score-legend">
+        <div class="legend-item">
+          <span class="legend-badge badge-a">A</span>
+          <span class="legend-range">90-100</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-badge badge-b">B</span>
+          <span class="legend-range">70-89</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-badge badge-c">C</span>
+          <span class="legend-range">&lt;70</span>
+        </div>
+      </div>
+      <div class="score-center">
         <div class="score-value">
           <span id="room-score-value">—</span><span class="score-max">/100</span>
         </div>
-        <div class="score-label" data-i18n="digitalTwin.roomScore">Score salle</div>
+        <div class="score-label" data-i18n="dashboard.score.roomLabel">Score salle</div>
       </div>
       <div class="score-right" id="room-score-meta">
         <div class="score-trend" id="room-score-trend">&nbsp;</div>

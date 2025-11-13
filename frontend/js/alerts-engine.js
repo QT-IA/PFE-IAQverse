@@ -240,6 +240,12 @@
             if (typeof window.syncAlertPointsToTable === "function")
                 window.syncAlertPointsToTable();
         } catch (e) { }
+        
+        // Update alert count label
+        try {
+            if (typeof window.updateAlertCountLabel === "function")
+                window.updateAlertCountLabel();
+        } catch (e) { }
     }
 
     // Définition des alert-points par défaut (positions et cibles)

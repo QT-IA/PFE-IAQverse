@@ -33,17 +33,24 @@ function showDetails(sujet, detail) {
     // Helper pour formatter un item de détail avec style riche
     const formatIssue = (it) => {
         if (!it) return null;
-        const dirTxt = it.direction === 'low' ? (t('details.low') || 'trop bas')
-            : (it.direction === 'high' ? (t('details.high') || 'trop élevé') : (t('details.out_of_range') || 'hors plage'));
-        const name = it.name || it.code || 'Paramètre';
+        const dirTxt = it.direction === 'low' ? (t('digitalTwin.details.low') || 'trop bas')
+            : (it.direction === 'high' ? (t('digitalTwin.details.high') || 'trop élevé') : (t('digitalTwin.details.out_of_range') || 'hors plage'));
+        
+        // Translate parameter name using i18n
+        const paramCode = (it.code || '').toLowerCase();
+        const paramName = t(`digitalTwin.details.parameters.${paramCode}`) || it.name || it.code || 'Paramètre';
+        
         const unit = it.unit ? ` ${it.unit}` : '';
+        const thresholdLabel = it.direction === 'low' 
+            ? (t('digitalTwin.details.thresholdMin') || 'seuil min')
+            : (t('digitalTwin.details.thresholdMax') || 'seuil max');
         const thrTxt = (typeof it.threshold === 'number')
-            ? ` <span class="param-threshold">(seuil ${it.direction === 'low' ? 'min' : 'max'}: ${it.threshold}${unit})</span>`
+            ? ` <span class="param-threshold">(${thresholdLabel}: ${it.threshold}${unit})</span>`
             : '';
         return {
-            html: `<span class="param-value">${name} ${dirTxt} : ${it.value}${unit}</span>${thrTxt}`,
+            html: `<span class="param-value">${paramName} ${dirTxt} : ${it.value}${unit}</span>${thrTxt}`,
             severity: it.severity || 'info',
-            code: (it.code || '').toLowerCase()
+            code: paramCode
         };
     };
 
@@ -129,6 +136,36 @@ document.addEventListener('enseigneChanged', () => {
 window.openModal = openModal;
 window.closeModal = closeModal;
 window.showDetails = showDetails;
+
+/**
+ * Met à jour le compteur d'alertes dans le label de la visualisation
+ * Compte uniquement les alert-points actifs avec sévérité danger (points rouges uniquement)
+ */
+function updateAlertCountLabel() {
+    const label = document.querySelector('.room-label');
+    if (!label) return;
+    
+    const t = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t : (()=>undefined);
+    
+    // Compter uniquement les alert-points actifs avec sévérité danger (points rouges)
+    const activeAlerts = document.querySelectorAll('.alert-point[data-active="true"][data-severity="danger"]');
+    const count = activeAlerts.length;
+    
+    let text;
+    if (count === 0) {
+        text = t('digitalTwin.alertCount.zero') || 'Aucune alerte';
+    } else if (count === 1) {
+        text = t('digitalTwin.alertCount.one') || '1 Alerte';
+    } else {
+        const template = t('digitalTwin.alertCount.multiple') || '{{count}} Alertes';
+        text = template.replace('{{count}}', count);
+    }
+    
+    label.textContent = text;
+}
+
+// Exporter la fonction pour qu'elle soit accessible depuis alerts-engine
+window.updateAlertCountLabel = updateAlertCountLabel;
 
 // Sync alert-point elements into the actions table as rows
 function syncAlertPointsToTable() {
@@ -281,6 +318,11 @@ function syncAlertPointsToTable() {
     builtRows.sort((a,b) => a.weight - b.weight);
     builtRows.forEach(({ tr }) => tbody.appendChild(tr));
     try { if (window.i18n && typeof window.i18n._applyTranslations === 'function') window.i18n._applyTranslations(tbody); } catch(e){}
+    
+    // Mettre à jour le compteur d'alertes
+    if (typeof window.updateAlertCountLabel === 'function') {
+        window.updateAlertCountLabel();
+    }
 }
 
 // run once on DOMContentLoaded and whenever language changes
