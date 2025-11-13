@@ -1,47 +1,3 @@
-// Calcule le score IAQ global (0-100) selon la logique backend
-function calculateGlobalScore(values) {
-  // Seuils et poids identiques au backend Python (action_selector.py)
-  const weights = { co2: 0.35, pm25: 0.30, tvoc: 0.25, humidity: 0.10 };
-  
-  function getPollutantScore(pollutant, value) {
-    // Cas spécial humidité (plage optimale)
-    if (pollutant === 'humidity') {
-      if (value >= 40 && value <= 50) return 100;
-      if (value >= 30 && value <= 60) return 80;
-      if (value >= 20 && value <= 70) return 60;
-      if (value >= 10 && value <= 80) return 40;
-      return 20;
-    }
-    
-    // Pour CO2, PM2.5, TVOC (plus bas = mieux)
-    const thresholds = {
-      co2: { excellent: 600, good: 1000, moderate: 1400, poor: 2000 },
-      pm25: { excellent: 12, good: 25, moderate: 50, poor: 100 },
-      tvoc: { excellent: 200, good: 300, moderate: 500, poor: 1000 }
-    };
-    
-    const th = thresholds[pollutant];
-    if (!th) return 100;
-    
-    if (value <= th.excellent) return 100;
-    if (value <= th.good) return 80;
-    if (value <= th.moderate) return 60;
-    if (value <= th.poor) return 40;
-    return 20;
-  }
-  
-  let weightedScore = 0;
-  for (const [pollutant, weight] of Object.entries(weights)) {
-    const value = values[pollutant];
-    if (typeof value === 'number') {
-      const score = getPollutantScore(pollutant, value);
-      weightedScore += score * weight;
-    }
-  }
-  
-  return Math.round(weightedScore * 10) / 10; // Arrondi à 1 décimale
-}
-
 // Génère les bandes de seuil avec une palette plus visible (info=vert, warning=orange, danger=rouge)
 // thresholds: { info, warning, danger, max }
 function getThresholdShapes(type, thresholds) {
@@ -363,14 +319,15 @@ function updateChartsWithData(data) {
   
   // Calculate and display global IAQ score after initial data load
   if (last.co2 != null && last.pm25 != null && last.tvoc != null && last.humidity != null) {
-    const globalScore = calculateGlobalScore({ co2: last.co2, pm25: last.pm25, tvoc: last.tvoc, humidity: last.humidity });
-    if (window.setRoomScore) {
+    // Utiliser global_score de l'API backend
+    const globalScore = (typeof last.global_score === 'number') ? last.global_score : null;
+    if (globalScore !== null && window.setRoomScore) {
       const trend = globalScore >= 90 ? 'good' : globalScore >= 70 ? 'ok' : 'bad';
       const trendLabel = globalScore >= 90 ? 'A' : globalScore >= 70 ? 'B' : 'C';
       window.setRoomScore(globalScore, { trend, trendLabel, note: '' });
     }
     // Update tab alerts
-    if (window.updateTabAlerts) window.updateTabAlerts(globalScore);
+    if (globalScore !== null && window.updateTabAlerts) window.updateTabAlerts(globalScore);
   }
   
 }
@@ -420,14 +377,16 @@ async function fetchAndUpdate() {
       
       // Calculate and display global IAQ score
       if (typeof lastCo2 === 'number' && typeof lastPm === 'number' && typeof lastTvoc === 'number' && typeof lastHumidity === 'number') {
-        const globalScore = calculateGlobalScore({ co2: lastCo2, pm25: lastPm, tvoc: lastTvoc, humidity: lastHumidity });
-        if (window.setRoomScore) {
+        // Utiliser global_score de l'API backend (dernière valeur de data)
+        const lastDataItem = data[data.length - 1];
+        const globalScore = (lastDataItem && typeof lastDataItem.global_score === 'number') ? lastDataItem.global_score : null;
+        if (globalScore !== null && window.setRoomScore) {
           const trend = globalScore >= 90 ? 'good' : globalScore >= 70 ? 'ok' : 'bad';
           const trendLabel = globalScore >= 90 ? 'A' : globalScore >= 70 ? 'B' : 'C';
           window.setRoomScore(globalScore, { trend, trendLabel, note: '' });
         }
         // Update tab alerts
-        if (window.updateTabAlerts) window.updateTabAlerts(globalScore);
+        if (globalScore !== null && window.updateTabAlerts) window.updateTabAlerts(globalScore);
       }
     } catch(e){}
     // plus de bandes adaptatives: conserver uniquement la logique de danger
