@@ -108,9 +108,11 @@
       "visual": "The visualization highlights affected zones in the room.",
       "details": "Center details explain the causes of alerts."
     },
-    "noDetails": "No details available",
+          "noDetails": "No details available",
+      "allGood": "All parameters are within normal range",
     "recommendedAction": "Recommended action",
     "details": {
+      "title": "Details",
       "low": "too low",
       "high": "too high",
       "out_of_range": "out of range",

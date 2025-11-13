@@ -7,13 +7,14 @@ let currentDetailsSubject = null;
  * Affiche les détails d'une alerte
  * @param {string} sujet - Le sujet de l'alerte (ex. Fenêtre, Ventilation, etc.)
  * @param {object} detail - Détails optionnels { issues: [{code,name,unit,severity,value,direction,threshold}], actionKey }
+ * @param {boolean} forceRefresh - Si true, force la mise à jour sans toggle
  */
-function showDetails(sujet, detail) {
+function showDetails(sujet, detail, forceRefresh = false) {
     const panel = document.getElementById("details-panel");
     const list = document.getElementById("details-list");
     if (!panel || !list) return;
-    // Toggle: si on reclique sur le même sujet, on masque les détails
-    if (!panel.classList.contains('hidden') && currentDetailsSubject === sujet) {
+    // Toggle: si on reclique sur le même sujet, on masque les détails (sauf si forceRefresh)
+    if (!forceRefresh && !panel.classList.contains('hidden') && currentDetailsSubject === sujet) {
         panel.classList.add('hidden');
         list.innerHTML = '';
         currentDetailsSubject = null;
@@ -23,6 +24,12 @@ function showDetails(sujet, detail) {
     panel.classList.remove("hidden");
     list.innerHTML = "";
     currentDetailsSubject = sujet;
+
+    // Mettre à jour le titre avec le sujet
+    const subjectSpan = document.getElementById('details-subject');
+    if (subjectSpan) {
+        subjectSpan.textContent = sujet ? `(${sujet})` : '';
+    }
 
     const t = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t : (()=>undefined);
 
@@ -45,7 +52,7 @@ function showDetails(sujet, detail) {
             ? (t('digitalTwin.details.thresholdMin') || 'seuil min')
             : (t('digitalTwin.details.thresholdMax') || 'seuil max');
         const thrTxt = (typeof it.threshold === 'number')
-            ? ` <span class="param-threshold">(${thresholdLabel}: ${it.threshold}${unit})</span>`
+            ? ` <span class="param-threshold">(${thresholdLabel} : ${it.threshold}${unit})</span>`
             : '';
         return {
             html: `<span class="param-value">${paramName} ${dirTxt} : ${it.value}${unit}</span>${thrTxt}`,
@@ -58,6 +65,7 @@ function showDetails(sujet, detail) {
     const hasIssues = issues.length > 0;
 
     if (hasIssues) {
+        // Afficher toutes les issues (danger, warning ET info)
         issues.forEach(it => {
             const li = document.createElement('li');
             const formatted = formatIssue(it);
@@ -79,13 +87,14 @@ function showDetails(sujet, detail) {
             const li = document.createElement('li');
             li.className = 'issue-action';
             const actionLabel = t && t(`digitalTwin.actionVerbs.${actionKey}`);
-            li.innerHTML = `<strong>${t('digitalTwin.recommendedAction') || 'Action recommandée'}:</strong> ${actionLabel || actionKey}`;
+            li.innerHTML = `<strong>${t('digitalTwin.recommendedAction') || 'Action recommandée'} :</strong> ${actionLabel || actionKey}`;
             list.appendChild(li);
         }
     } else {
-        // Fallback
+        // Pas de problème détecté - tout va bien
         const li = document.createElement('li');
-        li.textContent = t('digitalTwin.noDetails') || 'Aucun détail disponible';
+        li.className = 'issue-info';
+        li.innerHTML = `<span class="param-value">${t('digitalTwin.allGood') || 'Tous les paramètres sont dans les normes'}</span>`;
         list.appendChild(li);
     }
 }
@@ -176,6 +185,11 @@ function syncAlertPointsToTable() {
         console.warn('[digital-twin] Actions table tbody not found');
         return;
     }
+
+    // Vérifier si le panneau de détails est ouvert et stocker le sujet actuel
+    const panel = document.getElementById("details-panel");
+    const isPanelOpen = panel && !panel.classList.contains('hidden');
+    const previousSubject = currentDetailsSubject;
 
     // remove previously injected rows
     Array.from(tbody.querySelectorAll('tr.dynamic-alert')).forEach(r => r.remove());
@@ -297,6 +311,10 @@ function syncAlertPointsToTable() {
             const raw = pt.getAttribute('data-details');
             detailObj = raw ? JSON.parse(raw) : null;
         } catch(e) { detailObj = null; }
+        
+        // Stocker les détails dans la ligne pour pouvoir les récupérer plus tard
+        tr._detailsData = detailObj;
+        
         // Clicking the row should open details using the visible subject text and detail object
         tr.addEventListener('click', () => {
             const subj = tdSubj.textContent.trim();
@@ -316,8 +334,45 @@ function syncAlertPointsToTable() {
     // apply translations for newly inserted nodes
     // sort rows: danger first, then warning, then info
     builtRows.sort((a,b) => a.weight - b.weight);
+    
+    // Vérifier si le sujet du panneau ouvert existe encore dans les nouvelles lignes
+    let newDetailsForSubject = null;
+    let subjectStillExists = false;
+    if (isPanelOpen && previousSubject) {
+        for (const { tr } of builtRows) {
+            const subjCell = tr.querySelector('td:nth-child(2)');
+            if (subjCell && subjCell.textContent.trim() === previousSubject) {
+                subjectStillExists = true;
+                // Récupérer les nouveaux détails de cette ligne
+                const clickHandler = tr._detailsData;
+                if (clickHandler) {
+                    newDetailsForSubject = clickHandler;
+                }
+                break;
+            }
+        }
+    }
+    
     builtRows.forEach(({ tr }) => tbody.appendChild(tr));
     try { if (window.i18n && typeof window.i18n._applyTranslations === 'function') window.i18n._applyTranslations(tbody); } catch(e){}
+    
+    // Toujours mettre à jour le panneau s'il est ouvert et que le sujet existe encore
+    if (isPanelOpen && previousSubject) {
+        if (subjectStillExists && newDetailsForSubject !== null) {
+            console.log(`[digital-twin] Refreshing details panel for subject "${previousSubject}"`);
+            showDetails(previousSubject, newDetailsForSubject, true); // forceRefresh = true
+        } else if (!subjectStillExists) {
+            // Si le sujet n'existe plus, fermer le panneau
+            console.log(`[digital-twin] Subject "${previousSubject}" no longer exists, closing panel`);
+            const panel = document.getElementById('details-panel');
+            if (panel) {
+                panel.classList.add('hidden');
+                const list = document.getElementById('details-list');
+                if (list) list.innerHTML = '';
+                currentDetailsSubject = null;
+            }
+        }
+    }
     
     // Mettre à jour le compteur d'alertes
     if (typeof window.updateAlertCountLabel === 'function') {

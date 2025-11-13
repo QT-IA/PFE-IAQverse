@@ -109,9 +109,11 @@
       "visual": "La visualisation indique les zones concernées dans la pièce.",
       "details": "Les détails au centre expliquent les causes des alertes."
     },
-    "noDetails": "Aucun détail disponible",
+          "noDetails": "Aucun détail disponible",
+      "allGood": "Tous les paramètres sont dans les normes",
     "recommendedAction": "Action recommandée",
     "details": {
+      "title": "Détails",
       "low": "trop bas",
       "high": "trop élevé",
       "out_of_range": "hors plage",

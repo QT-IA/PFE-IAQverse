@@ -110,8 +110,10 @@
             "details": "I dettagli al centro spiegano le cause degli avvisi."
         },
         "noDetails": "Nessun dettaglio disponibile",
+      "allGood": "Tutti i parametri sono entro i limiti",
         "recommendedAction": "Azione raccomandata",
         "details": {
+      "title": "Dettagli",
             "low": "troppo basso",
             "high": "troppo alto",
             "out_of_range": "fuori intervallo",
