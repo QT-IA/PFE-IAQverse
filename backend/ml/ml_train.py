@@ -757,7 +757,7 @@ def main():
     2. Lance le réentraînement automatique toutes les heures
     """
     # Définir les chemins
-    dossier_base = Path(__file__).parent.parent
+    dossier_base = Path(__file__).parent.parent.parent
     chemin_dataset = dossier_base / "assets" / "datasets" / "ml_data" / "dataset_ml_5min.csv"
     dossier_modeles = dossier_base / "assets" / "ml_models"
     
