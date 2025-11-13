@@ -8,11 +8,14 @@
     "dashboard": {
         "title": "Dashboard",
         "aboutTitle": "Informazioni su questa pagina",
-        "aboutParagraph": "Questa dashboard consente di visualizzare le metriche principali della qualità dell'aria interna nel tempo.",
+        "aboutParagraph": "Questa dashboard consente di visualizzare le metriche principali della qualità dell'aria interna in tempo reale.",
         "co2": "Andamento CO₂",
         "pm25": "Concentrazione PM2.5",
         "comfort": "Temperatura & Umidità",
         "tvoc": "Concentrazione TVOC",
+        "scoreFeature": "Punteggio IAQ in tempo reale",
+        "predictionFeature": "Previsione del punteggio tra 30 minuti",
+        "alertsFeature": "Avvisi automatici sulle schede",
         "score": {
             "title": "Punteggio di qualità dell'aria",
             "label": "Punteggio complessivo",

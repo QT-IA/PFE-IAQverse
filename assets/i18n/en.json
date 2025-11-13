@@ -8,11 +8,14 @@
   "dashboard": {
     "title": "Dashboard",
     "aboutTitle": "About this page",
-    "aboutParagraph": "This Dashboard lets you visualize the main indoor air quality components over time.",
+    "aboutParagraph": "This Dashboard lets you visualize the main indoor air quality components in real-time.",
     "co2": "CO₂ trend",
     "pm25": "PM2.5 concentration",
     "comfort": "Temperature & Humidity",
     "tvoc": "TVOC concentration",
+    "scoreFeature": "Real-time IAQ score",
+    "predictionFeature": "Score prediction in 30 minutes",
+    "alertsFeature": "Automatic alerts on tabs",
     "score": {
       "title": "Air Quality Score",
       "label": "Global Score",

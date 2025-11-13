@@ -8,11 +8,14 @@
   "dashboard": {
     "title": "Tableau de bord",
     "aboutTitle": "À propos de cette page",
-    "aboutParagraph": "Cette interface Dashboard vous permet de visualiser l'évolution des composants principaux de la qualité de l'air.",
+    "aboutParagraph": "Cette interface Dashboard vous permet de visualiser l'évolution des composants principaux de la qualité de l'air en temps réel.",
     "co2": "Évolution du CO₂",
     "pm25": "Concentration de PM2.5",
     "comfort": "Température & Humidité",
     "tvoc": "Concentration de TVOC",
+    "scoreFeature": "Score IAQ en temps réel",
+    "predictionFeature": "Prédiction du score dans 30 minutes",
+    "alertsFeature": "Alertes automatiques sur les onglets",
     "score": {
       "title": "Score de qualité de l'air",
       "label": "Score global",
