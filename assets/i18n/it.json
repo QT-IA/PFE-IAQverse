@@ -12,7 +12,17 @@
         "co2": "Andamento CO₂",
         "pm25": "Concentrazione PM2.5",
         "comfort": "Temperatura & Umidità",
-        "tvoc": "Concentrazione TVOC"
+        "tvoc": "Concentrazione TVOC",
+        "score": {
+            "title": "Punteggio di qualità dell'aria",
+            "label": "Punteggio complessivo",
+            "roomLabel": "Punteggio della stanza",
+            "legend": "Legenda",
+            "excellent": "Eccellente",
+            "good": "Buono",
+            "moderate": "Moderato",
+            "poor": "Scadente"
+        }
     },
     "charts": {
         "no_data": "Nessun dato",
@@ -27,7 +37,8 @@
         "pm25Y": "µg/m³",
         "temperatureY": "Temperatura (°C)",
         "humidityY": "Umidità (%)",
-        "tvocY": "mg/m³"
+        "tvocY": "mg/m³",
+        "timeX": "Ora"
     },
     "settings": {
         "title": "Impostazioni",
@@ -90,9 +101,30 @@
             "action": "Azione"
         },
         "tip": {
-            "table": "La tabella a sinistra mostra le azioni consigliate.",
-            "visual": "La visualizzazione evidenzia le aree interessate nella stanza.",
+            "table": "La tabella a sinistra mostra le azioni raccomandate.",
+            "visual": "La visualizzazione indica le aree interessate nella stanza.",
             "details": "I dettagli al centro spiegano le cause degli avvisi."
+        },
+        "noDetails": "Nessun dettaglio disponibile",
+        "recommendedAction": "Azione raccomandata",
+        "details": {
+            "low": "troppo basso",
+            "high": "troppo alto",
+            "out_of_range": "fuori intervallo",
+            "thresholdMin": "soglia min",
+            "thresholdMax": "soglia max",
+            "parameters": {
+                "co2": "CO₂",
+                "pm25": "PM2.5",
+                "tvoc": "TVOC",
+                "temperature": "Temperatura",
+                "humidity": "Umidità"
+            }
+        },
+        "alertCount": {
+            "zero": "Nessun avviso",
+            "one": "1 Avviso",
+            "multiple": "{{count}} Avvisi"
         },
     "sample": {
             "window": {

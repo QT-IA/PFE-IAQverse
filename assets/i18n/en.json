@@ -12,7 +12,17 @@
     "co2": "CO₂ trend",
     "pm25": "PM2.5 concentration",
     "comfort": "Temperature & Humidity",
-    "tvoc": "TVOC concentration"
+    "tvoc": "TVOC concentration",
+    "score": {
+      "title": "Air quality score",
+      "label": "Overall score",
+      "roomLabel": "Room score",
+      "legend": "Legend",
+      "excellent": "Excellent",
+      "good": "Good",
+      "moderate": "Moderate",
+      "poor": "Poor"
+    }
   },
   "charts": {
     "no_data": "No data",
@@ -27,7 +37,8 @@
     "pm25Y": "µg/m³",
     "temperatureY": "Temperature (°C)",
     "humidityY": "Humidity (%)",
-    "tvocY": "mg/m³"
+    "tvocY": "mg/m³",
+    "timeX": "Time"
   },
   "settings": {
     "title": "Settings",
@@ -83,7 +94,6 @@
     "aboutTitle": "About this page",
     "aboutParagraph": "This Digital Twin view lets you visualize indoor air quality alerts in real time.",
     "actions": "Actions",
-    "details": "Details",
     "table": {
       "state": "State",
       "subject": "Subject",
@@ -93,6 +103,27 @@
       "table": "The table on the left shows recommended actions.",
       "visual": "The visualization highlights affected zones in the room.",
       "details": "Center details explain the causes of alerts."
+    },
+    "noDetails": "No details available",
+    "recommendedAction": "Recommended action",
+    "details": {
+      "low": "too low",
+      "high": "too high",
+      "out_of_range": "out of range",
+      "thresholdMin": "min threshold",
+      "thresholdMax": "max threshold",
+      "parameters": {
+        "co2": "CO₂",
+        "pm25": "PM2.5",
+        "tvoc": "TVOC",
+        "temperature": "Temperature",
+        "humidity": "Humidity"
+      }
+    },
+    "alertCount": {
+      "zero": "No alerts",
+      "one": "1 Alert",
+      "multiple": "{{count}} Alerts"
     },
   "sample": {
       "window": {

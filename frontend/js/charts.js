@@ -209,13 +209,15 @@ function renderEmpty(id, message) {
 // Mise en page commune des graphiques
 function makeCommonLayout(title, yTitle) {
   const isDark = document.documentElement.getAttribute('data-theme') === 'sombre';
+  const t = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t : (()=>undefined);
   // detect small screens for responsive behaviour (hide date labels)
   const isSmallScreen = (typeof window !== 'undefined') && (window.innerWidth <= 820);
+  const timeLabel = t('charts.timeX') || 'Heure';
   return {
     autosize: true,
     // Increase bottom margin to avoid truncating date labels
     margin: { t: 40, r: (isSmallScreen ? 60 : 100), b: (isSmallScreen ? 110 : 130), l: 50 },
-    xaxis: { title: (isSmallScreen ? '' : "Heure"), type: "date", showticklabels: !isSmallScreen, color: isDark ? '#a8b2c1' : '#2c3e50', gridcolor: isDark ? '#3a4049' : '#e2e8f0' },
+    xaxis: { title: (isSmallScreen ? '' : timeLabel), type: "date", showticklabels: !isSmallScreen, color: isDark ? '#a8b2c1' : '#2c3e50', gridcolor: isDark ? '#3a4049' : '#e2e8f0' },
     title: { text: title, font: { color: isDark ? '#e4e7eb' : '#2c3e50' } },
     yaxis: { title: yTitle, color: isDark ? '#a8b2c1' : '#2c3e50', gridcolor: isDark ? '#3a4049' : '#e2e8f0' },
     font: { family: "Segoe UI, sans-serif", color: isDark ? '#e4e7eb' : '#2c3e50' },

@@ -12,7 +12,17 @@
         "co2": "Tendencia de CO₂",
         "pm25": "Concentración de PM2.5",
         "comfort": "Temperatura y Humedad",
-        "tvoc": "Concentración de TVOC"
+        "tvoc": "Concentración de TVOC",
+        "score": {
+            "title": "Puntuación de calidad del aire",
+            "label": "Puntuación global",
+            "roomLabel": "Puntuación de la sala",
+            "legend": "Leyenda",
+            "excellent": "Excelente",
+            "good": "Bueno",
+            "moderate": "Moderado",
+            "poor": "Malo"
+        }
     },
     "charts": {
         "no_data": "Sin datos",
@@ -27,7 +37,8 @@
         "pm25Y": "µg/m³",
         "temperatureY": "Temperatura (°C)",
         "humidityY": "Humedad (%)",
-        "tvocY": "mg/m³"
+        "tvocY": "mg/m³",
+        "timeX": "Hora"
     },
     "settings": {
         "title": "Ajustes",
@@ -90,9 +101,30 @@
             "action": "Acción"
         },
         "tip": {
-            "table": "La tabla a la izquierda muestra acciones recomendadas.",
-            "visual": "La visualización resalta las zonas afectadas en la sala.",
-            "details": "Los detalles en el centro explican las causas de las alertas."
+            "table": "La tabla de la izquierda muestra las acciones recomendadas.",
+            "visual": "La visualización resalta las zonas afectadas en la habitación.",
+            "details": "Los detalles del centro explican las causas de las alertas."
+        },
+        "noDetails": "No hay detalles disponibles",
+        "recommendedAction": "Acción recomendada",
+        "details": {
+            "low": "demasiado bajo",
+            "high": "demasiado alto",
+            "out_of_range": "fuera de rango",
+            "thresholdMin": "umbral mín",
+            "thresholdMax": "umbral máx",
+            "parameters": {
+                "co2": "CO₂",
+                "pm25": "PM2.5",
+                "tvoc": "TVOC",
+                "temperature": "Temperatura",
+                "humidity": "Humedad"
+            }
+        },
+        "alertCount": {
+            "zero": "Sin alertas",
+            "one": "1 Alerta",
+            "multiple": "{{count}} Alertas"
         },
     "sample": {
             "window": {

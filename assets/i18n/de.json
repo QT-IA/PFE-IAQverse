@@ -12,7 +12,17 @@
         "co2": "CO₂-Verlauf",
         "pm25": "PM2.5-Konzentration",
         "comfort": "Temperatur & Luftfeuchtigkeit",
-        "tvoc": "TVOC-Konzentration"
+        "tvoc": "TVOC-Konzentration",
+        "score": {
+            "title": "Luftqualitätsbewertung",
+            "label": "Gesamtpunktzahl",
+            "roomLabel": "Raumpunktzahl",
+            "legend": "Legende",
+            "excellent": "Ausgezeichnet",
+            "good": "Gut",
+            "moderate": "Mäßig",
+            "poor": "Schlecht"
+        }
     },
     "charts": {
         "no_data": "Keine Daten",
@@ -27,7 +37,8 @@
         "pm25Y": "µg/m³",
         "temperatureY": "Temperatur (°C)",
         "humidityY": "Luftfeuchtigkeit (%)",
-        "tvocY": "mg/m³"
+        "tvocY": "mg/m³",
+        "timeX": "Zeit"
     },
     "settings": {
         "title": "Einstellungen",
@@ -90,9 +101,30 @@
             "action": "Aktion"
         },
         "tip": {
-            "table": "Die Tabelle links zeigt empfohlene Maßnahmen.",
-            "visual": "Die Visualisierung hebt betroffene Bereiche im Raum hervor.",
+            "table": "Die Tabelle links zeigt die empfohlenen Maßnahmen.",
+            "visual": "Die Visualisierung zeigt die betroffenen Bereiche im Raum an.",
             "details": "Die Details in der Mitte erklären die Ursachen der Warnungen."
+        },
+        "noDetails": "Keine Details verfügbar",
+        "recommendedAction": "Empfohlene Maßnahme",
+        "details": {
+            "low": "zu niedrig",
+            "high": "zu hoch",
+            "out_of_range": "außerhalb des Bereichs",
+            "thresholdMin": "Min-Schwelle",
+            "thresholdMax": "Max-Schwelle",
+            "parameters": {
+                "co2": "CO₂",
+                "pm25": "PM2.5",
+                "tvoc": "TVOC",
+                "temperature": "Temperatur",
+                "humidity": "Luftfeuchtigkeit"
+            }
+        },
+        "alertCount": {
+            "zero": "Keine Warnungen",
+            "one": "1 Warnung",
+            "multiple": "{{count}} Warnungen"
         },
     "sample": {
             "window": {
