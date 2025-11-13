@@ -109,9 +109,11 @@
             "visual": "La visualización resalta las zonas afectadas en la habitación.",
             "details": "Los detalles del centro explican las causas de las alertas."
         },
-        "noDetails": "No hay detalles disponibles",
+              "noDetails": "Sin detalles disponibles",
+      "allGood": "Todos los parámetros están dentro de las normas",
         "recommendedAction": "Acción recomendada",
         "details": {
+      "title": "Detalles",
             "low": "demasiado bajo",
             "high": "demasiado alto",
             "out_of_range": "fuera de rango",

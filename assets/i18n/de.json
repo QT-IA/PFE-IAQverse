@@ -110,8 +110,10 @@
             "details": "Die Details in der Mitte erklären die Ursachen der Warnungen."
         },
         "noDetails": "Keine Details verfügbar",
+      "allGood": "Alle Parameter liegen im Normbereich",
         "recommendedAction": "Empfohlene Maßnahme",
         "details": {
+      "title": "Details",
             "low": "zu niedrig",
             "high": "zu hoch",
             "out_of_range": "außerhalb des Bereichs",

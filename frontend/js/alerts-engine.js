@@ -138,6 +138,7 @@
             const issues = [];
             if (!latestSample) return { issues, actionKey: actionsMap && actionsMap[deviceKey] };
             const last = latestSample;
+            // Exclure les infos des détails (uniquement warning et danger)
             const pushIssue = (code, name, unit, sev, value, dir, threshold) => {
                 if (!sev || sev === 'info') return;
                 issues.push({ code, name, unit, severity: sev, value, direction: dir, threshold });
@@ -203,33 +204,28 @@
             }
             
             // Activer ou désactiver selon la map
-            if (map && map[key]) {
-                const severity = map[key];
-                el.setAttribute("data-active", "true");
-                el.setAttribute("data-severity", severity);
-                if (actionsMap && actionsMap[key]) {
-                    el.setAttribute("data-action-key", actionsMap[key]);
-                }
-                try {
-                    const det = buildDetailsForKey(key);
-                    el.setAttribute('data-details', JSON.stringify(det));
-                } catch (e) { /* ignore JSON issues */ }
-                
-                // Masquer les alert-points de type "info" dans la 3D (mais garder data-active pour le tableau)
-                if (severity === 'info') {
-                    el.style.display = 'none';
-                    console.log(`[alerts-engine] Alert ${key} is info severity - hidden in 3D but will appear in table`);
-                } else {
-                    el.style.display = ''; // Afficher les autres sévérités
-                    activatedCount++;
-                    console.log(`[alerts-engine] Activated ${key} with severity ${severity}`);
-                }
-            } else {
-                el.setAttribute("data-active", "false");
-                el.removeAttribute("data-severity");
-                el.removeAttribute("data-action-key");
-                el.removeAttribute("data-details");
+            // Tous les alert-points de la pièce active sont activés avec "info" par défaut
+            const severity = (map && map[key]) ? map[key] : 'info';
+            el.setAttribute("data-active", "true");
+            el.setAttribute("data-severity", severity);
+            
+            if (actionsMap && actionsMap[key]) {
+                el.setAttribute("data-action-key", actionsMap[key]);
+            }
+            
+            try {
+                const det = buildDetailsForKey(key);
+                el.setAttribute('data-details', JSON.stringify(det));
+            } catch (e) { /* ignore JSON issues */ }
+            
+            // Masquer les alert-points de type "info" dans la 3D (mais garder data-active pour le tableau)
+            if (severity === 'info') {
                 el.style.display = 'none';
+                console.log(`[alerts-engine] Alert ${key} is info severity - hidden in 3D but will appear in table`);
+            } else {
+                el.style.display = ''; // Afficher les autres sévérités
+                activatedCount++;
+                console.log(`[alerts-engine] Activated ${key} with severity ${severity}`);
             }
         });
         
