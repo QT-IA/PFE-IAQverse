@@ -8,11 +8,14 @@
     "dashboard": {
         "title": "Panel",
         "aboutTitle": "Über diese Seite",
-        "aboutParagraph": "Dieses Panel ermöglicht die Visualisierung der wichtigsten Komponenten der Innenraumluftqualität über die Zeit.",
+        "aboutParagraph": "Dieses Panel ermöglicht die Visualisierung der wichtigsten Komponenten der Innenraumluftqualität in Echtzeit.",
         "co2": "CO₂-Verlauf",
         "pm25": "PM2.5-Konzentration",
         "comfort": "Temperatur & Luftfeuchtigkeit",
         "tvoc": "TVOC-Konzentration",
+        "scoreFeature": "IAQ-Bewertung in Echtzeit",
+        "predictionFeature": "Vorhersage der Bewertung in 30 Minuten",
+        "alertsFeature": "Automatische Warnungen auf Registerkarten",
         "score": {
             "title": "Luftqualitätsbewertung",
             "label": "Gesamtpunktzahl",

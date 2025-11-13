@@ -8,11 +8,14 @@
     "dashboard": {
         "title": "Panel",
         "aboutTitle": "Acerca de esta página",
-        "aboutParagraph": "Este panel le permite visualizar los principales componentes de la calidad del aire interior a lo largo del tiempo.",
+        "aboutParagraph": "Este panel le permite visualizar los principales componentes de la calidad del aire interior en tiempo real.",
         "co2": "Tendencia de CO₂",
         "pm25": "Concentración de PM2.5",
         "comfort": "Temperatura y Humedad",
         "tvoc": "Concentración de TVOC",
+        "scoreFeature": "Puntuación IAQ en tiempo real",
+        "predictionFeature": "Predicción de la puntuación en 30 minutos",
+        "alertsFeature": "Alertas automáticas en las pestañas",
         "score": {
             "title": "Puntuación de calidad del aire",
             "label": "Puntuación global",
