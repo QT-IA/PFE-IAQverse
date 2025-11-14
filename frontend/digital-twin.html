@@ -9,7 +9,9 @@
     <script src="js/utils.js"></script>
     <script src="js/i18n.js"></script>
     <script src="js/config-loader.js"></script>
+    <script src="js/api.js"></script>
     <script src="js/tabs-manager.js"></script>
+    <script src="js/preventive-global.js"></script>
     <script src="js/digital-twin.js"></script>
     <script src="js/alerts-engine.js"></script>
     <script async src="https://unpkg.com/es-module-shims/dist/es-module-shims.js"></script>
@@ -47,6 +49,19 @@
     </div>
     </div>
     </header>
+
+    <!-- Panneau Actions Préventives Global -->
+    <section class="preventive-panel-global">
+        <div class="preventive-global-header">
+            <h2><span data-i18n="digitalTwin.preventive.title">Actions Préventives</span></h2>
+            <span class="preventive-global-subtitle" data-i18n="digitalTwin.preventive.subtitle">Basées sur les prédictions (30 min)</span>
+        </div>
+        <div id="preventive-global-container" class="preventive-global-content">
+            <div class="preventive-loading">
+                <span data-i18n="digitalTwin.preventive.loading">Analyse des prédictions en cours...</span>
+            </div>
+        </div>
+    </section>
 
     <div class="tabs-container">
     <div class="location-tabs" id="location-tabs">

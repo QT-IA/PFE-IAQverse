@@ -176,6 +176,241 @@ function updateAlertCountLabel() {
 // Exporter la fonction pour qu'elle soit accessible depuis alerts-engine
 window.updateAlertCountLabel = updateAlertCountLabel;
 
+/**
+ * Récupère et affiche le score prédit dans le panneau préventif
+ */
+async function fetchAndDisplayPreventiveScore(params) {
+    const scoreElement = document.getElementById('preventive-score-value');
+    const trendElement = document.getElementById('preventive-score-trend');
+    const containerElement = document.getElementById('preventive-predicted-score');
+    
+    if (!scoreElement || !trendElement || !containerElement) return;
+    
+    try {
+        const response = await fetch(`http://localhost:8000/api/predict/score?${params}`);
+        const data = await response.json();
+        
+        if (data.predicted_score !== undefined) {
+            const predictedScore = Math.round(data.predicted_score);
+            scoreElement.textContent = predictedScore;
+            
+            // Appliquer la classe de couleur selon le score
+            containerElement.classList.remove('predicted-excellent', 'predicted-warning', 'predicted-danger');
+            if (predictedScore >= 70) {
+                containerElement.classList.add('predicted-excellent');
+            } else if (predictedScore >= 40) {
+                containerElement.classList.add('predicted-warning');
+            } else {
+                containerElement.classList.add('predicted-danger');
+            }
+            
+            // Calculer et afficher la tendance
+            if (window.scoreHistory && window.scoreHistory.length > 0) {
+                const lastScore = window.scoreHistory[window.scoreHistory.length - 1];
+                const diff = predictedScore - lastScore;
+                
+                if (diff > 2) {
+                    trendElement.textContent = '↗';
+                    trendElement.className = 'predicted-trend up';
+                } else if (diff < -2) {
+                    trendElement.textContent = '↘';
+                    trendElement.className = 'predicted-trend down';
+                } else {
+                    trendElement.textContent = '→';
+                    trendElement.className = 'predicted-trend stable';
+                }
+            } else {
+                trendElement.textContent = '';
+                trendElement.className = 'predicted-trend';
+            }
+            
+            // Sauvegarder dans sessionStorage
+            sessionStorage.setItem('preventiveScore', JSON.stringify({ 
+                predicted_score: predictedScore,
+                timestamp: Date.now()
+            }));
+        }
+    } catch (error) {
+        console.error('[preventive] Error fetching score:', error);
+        // Essayer de restaurer depuis le cache
+        const cached = sessionStorage.getItem('preventiveScore');
+        if (cached) {
+            try {
+                const cachedData = JSON.parse(cached);
+                scoreElement.textContent = cachedData.predicted_score;
+            } catch (e) {
+                scoreElement.textContent = '—';
+            }
+        }
+    }
+}
+
+/**
+ * Récupère et affiche les actions préventives depuis l'API
+ */
+async function fetchAndDisplayPreventiveActions() {
+    const container = document.getElementById('preventive-actions-container');
+    if (!container) return;
+    
+    try {
+        const cfg = (typeof window.getConfig === 'function') ? window.getConfig() : (window.config || null);
+        const activeEnseigneId = (typeof window.getActiveEnseigne === 'function') 
+            ? window.getActiveEnseigne() 
+            : (cfg && cfg.lieux && cfg.lieux.active);
+        
+        const tab = document.querySelector('#room-tabs .room-tab.active');
+        let activeRoomId = tab ? tab.getAttribute('data-room-id') : null;
+        
+        if (!activeEnseigneId || !activeRoomId) {
+            // Restaurer depuis sessionStorage si disponible
+            const cached = sessionStorage.getItem('preventiveActions');
+            if (cached) {
+                try {
+                    const cachedData = JSON.parse(cached);
+                    displayPreventiveActions(cachedData);
+                    return;
+                } catch (e) {
+                    console.error('[preventive] Error parsing cached data:', e);
+                }
+            }
+            return;
+        }
+        
+        const ens = cfg?.lieux?.enseignes?.find(e => e.id === activeEnseigneId);
+        const salle = ens?.pieces?.find(p => p.id === activeRoomId);
+        
+        if (!ens || !salle) {
+            console.log('[preventive] Config:', { ens, salle, activeEnseigneId, activeRoomId });
+            return;
+        }
+        
+        // Les capteurs sont un array de strings dans la config
+        const capteur_id = salle.capteurs?.[0] || salle.nom || 'Salon1';
+        
+        const params = new URLSearchParams({
+            enseigne: ens.nom || 'Maison',
+            salle: salle.nom || '',
+            capteur_id: capteur_id
+        });
+        
+        console.log('[preventive] Fetching with params:', params.toString());
+        
+        const response = await fetch(`http://localhost:8000/api/predict/preventive-actions?${params}`);
+        const data = await response.json();
+        
+        // Sauvegarder dans sessionStorage
+        sessionStorage.setItem('preventiveActions', JSON.stringify(data));
+        
+        // Récupérer aussi le score prédit
+        await fetchAndDisplayPreventiveScore(params);
+        
+        displayPreventiveActions(data);
+        
+    } catch (error) {
+        console.error('[preventive] Error fetching actions:', error);
+        // Essayer de restaurer depuis le cache en cas d'erreur
+        const cached = sessionStorage.getItem('preventiveActions');
+        if (cached) {
+            try {
+                const cachedData = JSON.parse(cached);
+                displayPreventiveActions(cachedData);
+            } catch (e) {
+                container.innerHTML = '<div class="preventive-error">Erreur lors du chargement des prédictions</div>';
+            }
+        } else {
+            container.innerHTML = '<div class="preventive-error">Erreur lors du chargement des prédictions</div>';
+        }
+    }
+}
+
+/**
+ * Affiche les actions préventives dans le conteneur
+ */
+function displayPreventiveActions(data) {
+    const container = document.getElementById('preventive-actions-container');
+    if (!container) return;
+    
+    if (data.error || !data.actions || data.actions.length === 0) {
+        container.innerHTML = `
+            <div class="preventive-empty">
+                <span class="preventive-icon"></span>
+                <p>Aucune action préventive nécessaire. La qualité de l'air restera bonne.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const t = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t : (()=>undefined);
+    
+    const deviceI18nMap = {
+        'window': 'window',
+        'ventilation': 'ventilation',
+        'air_conditioning': 'air_conditioning',
+        'radiator': 'radiator'
+    };
+    
+    const actionI18nMap = {
+        'open': 'open',
+        'close': 'close',
+        'turn_on': 'turn_on',
+        'turn_off': 'turn_off',
+        'increase': 'increase',
+        'decrease': 'decrease'
+    };
+    
+    let html = '';
+    data.actions.forEach(action => {
+        const deviceKey = deviceI18nMap[action.device] || action.device;
+        const deviceName = (t && t(`digitalTwin.sample.${deviceKey}.subject`)) || action.device;
+        
+        const actionKey = actionI18nMap[action.action] || action.action;
+        const actionVerb = (t && t(`digitalTwin.actionVerbs.${actionKey}`)) || action.action;
+        
+        const priorityEmoji = {
+            'high': '',
+            'medium': '',
+            'low': ''
+        }[action.priority] || '';
+        
+        const priorityLabel = {
+            'high': 'Urgent',
+            'medium': 'Recommandé',
+            'low': 'Optionnel'
+        }[action.priority] || action.priority;
+        
+        html += `
+            <div class="preventive-card priority-${action.priority}">
+                <div class="preventive-card-header">
+                    <div class="preventive-device">
+                        <strong>${deviceName}</strong>
+                    </div>
+                    <div class="preventive-priority">
+                        ${priorityEmoji} <span>${priorityLabel}</span>
+                    </div>
+                </div>
+                <div class="preventive-action-name">
+                    <span class="action-verb">${actionVerb}</span>
+                </div>
+                <div class="preventive-reason">
+                    ${action.reason}
+                </div>
+                <div class="preventive-values">
+                    <div class="value-row">
+                        <span class="value-label">${action.parameter}</span>
+                    </div>
+                    <div class="value-row">
+                        <span class="value-current">${action.current_value} ${action.unit}</span>
+                        <span class="value-arrow">→</span>
+                        <span class="value-predicted">${action.predicted_value} ${action.unit}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
 // Sync alert-point elements into the actions table as rows
 function syncAlertPointsToTable() {
     console.log('[digital-twin] syncAlertPointsToTable called');
@@ -381,5 +616,41 @@ function syncAlertPointsToTable() {
 }
 
 // run once on DOMContentLoaded and whenever language changes
-document.addEventListener('DOMContentLoaded', () => { try { syncAlertPointsToTable(); } catch(e){} });
-window.addEventListener('language-changed', () => { try { syncAlertPointsToTable(); } catch(e){} });
+document.addEventListener('DOMContentLoaded', () => { 
+    try { 
+        syncAlertPointsToTable(); 
+        fetchAndDisplayPreventiveActions();
+        // Rafraîchir les actions préventives toutes les minutes
+        setInterval(fetchAndDisplayPreventiveActions, 60000);
+    } catch(e){
+        console.error('[digital-twin] Error in DOMContentLoaded:', e);
+    } 
+});
+window.addEventListener('language-changed', () => { 
+    try { 
+        syncAlertPointsToTable();
+        // Rafraîchir l'affichage des actions préventives avec les nouvelles traductions
+        const cached = sessionStorage.getItem('preventiveActions');
+        if (cached) {
+            const cachedData = JSON.parse(cached);
+            displayPreventiveActions(cachedData);
+        }
+        // Rafraîchir aussi le score prédit
+        const cachedScore = sessionStorage.getItem('preventiveScore');
+        if (cachedScore) {
+            const scoreData = JSON.parse(cachedScore);
+            const scoreElement = document.getElementById('preventive-score-value');
+            if (scoreElement) {
+                scoreElement.textContent = scoreData.predicted_score;
+            }
+        }
+    } catch(e){} 
+});
+
+// Rafraîchir les actions préventives lors du changement de pièce ou d'enseigne
+document.addEventListener('roomChanged', () => { 
+    try { fetchAndDisplayPreventiveActions(); } catch(e){} 
+});
+document.addEventListener('enseigneChanged', () => { 
+    try { fetchAndDisplayPreventiveActions(); } catch(e){} 
+});
