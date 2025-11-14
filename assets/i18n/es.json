@@ -99,6 +99,12 @@
         "aboutParagraph": "Esta vista Gemelos Digitales le permite visualizar alertas de calidad del aire interior en tiempo real.",
         "actions": "Acciones",
         "details": "Detalles",
+        "preventive": {
+            "title": "Acciones Preventivas",
+            "subtitle": "Basadas en predicciones (30 min)",
+            "loading": "Analizando predicciones...",
+            "noActions": "No se necesita ninguna acción preventiva. La calidad del aire seguirá siendo buena."
+        },
         "table": {
             "state": "Estado",
             "subject": "Asunto",

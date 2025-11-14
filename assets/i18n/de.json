@@ -99,6 +99,12 @@
         "aboutParagraph": "Diese Digitaler Zwilling-Ansicht zeigt Ihnen Echtzeit-Warnungen zur Innenraumluftqualität.",
         "actions": "Aktionen",
         "details": "Details",
+        "preventive": {
+            "title": "Präventive Maßnahmen",
+            "subtitle": "Basierend auf Vorhersagen (30 Min.)",
+            "loading": "Vorhersagen werden analysiert...",
+            "noActions": "Keine präventiven Maßnahmen erforderlich. Die Luftqualität bleibt gut."
+        },
         "table": {
             "state": "Zustand",
             "subject": "Betreff",

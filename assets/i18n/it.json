@@ -99,6 +99,12 @@
         "aboutParagraph": "Questa vista del Gemello Digitale mostra avvisi in tempo reale sulla qualità dell'aria interna.",
         "actions": "Azioni",
         "details": "Dettagli",
+        "preventive": {
+            "title": "Azioni Preventive",
+            "subtitle": "Basate su previsioni (30 min)",
+            "loading": "Analisi delle previsioni in corso...",
+            "noActions": "Nessuna azione preventiva necessaria. La qualità dell'aria rimarrà buona."
+        },
         "table": {
             "state": "Stato",
             "subject": "Soggetto",

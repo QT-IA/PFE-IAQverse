@@ -99,6 +99,12 @@
     "aboutParagraph": "Cette interface Digital Twin vous permet de visualiser les alertes de qualité de l'air intérieur en temps réel.",
     "actions": "Actions",
     "details": "Détails",
+    "preventive": {
+      "title": "Actions Préventives",
+      "subtitle": "Basées sur les prédictions (30 min)",
+      "loading": "Analyse des prédictions en cours...",
+      "noActions": "Aucune action préventive nécessaire. La qualité de l'air restera bonne."
+    },
     "table": {
       "state": "État",
       "subject": "Sujet",
@@ -148,6 +154,10 @@
       "radiator": {
         "subject": "Radiateur",
         "action": "Réduire"
+      },
+      "air_conditioning": {
+        "subject": "Climatisation",
+        "action": "Activer"
       },
       "temperature": {
         "subject": "Température",

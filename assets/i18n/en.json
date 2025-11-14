@@ -98,6 +98,12 @@
     "aboutTitle": "About this page",
     "aboutParagraph": "This Digital Twin view lets you visualize indoor air quality alerts in real time.",
     "actions": "Actions",
+    "preventive": {
+      "title": "Preventive Actions",
+      "subtitle": "Based on predictions (30 min)",
+      "loading": "Analyzing predictions...",
+      "noActions": "No preventive action needed. Air quality will remain good."
+    },
     "table": {
       "state": "State",
       "subject": "Subject",

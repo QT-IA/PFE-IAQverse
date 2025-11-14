@@ -361,6 +361,163 @@ def get_predicted_score(
         }
 
 
+@app.get("/api/predict/preventive-actions")
+def get_preventive_actions(
+    enseigne: Optional[str] = None,
+    salle: Optional[str] = None,
+    capteur_id: Optional[str] = None
+):
+    """
+    Analyse les prédictions ML et retourne les actions préventives à prendre.
+    """
+    try:
+        predictor = get_ml_predictor()
+        if not predictor:
+            return {"actions": [], "error": "ML model not available"}
+        
+        if not enseigne:
+            enseigne = "Maison"
+        
+        # Obtenir les prédictions
+        prediction_result = predictor.predict(
+            enseigne=enseigne,
+            salle=salle,
+            capteur_id=capteur_id
+        )
+        
+        if "error" in prediction_result:
+            return {"actions": [], "error": prediction_result["error"]}
+        
+        predicted_values = prediction_result.get("predicted_values", {})
+        
+        # Obtenir les valeurs actuelles
+        current_data = None
+        if iaq_database:
+            for item in reversed(iaq_database):
+                if (item.get("enseigne") == prediction_result.get("enseigne") and
+                    item.get("salle") == prediction_result.get("salle") and
+                    item.get("capteur_id") == prediction_result.get("capteur_id")):
+                    current_data = item
+                    break
+        
+        if not current_data:
+            return {"actions": [], "error": "No current data available"}
+        
+        # Analyser et générer les actions
+        actions = []
+        
+        THRESHOLDS = {
+            "co2": {"warning": 800, "danger": 1200},
+            "pm25": {"warning": 15, "danger": 35},
+            "tvoc": {"warning": 300, "danger": 1000},
+            "temperature": {"cold": 18, "hot": 24},
+            "humidity": {"dry": 30, "humid": 70}
+        }
+        
+        current_co2 = float(current_data.get("co2", 0))
+        predicted_co2 = float(predicted_values.get("co2", 0))
+        
+        if predicted_co2 >= THRESHOLDS["co2"]["warning"] and predicted_co2 > current_co2:
+            priority = "high" if predicted_co2 >= THRESHOLDS["co2"]["danger"] else "medium"
+            actions.append({
+                "device": "window",
+                "action": "open",
+                "parameter": "CO₂",
+                "current_value": round(current_co2, 1),
+                "predicted_value": round(predicted_co2, 1),
+                "threshold": THRESHOLDS["co2"]["warning"],
+                "unit": "ppm",
+                "priority": priority,
+                "reason": f"Le CO₂ va augmenter de {current_co2:.0f} à {predicted_co2:.0f} ppm"
+            })
+            actions.append({
+                "device": "ventilation",
+                "action": "turn_on",
+                "parameter": "CO₂",
+                "current_value": round(current_co2, 1),
+                "predicted_value": round(predicted_co2, 1),
+                "threshold": THRESHOLDS["co2"]["warning"],
+                "unit": "ppm",
+                "priority": priority,
+                "reason": f"Prévenir l'accumulation de CO₂"
+            })
+        
+        current_pm = float(current_data.get("pm25", 0))
+        predicted_pm = float(predicted_values.get("pm25", 0))
+        
+        if predicted_pm >= THRESHOLDS["pm25"]["warning"] and predicted_pm > current_pm:
+            if predicted_co2 < THRESHOLDS["co2"]["warning"]:
+                priority = "high" if predicted_pm >= THRESHOLDS["pm25"]["danger"] else "medium"
+                actions.append({
+                    "device": "window",
+                    "action": "close",
+                    "parameter": "PM2.5",
+                    "current_value": round(current_pm, 1),
+                    "predicted_value": round(predicted_pm, 1),
+                    "threshold": THRESHOLDS["pm25"]["warning"],
+                    "unit": "µg/m³",
+                    "priority": priority,
+                    "reason": f"Les particules fines vont augmenter de {current_pm:.1f} à {predicted_pm:.1f} µg/m³"
+                })
+        
+        current_temp = float(current_data.get("temperature", 20))
+        predicted_temp = float(predicted_values.get("temperature", 20))
+        
+        if predicted_temp > THRESHOLDS["temperature"]["hot"] and predicted_temp > current_temp:
+            actions.append({
+                "device": "air_conditioning",
+                "action": "turn_on",
+                "parameter": "Température",
+                "current_value": round(current_temp, 1),
+                "predicted_value": round(predicted_temp, 1),
+                "threshold": THRESHOLDS["temperature"]["hot"],
+                "unit": "°C",
+                "priority": "medium",
+                "reason": f"La température va monter de {current_temp:.1f}°C à {predicted_temp:.1f}°C"
+            })
+        elif predicted_temp < THRESHOLDS["temperature"]["cold"] and predicted_temp < current_temp:
+            actions.append({
+                "device": "radiator",
+                "action": "increase",
+                "parameter": "Température",
+                "current_value": round(current_temp, 1),
+                "predicted_value": round(predicted_temp, 1),
+                "threshold": THRESHOLDS["temperature"]["cold"],
+                "unit": "°C",
+                "priority": "low",
+                "reason": f"La température va baisser de {current_temp:.1f}°C à {predicted_temp:.1f}°C"
+            })
+        
+        current_hum = float(current_data.get("humidity", 50))
+        predicted_hum = float(predicted_values.get("humidity", 50))
+        
+        if predicted_hum > THRESHOLDS["humidity"]["humid"] and predicted_hum > current_hum:
+            actions.append({
+                "device": "ventilation",
+                "action": "turn_on",
+                "parameter": "Humidité",
+                "current_value": round(current_hum, 1),
+                "predicted_value": round(predicted_hum, 1),
+                "threshold": THRESHOLDS["humidity"]["humid"],
+                "unit": "%",
+                "priority": "medium",
+                "reason": f"L'humidité va augmenter de {current_hum:.0f}% à {predicted_hum:.0f}%"
+            })
+        
+        priority_order = {"high": 0, "medium": 1, "low": 2}
+        actions.sort(key=lambda x: priority_order.get(x.get("priority", "low"), 99))
+        
+        return {
+            "actions": actions,
+            "forecast_minutes": prediction_result.get("forecast_minutes", 30),
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in preventive actions endpoint: {e}")
+        return {"actions": [], "error": str(e)}
+
+
 @app.get("/iaq/debug")
 def debug_iaq():
     """Endpoint de debug: affiche iaq_database dans les logs."""
