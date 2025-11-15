@@ -1589,6 +1589,8 @@ a:hover img {
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 20px;
+    border-radius: 8px;
+    overflow: hidden;
 }
 
 .actions-table th,
