@@ -448,52 +448,12 @@ async function fetchAndUpdate() {
 // Fetch predicted score from ML model
 async function fetchPredictedScore() {
   try {
-    const params = new URLSearchParams({
-      enseigne: currentEnseigne || "Maison",
-      salle: currentSalle || "Salon"
-    });
-    const url = `http://localhost:8000/api/predict/score?${params.toString()}`;
-    console.debug("ML Prediction fetch:", url);
-    
-    const res = await window.fetch(url, { cache: "no-store" });
-    if (!res.ok) {
-      console.warn(`ML Prediction API returned ${res.status}`);
-      updatePredictedScoreUI(null);
-      return;
-    }
-    
-    const data = await res.json();
-    
-    if (data.error || data.predicted_score === null) {
-      console.warn("ML Prediction not available:", data.error || "No score");
-      updatePredictedScoreUI(null);
-      return;
-    }
-    
-    // Sauvegarder la prédiction avec timestamp dans sessionStorage
-    const predictionData = {
-      ...data,
-      fetchedAt: Date.now()
-    };
-    sessionStorage.setItem('lastPrediction', JSON.stringify(predictionData));
-    
+    const enseigne = currentEnseigne || "Maison";
+    const salle = currentSalle || "Salon";
+    const data = await getPredictedScore(enseigne, salle);
     updatePredictedScoreUI(data);
-    
   } catch (err) {
     console.error("Erreur fetch ML prediction:", err);
-    // En cas d'erreur, essayer de charger la dernière prédiction sauvegardée
-    try {
-      const stored = sessionStorage.getItem('lastPrediction');
-      if (stored) {
-        const predictionData = JSON.parse(stored);
-        // Utiliser la prédiction sauvegardée si elle a moins de 30 secondes
-        if (Date.now() - predictionData.fetchedAt < 30000) {
-          console.log('Using cached prediction');
-          updatePredictedScoreUI(predictionData);
-          return;
-        }
-      }
-    } catch (e) {}
     updatePredictedScoreUI(null);
   }
 }
@@ -577,7 +537,7 @@ if (typeof window !== "undefined" && typeof Plotly !== "undefined") {
       fetchAndUpdate();
       fetchPredictedScore(); // Récupérer le score prédit initial
       setInterval(fetchAndUpdate, REFRESH_MS);
-      setInterval(fetchPredictedScore, 60000); // Mettre à jour le score prédit toutes les minutes
+      // Note: fetchPredictedScore timer is handled separately below for minute synchronization
     }
   };
   
@@ -611,6 +571,15 @@ if (typeof window !== "undefined" && typeof Plotly !== "undefined") {
       handleFirstRoomChange();
     }
   }, 1000);
+  
+  // Programmer la mise à jour du score prédit toutes les minutes, synchronisée
+  const now = new Date();
+  const secondsUntilNextMinute = 60 - now.getSeconds();
+  const initialDelay = secondsUntilNextMinute * 1000;
+  setTimeout(() => {
+    fetchPredictedScore();
+    setInterval(fetchPredictedScore, 60000); // Ensuite toutes les minutes
+  }, initialDelay);
   
   let resizeTimer = null;
   window.addEventListener("resize", () => {
