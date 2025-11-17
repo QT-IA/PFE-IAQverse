@@ -51,6 +51,7 @@
       "display": "Affichage",
       "notifications": "Notifications",
       "locations": "Lieux",
+      "subscription": "Abonnement",
       "contact": "Contact"
     },
     "aboutTitle": "À propos de cette page",
@@ -65,6 +66,7 @@
       "technologies": "Technologies",
       "type": "Type",
       "manage_brands": "Gestion des enseignes",
+      "subscription": "Votre abonnement",
       "contact": "Contact"
     },
     "infoList": {
@@ -89,7 +91,45 @@
       "push": "Push",
       "alertes": "Alertes",
       "rappels": "Rappels",
-      "newsletters": "Newsletters"
+      "newsletters": "Newsletters",
+      "current_plan": "Plan actuel"
+    },
+    "plans": {
+      "basic": {
+        "title": "Basic",
+        "description": "Plan de base avec fonctionnalités essentielles",
+        "features": {
+          "monitoring": "Monitoring de base",
+          "alerts": "Alertes simples",
+          "reports": "Rapports mensuels"
+        }
+      },
+      "pro": {
+        "title": "Pro",
+        "description": "Plan professionnel avec fonctionnalités avancées",
+        "features": {
+          "advanced": "Monitoring avancé",
+          "custom": "Alertes personnalisées",
+          "realtime": "Rapports en temps réel",
+          "api": "Accès API"
+        }
+      },
+      "enterprise": {
+        "title": "Entreprise",
+        "description": "Solution complète pour les grandes organisations",
+        "features": {
+          "unlimited": "Monitoring illimité",
+          "integration": "Intégrations personnalisées",
+          "support": "Support dédié 24/7",
+          "training": "Formation équipe",
+          "sla": "SLA garanti"
+        }
+      }
+    },
+    "enterprise_modal": {
+      "title": "Contact pour Plan Entreprise",
+      "message": "Pour le plan Entreprise, veuillez nous contacter directement :\n\n📧 Email : <a href=\"mailto:enterprise@iaqverse.com\" style=\"color: inherit; text-decoration: underline;\">enterprise@iaqverse.com</a>\n📞 Téléphone : +1 (555) 123-4567\n🌐 Site web : <a href=\"https://www.iaqverse.com/enterprise\" target=\"_blank\" style=\"color: inherit; text-decoration: underline;\">www.iaqverse.com/enterprise</a>\n\nNotre équipe vous aidera à configurer la solution parfaite pour votre organisation.",
+      "close": "Fermer"
     }
   },
   "digitalTwin": {
@@ -204,7 +244,9 @@
     "yes": "Oui",
     "no": "Non",
     "cancel": "Annuler",
-    "save": "Enregistrer"
+    "save": "Enregistrer",
+    "select": "Sélectionner",
+    "selected": "Sélectionné"
   },
   "modals": {
     "add_brand": "Ajouter une enseigne",
@@ -219,6 +261,7 @@
     "save_error": "Erreur lors de la sauvegarde",
     "order_saved": "Nouvel ordre enregistré",
     "rooms_order_saved": "Ordre des pièces enregistré",
+    "plan_saved": "Plan d'abonnement mis à jour",
     "location_exists": "Une enseigne avec ce nom existe déjà",
     "add_success": "Enseigne ajoutée avec succès",
     "add_error": "Erreur lors de l'ajout de l'enseigne",

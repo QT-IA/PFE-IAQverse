@@ -174,5 +174,8 @@
     "value": false,
     "nom": "",
     "adresse": "123 rue d'Avrons",
-    "type": "salon"
+    "type": "salon",
+    "abonnement": {
+        "plan_actuel": "basic"
+    }
 }

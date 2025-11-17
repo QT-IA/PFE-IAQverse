@@ -51,6 +51,7 @@
       "display": "Display",
       "notifications": "Notifications",
       "locations": "Locations",
+      "subscription": "Subscription",
       "contact": "Contact"
     },
     "aboutTitle": "About this page",
@@ -65,6 +66,7 @@
       "technologies": "Technologies",
       "type": "Type",
       "manage_brands": "Manage locations",
+      "subscription": "Your subscription",
       "contact": "Contact"
     },
     "infoList": {
@@ -89,7 +91,45 @@
       "push": "Push",
       "alertes": "Alerts",
       "rappels": "Reminders",
-      "newsletters": "Newsletters"
+      "newsletters": "Newsletters",
+      "current_plan": "Current plan"
+    },
+    "plans": {
+      "basic": {
+        "title": "Basic",
+        "description": "Basic plan with essential features",
+        "features": {
+          "monitoring": "Basic monitoring",
+          "alerts": "Simple alerts",
+          "reports": "Monthly reports"
+        }
+      },
+      "pro": {
+        "title": "Pro",
+        "description": "Professional plan with advanced features",
+        "features": {
+          "advanced": "Advanced monitoring",
+          "custom": "Custom alerts",
+          "realtime": "Real-time reports",
+          "api": "API access"
+        }
+      },
+      "enterprise": {
+        "title": "Enterprise",
+        "description": "Complete solution for large organizations",
+        "features": {
+          "unlimited": "Unlimited monitoring",
+          "integration": "Custom integrations",
+          "support": "24/7 dedicated support",
+          "training": "Team training",
+          "sla": "Guaranteed SLA"
+        }
+      }
+    },
+    "enterprise_modal": {
+      "title": "Contact for Enterprise Plan",
+      "message": "For the Enterprise plan, please contact us directly:\n\n📧 Email: <a href=\"mailto:enterprise@iaqverse.com\" style=\"color: inherit; text-decoration: underline;\">enterprise@iaqverse.com</a>\n📞 Phone: +1 (555) 123-4567\n🌐 Website: <a href=\"https://www.iaqverse.com/enterprise\" target=\"_blank\" style=\"color: inherit; text-decoration: underline;\">www.iaqverse.com/enterprise</a>\n\nOur team will help you configure the perfect solution for your organization.",
+      "close": "Close"
     }
   },
   "digitalTwin": {
@@ -199,7 +239,9 @@
     "yes": "Yes",
     "no": "No",
     "cancel": "Cancel",
-    "save": "Save"
+    "save": "Save",
+    "select": "Select",
+    "selected": "Selected"
   },
   "modals": {
     "add_brand": "Add location",
@@ -214,6 +256,7 @@
     "save_error": "Error saving",
     "order_saved": "New order saved",
     "rooms_order_saved": "Rooms order saved",
+    "plan_saved": "Subscription plan updated",
     "location_exists": "A location with this name already exists",
     "add_success": "Location added successfully",
     "add_error": "Error adding the location",

@@ -31,6 +31,7 @@
             <li onclick="showSection('affichage')" data-section="affichage" data-i18n="settings.menu.display">Affichage</li>
             <li onclick="showSection('notifications')" data-section="notifications" data-i18n="settings.menu.notifications">Notifications</li>
             <li onclick="showSection('lieux')" data-section="lieux" data-i18n="settings.menu.locations">Lieux</li>
+            <li onclick="showSection('abonnement')" data-section="abonnement" data-i18n="settings.menu.subscription">Abonnement</li>
             <li onclick="showSection('contact')" data-section="contact" data-i18n="settings.menu.contact">Contact</li>
         </ul>
     </aside>
@@ -180,6 +181,58 @@
                     <div id="enseignes-list" class="locations-grid">
                         <!-- Cartes des enseignes générées dynamiquement -->
                     </div>
+                </div>
+            </details>
+        </div>
+
+        <!-- Section de l'abonnement -->
+        <div id="abonnement" class="section">
+            <details id="abonnement-list" class="settings-section">
+                <summary><span data-i18n="settings.summary.subscription">Votre abonnement</span>
+                </summary>
+                <div class="details-content">
+                <p><span data-i18n="settings.fields.current_plan">Plan actuel</span> : <span data-path="abonnement.plan_actuel">—</span></p>
+                <div class="plans-container">
+                    <div class="plan-card" data-plan="basic">
+                        <h3 data-i18n="settings.plans.basic.title">Basic</h3>
+                        <div class="plan-price">49 €</div>
+                        <p data-i18n="settings.plans.basic.description">Plan de base avec fonctionnalités essentielles</p>
+                        <ul>
+                            <li data-i18n="settings.plans.basic.features.monitoring">Monitoring de base</li>
+                            <li data-i18n="settings.plans.basic.features.alerts">Alertes simples</li>
+                            <li data-i18n="settings.plans.basic.features.reports">Rapports mensuels</li>
+                        </ul>
+                        <button class="plan-btn" data-i18n="actions.select">Sélectionner</button>
+                    </div>
+                    <div class="plan-card" data-plan="pro">
+                        <h3 data-i18n="settings.plans.pro.title">Pro</h3>
+                        <div class="plan-price">
+                            <span class="price-current">79 €</span>
+                            <span class="price-old">99 €</span>
+                        </div>
+                        <p data-i18n="settings.plans.pro.description">Plan professionnel avec fonctionnalités avancées</p>
+                        <ul>
+                            <li data-i18n="settings.plans.pro.features.advanced">Monitoring avancé</li>
+                            <li data-i18n="settings.plans.pro.features.custom">Alertes personnalisées</li>
+                            <li data-i18n="settings.plans.pro.features.realtime">Rapports en temps réel</li>
+                            <li data-i18n="settings.plans.pro.features.api">Accès API</li>
+                        </ul>
+                        <button class="plan-btn" data-i18n="actions.select">Sélectionner</button>
+                    </div>
+                    <div class="plan-card" data-plan="entreprise">
+                        <h3 data-i18n="settings.plans.enterprise.title">Entreprise</h3>
+                        <div class="plan-price">Sur devis</div>
+                        <p data-i18n="settings.plans.enterprise.description">Solution complète pour les grandes organisations</p>
+                        <ul>
+                            <li data-i18n="settings.plans.enterprise.features.unlimited">Monitoring illimité</li>
+                            <li data-i18n="settings.plans.enterprise.features.integration">Intégrations personnalisées</li>
+                            <li data-i18n="settings.plans.enterprise.features.support">Support dédié 24/7</li>
+                            <li data-i18n="settings.plans.enterprise.features.training">Formation équipe</li>
+                            <li data-i18n="settings.plans.enterprise.features.sla">SLA garanti</li>
+                        </ul>
+                        <button class="plan-btn" data-i18n="actions.select">Sélectionner</button>
+                    </div>
+                </div>
                 </div>
             </details>
         </div>

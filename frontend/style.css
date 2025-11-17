@@ -2715,3 +2715,229 @@ select.form-control::after {
     transform: scale(1.0);
     border: 2px dashed #4CAF50;
 }
+
+/* Styles pour les cartes de plans d'abonnement */
+.plans-container {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 15px;
+}
+
+.plan-card {
+    flex: 1;
+    min-width: 280px;
+    min-height: 420px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 5px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.plan-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    border-color: var(--accent-color);
+}
+
+.plan-card h3 {
+    margin: 0 0 10px 0;
+    color: var(--accent-color);
+    font-size: 1.4em;
+    font-weight: 600;
+}
+
+.plan-card p {
+    color: var(--text-secondary);
+    margin: 0 0 15px 0;
+    font-size: 0.95em;
+    line-height: 1.4;
+}
+
+.plan-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 15px 0;
+    text-align: left;
+    flex: 1;
+}
+
+.plan-card li {
+    padding: 5px 0;
+    color: var(--text-primary);
+    font-size: 0.9em;
+    position: relative;
+    padding-left: 20px;
+}
+
+.plan-card li::before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: var(--success-color);
+    font-weight: bold;
+}
+
+.plan-btn {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    width: 100%;
+    margin-top: auto;
+}
+
+.plan-btn:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+}
+
+/* Styles spécifiques pour le mode sombre */
+[data-theme="sombre"] .plan-card {
+    background: var(--bg-secondary);
+    border-color: var(--border-light);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="sombre"] .plan-card:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+    border-color: var(--accent-color);
+}
+
+[data-theme="sombre"] .plan-card h3 {
+    color: var(--text-primary);
+}
+
+[data-theme="sombre"] .plan-card p {
+    color: var(--text-secondary);
+}
+
+[data-theme="sombre"] .plan-card li {
+    color: var(--text-primary);
+}
+
+/* Responsive pour les cartes de plan */
+@media (max-width: 768px) {
+    .plans-container {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .plan-card {
+        min-width: auto;
+    }
+}
+
+/* Styles pour les prix des plans */
+.plan-price {
+    font-size: 1.8em;
+    font-weight: bold;
+    color: var(--accent-color);
+    margin: 10px 0;
+    text-align: center;
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.price-current {
+    color: var(--accent-color);
+    font-weight: bold;
+    display: inline-block;
+}
+
+.price-old {
+    color: var(--text-muted);
+    text-decoration: line-through;
+    font-size: 1.2em;
+    margin-left: 8px;
+    opacity: 0.7;
+    display: inline-block;
+}
+
+/* Styles sombre pour les prix */
+[data-theme="dark"] .plan-price {
+    color: var(--accent-color);
+}
+
+[data-theme="dark"] .price-current {
+    color: var(--accent-color);
+}
+
+[data-theme="dark"] .price-old {
+    color: var(--text-muted);
+}
+
+/* Styles pour la modale de contact Entreprise */
+.enterprise-modal .modal-content {
+    max-width: 600px;
+    text-align: center;
+}
+
+.enterprise-contact h2 {
+    color: var(--accent-color);
+    margin-bottom: 15px;
+    font-size: 1.5em;
+}
+
+.contact-message p {
+    margin-bottom: 20px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    white-space: pre-line;
+    text-align: left;
+    background: var(--bg-secondary);
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.contact-message p a {
+    color: var(--text-secondary) !important;
+    text-decoration: underline;
+}
+
+.contact-message p a:hover {
+    color: var(--accent-color) !important;
+}
+
+.modal-actions {
+    margin-top: 20px;
+}
+
+.modal-actions .btn-secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.modal-actions .btn-secondary:hover {
+    background: var(--border-color);
+}
+
+/* Styles sombre pour la modale entreprise */
+[data-theme="dark"] .contact-message p {
+    background: var(--bg-tertiary);
+    border-color: var(--border-light);
+}
+
+[data-theme="dark"] .contact-message p a {
+    color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .contact-message p a:hover {
+    color: var(--accent-color) !important;
+}
