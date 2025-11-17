@@ -12,7 +12,7 @@ let config = null;
 async function loadConfig() {
     try {
         // Essayer d'abord l'API du backend
-        const response = await fetch('http://localhost:8000/config');
+        const response = await fetch('http://localhost:8000/api/iaq/config');
         if (response.ok) {
             config = await response.json();
             console.log('Configuration chargée depuis le backend');
@@ -47,7 +47,8 @@ async function loadConfig() {
 async function saveConfig(updates = null) {
     try {
         const dataToSend = updates || config;
-        const response = await fetch('http://localhost:8000/api/saveConfig', {
+        const response = await fetch('http://localhost:8000/api/iaq/config', {
+            method: 'PUT',
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(dataToSend)

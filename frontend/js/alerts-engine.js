@@ -1,7 +1,7 @@
 /* Alerts Engine: evaluates IAQ data against thresholds and toggles alert-points visibility/severity */
 (function (window) {
     const REFRESH_MS = 5000; // polling frequency
-    const API_URL_DATA = "http://localhost:8000/iaq/data";
+    const API_URL_DATA = "http://localhost:8000/api/iaq/measurements";
     // Centralise all thresholds here to avoid magic numbers
     const THRESHOLDS = {
         CO2: { WARNING: 800, DANGER: 1200 },
