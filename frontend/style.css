@@ -49,8 +49,8 @@ Fichier CSS pour le dashboard IAQverse
     --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.4);
     --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.5);
-    --accent-color: #4a90e2;
-    --accent-hover: #5ba0f2;
+    --accent-color: #2c3e50;
+    --accent-hover: #3c526a;
     --success-color: #2ecc71;
     --error-color: #e74c3c;
     --info-bg: #2d3239;
@@ -1673,32 +1673,157 @@ a:hover img {
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 20px;
-    border-radius: 8px;
+    border-radius: 12px;
     overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    background: var(--card-bg);
 }
 
 .actions-table th,
 .actions-table td {
-    padding: 10px;
+    padding: 12px 16px;
     text-align: center;
     border-bottom: 1px solid var(--border-color);
+    border-right: none;
     cursor: pointer;
     color: var(--text-primary);
+    transition: all 0.2s ease;
+}
+
+.actions-table th:first-child,
+.actions-table td:first-child {
+    border-left: none;
+}
+
+.actions-table th {
+    background: var(--accent-color);
+    color: white;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.85em;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 2px solid var(--accent-hover);
+    border-right: 4px solid #1a252f;
+}
+
+.actions-table th:last-child {
+    border-right: none;
+}
+
+.actions-table tbody tr:nth-child(even) {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.actions-table tbody tr:nth-child(odd) {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.actions-table tbody tr:hover {
+    background-color: var(--hover-bg);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.actions-table tbody tr:hover td {
+    border-bottom-color: var(--primary-color);
+}
+
+/* États spéciaux pour les cellules */
+.actions-table td:first-child {
+    font-weight: 600;
+}
+
+.actions-table td:nth-child(2) {
+    font-weight: 500;
+    text-align: left;
+    max-width: 150px;
+    word-wrap: break-word;
+}
+
+.actions-table td:nth-child(3) {
+    font-size: 0.9em;
+    text-align: left;
+    max-width: 200px;
+    word-wrap: break-word;
+}
+
+/* Animation pour les nouvelles lignes */
+@keyframes fadeInRow {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.actions-table tbody tr {
+    animation: fadeInRow 0.3s ease-out;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .actions-table {
+        font-size: 0.8em;
+    }
+
+    .actions-table th,
+    .actions-table td {
+        padding: 8px 12px;
+    }
+
+    .actions-table td:nth-child(2),
+    .actions-table td:nth-child(3) {
+        max-width: 120px;
+    }
+}
+
+/* Thème sombre spécifique pour le tableau */
+[data-theme="sombre"] .actions-table {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="sombre"] .actions-table tbody tr:nth-child(even) {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="sombre"] .actions-table tbody tr:nth-child(odd) {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+[data-theme="sombre"] .actions-table tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="sombre"] .actions-table th {
+    background: var(--accent-color);
+    border-bottom-color: var(--accent-hover);
 }
 
 .alert-red td {
-    background-color: #f8d7da;
-    color: #c0392b;
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    color: #dc2626;
+    font-weight: 500;
+    border-left: 4px solid #dc2626;
 }
 
 .alert-yellow td {
-    background-color: #fff3cd; /* warning */
-    color: #826203;
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    color: #d97706;
+    font-weight: 500;
+    border-left: 4px solid #d97706;
 }
 
 .alert-green td {
-    background-color: #d4edda;
-    color: #27ae60;
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+    color: #059669;
+    font-weight: 500;
+    border-left: 4px solid #059669;
 }
 
 .details-panel ul {
