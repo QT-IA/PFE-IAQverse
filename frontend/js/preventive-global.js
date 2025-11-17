@@ -238,8 +238,14 @@ window.toggleAction = toggleAction;
 document.addEventListener('DOMContentLoaded', () => {
     try {
         fetchAndDisplayGlobalPreventiveActions();
-        // Rafraîchir toutes les minutes
-        setInterval(fetchAndDisplayGlobalPreventiveActions, 60000);
+        // Rafraîchir toutes les minutes, synchronisé
+        const now = new Date();
+        const secondsUntilNextMinute = 60 - now.getSeconds();
+        const initialDelay = secondsUntilNextMinute * 1000;
+        setTimeout(() => {
+            fetchAndDisplayGlobalPreventiveActions();
+            setInterval(fetchAndDisplayGlobalPreventiveActions, 60000);
+        }, initialDelay);
     } catch (e) {
         console.error('[preventive-global] Error in DOMContentLoaded:', e);
     }
