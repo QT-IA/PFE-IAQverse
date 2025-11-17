@@ -805,6 +805,90 @@ a:hover img {
     }
 }
 
+/* Responsive score panel for mobile */
+@media (max-width: 768px) {
+    .score-panel {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 10px;
+        min-height: auto;
+        gap: 10px;
+    }
+
+    .score-panel .score-legend {
+        position: static;
+        transform: none;
+        order: 1;
+        flex-direction: row;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 5px;
+    }
+
+    .score-panel .legend-item {
+        font-size: 9px;
+        gap: 3px;
+    }
+
+    .score-panel .legend-badge {
+        width: 16px;
+        height: 16px;
+        font-size: 10px;
+    }
+
+    .score-panel .score-center {
+        order: 2;
+        margin: 5px 0;
+    }
+
+    .score-value {
+        font-size: 36px;
+    }
+
+    .score-max {
+        font-size: 20px;
+    }
+
+    .score-label {
+        font-size: 12px;
+    }
+
+    .score-right {
+        position: static;
+        transform: none;
+        order: 3;
+        justify-content: center;
+        min-width: auto;
+        gap: 8px;
+    }
+
+    .score-trend {
+        width: 36px;
+        height: 24px;
+        font-size: 12px;
+    }
+
+    .score-note {
+        font-size: 12px;
+    }
+
+    .score-predicted {
+        position: static;
+        transform: none;
+        order: 4;
+        align-self: center;
+        padding: 6px 12px;
+    }
+
+    .predicted-value {
+        font-size: 20px;
+    }
+
+    .predicted-label {
+        font-size: 10px;
+    }
+}
+
 .nav-bar {
     position: fixed;
     bottom: 12px;
