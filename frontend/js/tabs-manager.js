@@ -228,7 +228,7 @@ let monitoringInterval = null;
 
 async function fetchRoomScore(enseigneNom, roomNom) {
     try {
-        const url = `http://localhost:8000/iaq/data?enseigne=${encodeURIComponent(enseigneNom)}&salle=${encodeURIComponent(roomNom)}&hours=1`;
+        const url = `http://localhost:8000/api/iaq/measurements?enseigne=${encodeURIComponent(enseigneNom)}&salle=${encodeURIComponent(roomNom)}&hours=1`;
         console.log(`[tabs-manager] Fetching score for ${enseigneNom}:${roomNom} from ${url}`);
         
         const response = await fetch(url);

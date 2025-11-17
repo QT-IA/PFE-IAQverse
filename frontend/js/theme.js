@@ -18,7 +18,7 @@ function initTheme() {
         document.documentElement.setAttribute('data-theme', savedTheme);
         return;
     }
-    fetch('http://localhost:8000/config')
+    fetch('http://localhost:8000/api/iaq/config')
         .then(response => response.json())
         .then(config => {
             const mode = config?.affichage?.mode || 'clair';
@@ -44,8 +44,8 @@ function toggleTheme() {
 // Mettre à jour le thème dans la configuration serveur
 async function updateThemeInConfig(theme) {
     try {
-        const response = await fetch('http://localhost:8000/api/saveConfig', {
-            method: 'POST',
+        const response = await fetch('http://localhost:8000/api/iaq/config', {
+            method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ affichage: { mode: theme === 'sombre' ? 'Sombre' : 'Clair' } })
         });

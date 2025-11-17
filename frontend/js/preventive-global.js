@@ -64,19 +64,22 @@ async function fetchAndDisplayGlobalPreventiveActions() {
                 });
                 
                 try {
-                    // Fetch actions
-                    const actionsResponse = await fetch(`http://localhost:8000/api/predict/preventive-actions?${actionsParams}`);
+                    // Récupérer les actions préventives depuis l'API
+                    const actionsParams = new URLSearchParams({
+                        enseigne: enseigne.nom || 'Unknown',
+                        salle: salle.nom || 'Unknown'
+                    });
+                    
+                    const actionsResponse = await fetch(`${API_ENDPOINTS.preventiveActions}?${actionsParams}`);
                     const actionsData = await actionsResponse.json();
                     
-                    // Fetch score (même format que dans charts.js)
-                    const scoreData = await getPredictedScore(enseigne.nom, salle.nom);
-                    
+                    // Les actions préventives incluent maintenant le score prédit
                     if (!actionsData.error && actionsData.actions && actionsData.actions.length > 0) {
                         allRoomActions.push({
                             enseigne: enseigne.nom,
                             salle: salle.nom,
                             actions: actionsData.actions,
-                            score: scoreData ? scoreData.predicted_score : null
+                            score: actionsData.predicted_score || null
                         });
                     }
                 } catch (error) {

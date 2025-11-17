@@ -187,18 +187,22 @@ async function fetchAndDisplayPreventiveScore(params) {
     if (!scoreElement || !trendElement || !containerElement) return;
     
     try {
-        const response = await fetch(`http://localhost:8000/api/predict/score?${params}`);
+        // Récupérer depuis /api/iaq/actions/preventive
+        const response = await fetch(`${API_ENDPOINTS.preventiveActions}?${params}`);
         const data = await response.json();
         
-        if (data.predicted_score !== undefined) {
-            const predictedScore = Math.round(data.predicted_score);
-            scoreElement.textContent = predictedScore;
+        // Le score prédit est inclus dans les actions préventives
+        const predictedScore = data.predicted_score;
+        
+        if (predictedScore !== undefined) {
+            const roundedScore = Math.round(predictedScore);
+            scoreElement.textContent = roundedScore;
             
             // Appliquer la classe de couleur selon le score
             containerElement.classList.remove('predicted-excellent', 'predicted-warning', 'predicted-danger');
-            if (predictedScore >= 70) {
+            if (roundedScore >= 70) {
                 containerElement.classList.add('predicted-excellent');
-            } else if (predictedScore >= 40) {
+            } else if (roundedScore >= 40) {
                 containerElement.classList.add('predicted-warning');
             } else {
                 containerElement.classList.add('predicted-danger');
@@ -207,7 +211,7 @@ async function fetchAndDisplayPreventiveScore(params) {
             // Calculer et afficher la tendance
             if (window.scoreHistory && window.scoreHistory.length > 0) {
                 const lastScore = window.scoreHistory[window.scoreHistory.length - 1];
-                const diff = predictedScore - lastScore;
+                const diff = roundedScore - lastScore;
                 
                 if (diff > 2) {
                     trendElement.textContent = '↗';
@@ -226,7 +230,7 @@ async function fetchAndDisplayPreventiveScore(params) {
             
             // Sauvegarder dans sessionStorage
             sessionStorage.setItem('preventiveScore', JSON.stringify({ 
-                predicted_score: predictedScore,
+                predicted_score: roundedScore,
                 timestamp: Date.now()
             }));
         }
@@ -289,19 +293,19 @@ async function fetchAndDisplayPreventiveActions() {
         
         const params = new URLSearchParams({
             enseigne: ens.nom || 'Maison',
-            salle: salle.nom || '',
-            capteur_id: capteur_id
+            salle: salle.nom || ''
         });
         
         console.log('[preventive] Fetching with params:', params.toString());
         
-        const response = await fetch(`http://localhost:8000/api/predict/preventive-actions?${params}`);
+        // Récupérer depuis /api/iaq/actions/preventive
+        const response = await fetch(`${API_ENDPOINTS.preventiveActions}?${params}`);
         const data = await response.json();
         
         // Sauvegarder dans sessionStorage
         sessionStorage.setItem('preventiveActions', JSON.stringify(data));
         
-        // Récupérer aussi le score prédit
+        // Le score est inclus dans la réponse
         await fetchAndDisplayPreventiveScore(params);
         
         displayPreventiveActions(data);

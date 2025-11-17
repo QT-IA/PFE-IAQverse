@@ -50,7 +50,7 @@ COLONNES_CIBLES = ['co2', 'pm25', 'tvoc', 'humidity']
 API_BASE_URL = "http://localhost:8000"
 
 # Endpoint pour récupérer la configuration des capteurs actifs
-API_SENSORS_CONFIG_URL = f"{API_BASE_URL}/api/sensors-config"
+API_SENSORS_CONFIG_URL = f"{API_BASE_URL}/api/iaq/sensors"
 
 # Intervalle de réentraînement (en secondes)
 INTERVALLE_REENTRAINEMENT = 3600  # 1 heure

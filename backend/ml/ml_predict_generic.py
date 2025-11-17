@@ -153,7 +153,7 @@ class RealtimeGenericPredictor:
             DataFrame avec les données récentes
         """
         try:
-            url = f"{self.api_base_url}/api/iaq-database"
+            url = f"{self.api_base_url}/api/iaq/measurements/raw"
             params = {}
             if enseigne:
                 params['enseigne'] = enseigne
@@ -421,7 +421,7 @@ class RealtimeGenericPredictor:
             return True
         
         try:
-            url = f"{self.api_base_url}/api/preventive-actions"
+            url = f"{self.api_base_url}/api/iaq/actions/preventive"
             
             payload = {
                 "timestamp": prediction_result['timestamp'],

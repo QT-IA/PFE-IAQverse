@@ -71,7 +71,7 @@ function getComfortShapes(maxTemp, maxHum) {
 // Configuration
 const REFRESH_MS = 3000; // 3s
 /* Fichier des graphiques IAQ - mise à jour dynamique sans rechargement de la page */
-const API_URL_DATA = "http://localhost:8000/iaq/data";
+const API_URL_DATA = "http://localhost:8000/api/iaq/measurements";
 const chartIds = ["co2-chart", "pm25-chart", "comfort-chart", "tvoc-chart"];
 // Evite le conflit avec la variable globale "config" utilisée par index.html
 const plotlyConfig = { responsive: true, displayModeBar: false };
