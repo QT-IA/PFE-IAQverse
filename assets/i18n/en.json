@@ -129,7 +129,7 @@
     },
     "enterprise_modal": {
       "title": "Contact for Enterprise Plan",
-      "message": "For the Enterprise plan, please contact us directly:\n\n📧 Email: <a href=\"mailto:enterprise@iaqverse.com\" style=\"color: inherit; text-decoration: underline;\">enterprise@iaqverse.com</a>\n📞 Phone: +1 (555) 123-4567\n🌐 Website: <a href=\"https://www.iaqverse.com/enterprise\" target=\"_blank\" style=\"color: inherit; text-decoration: underline;\">www.iaqverse.com/enterprise</a>\n\nOur team will help you configure the perfect solution for your organization.",
+      "message": "For the Enterprise plan, please contact us directly:\n\nEmail: {email}\nPhone: {phone}\nAddress: {address}\n\nOur team will help you configure the perfect solution for your organization.",
       "close": "Close"
     }
   },
@@ -143,7 +143,25 @@
       "title": "Preventive Actions",
       "subtitle": "Based on predictions (30 min)",
       "loading": "Analyzing predictions...",
-      "noActions": "No preventive action needed. Air quality will remain good."
+      "noActions": "No preventive action needed. Air quality will remain good.",
+      "no_actions": "No preventive actions needed. Air quality will remain good.",
+      "no_actions_global": "No preventive actions needed",
+      "config_unavailable": "Configuration not available",
+      "loading_error": "Error loading predictions",
+      "reasons": {
+        "co2_increase": "CO₂ will increase from {current} to {predicted} ppm",
+        "co2_prevent": "Prevent CO₂ accumulation",
+        "pm25_increase": "Fine particles will increase from {current} to {predicted} µg/m³",
+        "temperature_rise": "Temperature will rise from {current}°C to {predicted}°C",
+        "temperature_drop": "Temperature will drop from {current}°C to {predicted}°C",
+        "humidity_increase": "Humidity will increase from {current}% to {predicted}%"
+      },
+      "priorities": {
+        "high": "Urgent",
+        "medium": "Recommended",
+        "low": "Optional"
+      },
+      "arrow": "→"
     },
     "table": {
       "state": "State",
@@ -177,6 +195,11 @@
       "zero": "No alerts",
       "one": "1 Alert",
       "multiple": "{{count}} Alerts"
+    },
+    "actionCount": {
+      "zero": "No actions",
+      "one": "1 action",
+      "multiple": "{{count}} actions"
     },
   "sample": {
       "window": {

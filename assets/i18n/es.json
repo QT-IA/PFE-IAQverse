@@ -132,7 +132,7 @@
         },
         "enterprise_modal": {
             "title": "Contacto para Plan Empresa",
-            "message": "Para el plan Empresa, por favor contáctenos directamente:\n\n📧 Email: <a href=\"mailto:enterprise@iaqverse.com\" style=\"color: inherit; text-decoration: underline;\">enterprise@iaqverse.com</a>\n📞 Teléfono: +1 (555) 123-4567\n🌐 Sitio web: <a href=\"https://www.iaqverse.com/enterprise\" target=\"_blank\" style=\"color: inherit; text-decoration: underline;\">www.iaqverse.com/enterprise</a>\n\nNuestro equipo le ayudará a configurar la solución perfecta para su organización.",
+            "message": "Para el plan Empresa, por favor contáctenos directamente:\n\nEmail: {email}\nTeléfono: {phone}\nDirección: {address}\n\nNuestro equipo le ayudará a configurar la solución perfecta para su organización.",
             "close": "Cerrar"
         }
     },
@@ -147,7 +147,25 @@
             "title": "Acciones Preventivas",
             "subtitle": "Basadas en predicciones (30 min)",
             "loading": "Analizando predicciones...",
-            "noActions": "No se necesita ninguna acción preventiva. La calidad del aire seguirá siendo buena."
+            "noActions": "No se necesita ninguna acción preventiva. La calidad del aire seguirá siendo buena.",
+            "no_actions": "No se necesita ninguna acción preventiva. La calidad del aire seguirá siendo buena.",
+            "no_actions_global": "No se necesita ninguna acción preventiva",
+            "config_unavailable": "Configuración no disponible",
+            "loading_error": "Error al cargar las predicciones",
+            "reasons": {
+                "co2_increase": "El CO₂ aumentará de {current} a {predicted} ppm",
+                "co2_prevent": "Prevenir la acumulación de CO₂",
+                "pm25_increase": "Las partículas finas aumentarán de {current} a {predicted} µg/m³",
+                "temperature_rise": "La temperatura subirá de {current}°C a {predicted}°C",
+                "temperature_drop": "La temperatura bajará de {current}°C a {predicted}°C",
+                "humidity_increase": "La humedad aumentará del {current}% al {predicted}%"
+            },
+            "priorities": {
+                "high": "Urgente",
+                "medium": "Recomendado",
+                "low": "Opcional"
+            },
+            "arrow": "→"
         },
         "table": {
             "state": "Estado",
@@ -181,6 +199,11 @@
             "zero": "Sin alertas",
             "one": "1 Alerta",
             "multiple": "{{count}} Alertas"
+        },
+        "actionCount": {
+            "zero": "Sin acciones",
+            "one": "1 acción",
+            "multiple": "{{count}} acciones"
         },
     "sample": {
             "window": {

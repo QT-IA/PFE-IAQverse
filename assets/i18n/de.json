@@ -132,7 +132,7 @@
         },
         "enterprise_modal": {
             "title": "Kontakt für Enterprise-Plan",
-            "message": "Für den Enterprise-Plan kontaktieren Sie uns bitte direkt:\n\n📧 E-Mail: <a href=\"mailto:enterprise@iaqverse.com\" style=\"color: inherit; text-decoration: underline;\">enterprise@iaqverse.com</a>\n📞 Telefon: +1 (555) 123-4567\n🌐 Website: <a href=\"https://www.iaqverse.com/enterprise\" target=\"_blank\" style=\"color: inherit; text-decoration: underline;\">www.iaqverse.com/enterprise</a>\n\nUnser Team hilft Ihnen bei der Einrichtung der perfekten Lösung für Ihre Organisation.",
+            "message": "Für den Enterprise-Plan kontaktieren Sie uns bitte direkt:\n\nE-Mail: {email}\nTelefon: {phone}\nAdresse: {address}\n\nUnser Team hilft Ihnen bei der Einrichtung der perfekten Lösung für Ihre Organisation.",
             "close": "Schließen"
         }
     },
@@ -147,7 +147,25 @@
             "title": "Präventive Maßnahmen",
             "subtitle": "Basierend auf Vorhersagen (30 Min.)",
             "loading": "Vorhersagen werden analysiert...",
-            "noActions": "Keine präventiven Maßnahmen erforderlich. Die Luftqualität bleibt gut."
+            "noActions": "Keine präventiven Maßnahmen erforderlich. Die Luftqualität bleibt gut.",
+            "no_actions": "Keine präventiven Maßnahmen erforderlich. Die Luftqualität bleibt gut.",
+            "no_actions_global": "Keine präventiven Maßnahmen erforderlich",
+            "config_unavailable": "Konfiguration nicht verfügbar",
+            "loading_error": "Fehler beim Laden der Vorhersagen",
+            "reasons": {
+                "co2_increase": "CO₂ wird von {current} auf {predicted} ppm ansteigen",
+                "co2_prevent": "CO₂-Ansammlung verhindern",
+                "pm25_increase": "Feinstaub wird von {current} auf {predicted} µg/m³ ansteigen",
+                "temperature_rise": "Temperatur wird von {current}°C auf {predicted}°C ansteigen",
+                "temperature_drop": "Temperatur wird von {current}°C auf {predicted}°C fallen",
+                "humidity_increase": "Luftfeuchtigkeit wird von {current}% auf {predicted}% ansteigen"
+            },
+            "priorities": {
+                "high": "Dringend",
+                "medium": "Empfohlen",
+                "low": "Optional"
+            },
+            "arrow": "→"
         },
         "table": {
             "state": "Zustand",
@@ -182,7 +200,12 @@
             "one": "1 Warnung",
             "multiple": "{{count}} Warnungen"
         },
-    "sample": {
+        "actionCount": {
+            "zero": "Keine Aktionen",
+            "one": "1 Aktion",
+            "multiple": "{{count}} Aktionen"
+        },
+        "sample": {
             "window": {
                 "subject": "Fenster",
                 "action": "Schließen"

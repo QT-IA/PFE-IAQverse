@@ -1,6 +1,25 @@
 /**
- * Gestion du panneau global des actions préventives
+ * Construit le texte de raison traduit pour une action préventive
  */
+function buildReasonText(action, t) {
+    if (action.reason_key) {
+        let reasonText = t(`digitalTwin.preventive.reasons.${action.reason_key}`) || action.reason_key;
+        
+        // Remplacer les paramètres dans le texte
+        if (action.reason_params) {
+            Object.keys(action.reason_params).forEach(key => {
+                const placeholder = `{${key}}`;
+                const value = action.reason_params[key];
+                reasonText = reasonText.replace(new RegExp(placeholder, 'g'), value);
+            });
+        }
+        
+        return reasonText;
+    }
+    
+    // Fallback vers l'ancien format si reason_key n'existe pas
+    return action.reason || '';
+}
 
 /**
  * Récupère et affiche toutes les actions préventives pour toutes les pièces
@@ -9,6 +28,8 @@ async function fetchAndDisplayGlobalPreventiveActions() {
     const container = document.getElementById('preventive-global-container');
     if (!container) return;
     
+    const t = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t : (()=>undefined);
+    
     try {
         // Attendre que la config soit chargée
         await loadConfig();
@@ -16,7 +37,7 @@ async function fetchAndDisplayGlobalPreventiveActions() {
         
         if (!cfg || !cfg.lieux || !cfg.lieux.enseignes) {
             console.error('[preventive-global] Configuration not available:', cfg);
-            container.innerHTML = '<div class="preventive-loading">Configuration non disponible</div>';
+            container.innerHTML = `<div class="preventive-loading">${t('digitalTwin.preventive.config_unavailable') || 'Configuration non disponible'}</div>`;
             return;
         }
         
@@ -80,10 +101,10 @@ async function fetchAndDisplayGlobalPreventiveActions() {
                 const cachedData = JSON.parse(cached);
                 displayGlobalPreventiveActions(cachedData);
             } catch (e) {
-                container.innerHTML = '<div class="preventive-error">Erreur lors du chargement des prédictions</div>';
+                container.innerHTML = `<div class="preventive-error">${t('digitalTwin.preventive.loading_error') || 'Erreur lors du chargement des prédictions'}</div>`;
             }
         } else {
-            container.innerHTML = '<div class="preventive-error">Erreur lors du chargement des prédictions</div>';
+            container.innerHTML = `<div class="preventive-error">${t('digitalTwin.preventive.loading_error') || 'Erreur lors du chargement des prédictions'}</div>`;
         }
     }
 }
@@ -98,7 +119,7 @@ function displayGlobalPreventiveActions(allRoomActions) {
     if (!allRoomActions || allRoomActions.length === 0) {
         container.innerHTML = `
             <div class="preventive-all-good">
-                Aucune action préventive nécessaire
+                ${t('digitalTwin.preventive.no_actions_global') || 'Aucune action préventive nécessaire'}
             </div>
         `;
         return;
@@ -138,7 +159,9 @@ function displayGlobalPreventiveActions(allRoomActions) {
                     </div>
                     <div class="preventive-room-location">${roomData.enseigne}</div>
                     <div class="preventive-room-count">
-                        ${actionsCount} action${actionsCount > 1 ? 's' : ''}
+                        ${actionsCount === 0 ? (t && t('digitalTwin.actionCount.zero')) || 'No actions' : 
+                          actionsCount === 1 ? (t && t('digitalTwin.actionCount.one')) || '1 action' : 
+                          ((t && t('digitalTwin.actionCount.multiple')) || '{{count}} actions').replace('{{count}}', actionsCount)}
                     </div>
                 </div>
                 <div class="preventive-room-actions">
@@ -151,7 +174,7 @@ function displayGlobalPreventiveActions(allRoomActions) {
             const actionKey = actionI18nMap[action.action] || action.action;
             const actionVerb = (t && t(`digitalTwin.actionVerbs.${actionKey}`)) || action.action;
             
-            const priorityLabel = {
+            const priorityLabel = t(`digitalTwin.preventive.priorities.${action.priority}`) || {
                 'high': 'Urgent',
                 'medium': 'Recommandé',
                 'low': 'Optionnel'
@@ -170,14 +193,14 @@ function displayGlobalPreventiveActions(allRoomActions) {
                     </div>
                     <div class="preventive-action-details">
                         <div class="preventive-action-verb">${actionVerb}</div>
-                        <div class="preventive-action-reason">${action.reason}</div>
+                        <div class="preventive-action-reason">${buildReasonText(action, t)}</div>
                         <div class="preventive-action-values">
                             <div>
-                                <span class="preventive-value-label">${action.parameter}:</span>
+                                <span class="preventive-value-label">${action.parameter} :</span>
                             </div>
                             <div class="preventive-value-change">
                                 <span>${action.current_value} ${action.unit}</span>
-                                <span class="preventive-value-arrow">→</span>
+                                <span class="preventive-value-arrow">${t('digitalTwin.preventive.arrow') || '→'}</span>
                                 <span>${action.predicted_value} ${action.unit}</span>
                             </div>
                         </div>

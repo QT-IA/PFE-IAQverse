@@ -129,7 +129,7 @@
     },
     "enterprise_modal": {
       "title": "Contact pour Plan Entreprise",
-      "message": "Pour le plan Entreprise, veuillez nous contacter directement :\n\n📧 Email : <a href=\"mailto:enterprise@iaqverse.com\" style=\"color: inherit; text-decoration: underline;\">enterprise@iaqverse.com</a>\n📞 Téléphone : +1 (555) 123-4567\n🌐 Site web : <a href=\"https://www.iaqverse.com/enterprise\" target=\"_blank\" style=\"color: inherit; text-decoration: underline;\">www.iaqverse.com/enterprise</a>\n\nNotre équipe vous aidera à configurer la solution parfaite pour votre organisation.",
+      "message": "Pour le plan Entreprise, veuillez nous contacter directement :\n\nEmail : {email}\nTéléphone : {phone}\nAdresse : {address}\n\nNotre équipe vous aidera à configurer la solution parfaite pour votre organisation.",
       "close": "Fermer"
     }
   },
@@ -143,7 +143,25 @@
       "title": "Actions Préventives",
       "subtitle": "Basées sur les prédictions (30 min)",
       "loading": "Analyse des prédictions en cours...",
-      "noActions": "Aucune action préventive nécessaire. La qualité de l'air restera bonne."
+      "noActions": "Aucune action préventive nécessaire. La qualité de l'air restera bonne.",
+      "no_actions": "Aucune action préventive nécessaire. La qualité de l'air restera bonne.",
+      "no_actions_global": "Aucune action préventive nécessaire",
+      "config_unavailable": "Configuration non disponible",
+      "loading_error": "Erreur lors du chargement des prédictions",
+      "reasons": {
+        "co2_increase": "Le CO₂ va augmenter de {current} à {predicted} ppm",
+        "co2_prevent": "Prévenir l'accumulation de CO₂",
+        "pm25_increase": "Les particules fines vont augmenter de {current} à {predicted} µg/m³",
+        "temperature_rise": "La température va monter de {current}°C à {predicted}°C",
+        "temperature_drop": "La température va baisser de {current}°C à {predicted}°C",
+        "humidity_increase": "L'humidité va augmenter de {current}% à {predicted}%"
+      },
+      "priorities": {
+        "high": "Urgent",
+        "medium": "Recommandé",
+        "low": "Optionnel"
+      },
+      "arrow": "→"
     },
     "table": {
       "state": "État",
@@ -175,8 +193,13 @@
     },
     "alertCount": {
       "zero": "Aucune alerte",
-      "one": "1 Alerte",
-      "multiple": "{{count}} Alertes"
+      "one": "1 alerte",
+      "multiple": "{{count}} alertes"
+    },
+    "actionCount": {
+      "zero": "Aucune action",
+      "one": "1 action",
+      "multiple": "{{count}} actions"
     },
   "sample": {
       "window": {
