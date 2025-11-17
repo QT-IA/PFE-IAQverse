@@ -454,7 +454,7 @@ async function addEnseigne() {
 
 async function addPiece(enseigneId) {
   openEditModalWith('modals.add_room', `
-    <div class="form-group"><label data-i18n="digitalTwin.sample.window.subject">Nom de la pièce</label><input name="nom" type="text" required></div>
+    <div class="form-group"><label data-i18n="settings.fields.nom">Nom de la pièce</label><input name="nom" type="text" required></div>
     <div class="form-group"><label data-i18n="settings.fields.type">Type</label>
       <select name="type"><option value="salon">Salon</option><option value="cuisine">Cuisine</option><option value="chambre">Chambre</option><option value="bureau">Bureau</option><option value="autre">Autre</option></select>
     </div>
@@ -1035,14 +1035,15 @@ function showEnterpriseContactModal() {
   
   // Obtenir les traductions
   const t = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t : (() => undefined);
-  const title = t && t('settings.subscription.enterprise_modal.title') || 'Contact pour Plan Entreprise';
-  const closeBtn = t && t('settings.subscription.enterprise_modal.close') || 'Fermer';
+  const title = t && t('settings.enterprise_modal.title') || 'Contact for Enterprise Plan';
+  const closeBtn = t && t('settings.enterprise_modal.close') || 'Close';
   
-  const message = `Pour le plan Entreprise, veuillez nous contacter directement :<br><br>
-Email : <a href="mailto:${email}" style="color: inherit; text-decoration: underline;">${email}</a><br>
-Téléphone : ${telephone}<br>
-Adresse : ${adresse}<br><br>
-Notre équipe vous aidera à configurer la solution parfaite pour votre organisation.`;
+  // Message avec informations dynamiques
+  const baseMessage = t && t('settings.enterprise_modal.message') || 'For the Enterprise plan, please contact us directly:\n\nEmail: {email}\nPhone: {phone}\nAddress: {address}\n\nOur team will help you configure the perfect solution for your organization.';
+  const message = baseMessage
+    .replace('{email}', `<a href="mailto:${email}" style="color: inherit; text-decoration: underline;">${email}</a>`)
+    .replace('{phone}', telephone)
+    .replace('{address}', adresse);
   
   modal.innerHTML = `
     <div class="modal-content enterprise-contact">

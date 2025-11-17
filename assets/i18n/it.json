@@ -78,8 +78,8 @@
             "contact": "Contattaci"
         },
         "fields": {
-            "nom": "Cognome",
-            "prenom": "Nome",
+            "nom": "Nome",
+            "prenom": "Cognome",
             "date_naissance": "Data di nascita",
             "email": "Email",
             "telephone": "Telefono",
@@ -132,7 +132,7 @@
         },
         "enterprise_modal": {
             "title": "Contatto per Piano Enterprise",
-            "message": "Per il piano Enterprise, contattateci direttamente:\n\n📧 Email: <a href=\"mailto:enterprise@iaqverse.com\" style=\"color: inherit; text-decoration: underline;\">enterprise@iaqverse.com</a>\n📞 Telefono: +1 (555) 123-4567\n🌐 Sito web: <a href=\"https://www.iaqverse.com/enterprise\" target=\"_blank\" style=\"color: inherit; text-decoration: underline;\">www.iaqverse.com/enterprise</a>\n\nIl nostro team vi aiuterà a configurare la soluzione perfetta per la vostra organizzazione.",
+            "message": "Per il piano Enterprise, contattateci direttamente:\n\nEmail: {email}\nTelefono: {phone}\nIndirizzo: {address}\n\nIl nostro team vi aiuterà a configurare la soluzione perfetta per la vostra organizzazione.",
             "close": "Chiudi"
         }
     },
@@ -147,7 +147,24 @@
             "title": "Azioni Preventive",
             "subtitle": "Basate su previsioni (30 min)",
             "loading": "Analisi delle previsioni in corso...",
-            "noActions": "Nessuna azione preventiva necessaria. La qualità dell'aria rimarrà buona."
+            "noActions": "Nessuna azione preventiva necessaria. La qualità dell'aria rimarrà buona.",
+            "no_actions_global": "Nessuna azione preventiva necessaria",
+            "config_unavailable": "Configurazione non disponibile",
+            "loading_error": "Errore nel caricamento delle previsioni",
+            "reasons": {
+                "co2_increase": "Il CO₂ aumenterà da {current} a {predicted} ppm",
+                "co2_prevent": "Prevenire l'accumulo di CO₂",
+                "pm25_increase": "Le particelle fini aumenteranno da {current} a {predicted} µg/m³",
+                "temperature_rise": "La temperatura salirà da {current}°C a {predicted}°C",
+                "temperature_drop": "La temperatura scenderà da {current}°C a {predicted}°C",
+                "humidity_increase": "L'umidità aumenterà dal {current}% al {predicted}%"
+            },
+            "priorities": {
+                "high": "Urgente",
+                "medium": "Raccomandato",
+                "low": "Opzionale"
+            },
+            "arrow": "→"
         },
         "table": {
             "state": "Stato",
@@ -181,6 +198,11 @@
             "zero": "Nessun avviso",
             "one": "1 Avviso",
             "multiple": "{{count}} Avvisi"
+        },
+        "actionCount": {
+            "zero": "Nessuna azione",
+            "one": "1 azione",
+            "multiple": "{{count}} azioni"
         },
     "sample": {
             "window": {

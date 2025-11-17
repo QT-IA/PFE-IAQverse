@@ -22,7 +22,7 @@
     },
     "affichage": {
         "mode": "Sombre",
-        "langue": "en",
+        "langue": "fr",
         "localisation": "Europe, Paris"
     },
     "notifications": {
@@ -130,6 +130,12 @@
                 "adresse": "123 Rue des Commerces",
                 "pieces": [
                     {
+                        "id": "piece_1763414279663",
+                        "nom": "Salon",
+                        "type": "salon",
+                        "glbModel": "/assets/rooms/ens_boutique1_piece_1763414279663.glb"
+                    },
+                    {
                         "id": "piece_1762418052257",
                         "nom": "Chambre",
                         "type": "chambre",
@@ -176,6 +182,6 @@
     "adresse": "123 rue d'Avrons",
     "type": "salon",
     "abonnement": {
-        "plan_actuel": "basic"
+        "plan_actuel": "pro"
     }
 }

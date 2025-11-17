@@ -334,7 +334,7 @@ function displayPreventiveActions(data) {
         container.innerHTML = `
             <div class="preventive-empty">
                 <span class="preventive-icon"></span>
-                <p>Aucune action préventive nécessaire. La qualité de l'air restera bonne.</p>
+                <p>${t('digitalTwin.preventive.no_actions') || 'Aucune action préventive nécessaire. La qualité de l\'air restera bonne.'}</p>
             </div>
         `;
         return;
@@ -400,7 +400,7 @@ function displayPreventiveActions(data) {
                     </div>
                     <div class="value-row">
                         <span class="value-current">${action.current_value} ${action.unit}</span>
-                        <span class="value-arrow">→</span>
+                        <span class="value-arrow">${t('digitalTwin.preventive.arrow') || '→'}</span>
                         <span class="value-predicted">${action.predicted_value} ${action.unit}</span>
                     </div>
                 </div>
