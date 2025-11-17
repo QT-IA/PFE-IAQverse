@@ -844,9 +844,31 @@ function updateDataPathsDisplay() {
         }
       }
       el.textContent = display;
+    } else if (path === 'abonnement.plan_actuel') {
+      // Capitaliser la première lettre du nom du plan
+      const planName = value ? String(value).charAt(0).toUpperCase() + String(value).slice(1) : '—';
+      el.textContent = planName;
+      el.style.cursor = 'pointer';
+      el.onclick = (e) => openEditModal(e.target);
+    } else if (path === 'contact.email' || path === 'vous.email' || path === 'assurance.email' || path === 'syndicat.email') {
+      // Rendre l'email cliquable pour ouvrir le client mail
+      if (value) {
+        el.innerHTML = `<a href="mailto:${value}" style="color: inherit; text-decoration: underline;">${value}</a>`;
+        el.removeAttribute('data-readonly'); // Permettre les clics sur le lien
+        // Ne pas ajouter onclick pour éviter le conflit avec le lien
+        return;
+      } else {
+        el.textContent = '—';
+      }
+      el.style.cursor = 'pointer';
+      el.onclick = (e) => openEditModal(e.target);
     } else el.textContent = value || '—';
-    el.style.cursor = 'pointer';
-    el.onclick = (e) => openEditModal(e.target);
+    
+    // Ajouter onclick seulement pour les éléments éditables (pas pour contact.email)
+    if (path !== 'contact.email') {
+      el.style.cursor = 'pointer';
+      el.onclick = (e) => openEditModal(e.target);
+    }
   });
 }
 
@@ -924,3 +946,117 @@ window.editEnseigne = editEnseigne;
 window.removeEnseigne = removeEnseigne;
 window.removePiece = removePiece;
 window.editSection = editSection;
+
+// Gestion de la sélection de plan d'abonnement
+document.addEventListener('DOMContentLoaded', function() {
+  // Attacher les événements aux boutons de plan
+  document.querySelectorAll('.plan-btn').forEach(btn => {
+    btn.addEventListener('click', async function() {
+      const planType = this.closest('.plan-card').dataset.plan;
+      await selectPlan(planType);
+    });
+  });
+
+  // Initialiser l'état des boutons selon le plan actuel
+  if (settingsConfig && settingsConfig.abonnement && settingsConfig.abonnement.plan_actuel) {
+    updatePlanButtons(settingsConfig.abonnement.plan_actuel);
+  }
+});
+
+async function selectPlan(planType) {
+  // Cas spécial pour le plan Entreprise
+  if (planType === 'entreprise') {
+    showEnterpriseContactModal();
+    return;
+  }
+
+  try {
+    // Mettre à jour la configuration locale
+    if (!settingsConfig.abonnement) {
+      settingsConfig.abonnement = {};
+    }
+    settingsConfig.abonnement.plan_actuel = planType;
+
+    // Sauvegarder via l'API
+    const response = await fetch('http://localhost:8000/api/saveConfig', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(settingsConfig)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    // Mettre à jour l'affichage
+    const planDisplay = document.querySelector('[data-path="abonnement.plan_actuel"]');
+    if (planDisplay) {
+      // Capitaliser la première lettre du plan
+      const planName = planType.charAt(0).toUpperCase() + planType.slice(1);
+      planDisplay.textContent = planName;
+    }
+
+    // Mettre à jour l'état visuel des boutons
+    updatePlanButtons(planType);
+
+    showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.plan_saved') || 'Plan d\'abonnement mis à jour' : 'Plan d\'abonnement mis à jour');
+
+  } catch (err) {
+    console.error('Erreur lors de la sauvegarde du plan:', err);
+    showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.save_error') || 'Erreur lors de la sauvegarde' : 'Erreur lors de la sauvegarde', true);
+  }
+}
+
+function updatePlanButtons(selectedPlan) {
+  document.querySelectorAll('.plan-card').forEach(card => {
+    const btn = card.querySelector('.plan-btn');
+    if (card.dataset.plan === selectedPlan) {
+      btn.textContent = (window.i18n && window.i18n.t) ? window.i18n.t('actions.selected') || 'Sélectionné' : 'Sélectionné';
+      btn.style.background = 'var(--success-color)';
+      card.style.borderColor = 'var(--success-color)';
+    } else {
+      btn.textContent = (window.i18n && window.i18n.t) ? window.i18n.t('actions.select') || 'Sélectionner' : 'Sélectionner';
+      btn.style.background = 'var(--accent-color)';
+      card.style.borderColor = 'var(--border-color)';
+    }
+  });
+}
+
+function showEnterpriseContactModal() {
+  // Créer la modale de contact pour le plan Entreprise
+  const modal = document.createElement('div');
+  modal.className = 'modal enterprise-modal';
+  
+  // Récupérer les informations de contact depuis la configuration
+  const contactInfo = settingsConfig.contact || {};
+  const email = contactInfo.email || 'support@iaqverse.local';
+  const telephone = contactInfo.telephone || '+33 1 23 45 67 89';
+  const adresse = contactInfo.adresse_postale || '1 rue Support, 75000 Paris';
+  
+  // Obtenir les traductions
+  const t = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t : (() => undefined);
+  const title = t && t('settings.subscription.enterprise_modal.title') || 'Contact pour Plan Entreprise';
+  const closeBtn = t && t('settings.subscription.enterprise_modal.close') || 'Fermer';
+  
+  const message = `Pour le plan Entreprise, veuillez nous contacter directement :<br><br>
+Email : <a href="mailto:${email}" style="color: inherit; text-decoration: underline;">${email}</a><br>
+Téléphone : ${telephone}<br>
+Adresse : ${adresse}<br><br>
+Notre équipe vous aidera à configurer la solution parfaite pour votre organisation.`;
+  
+  modal.innerHTML = `
+    <div class="modal-content enterprise-contact">
+      <span class="close" onclick="this.closest('.modal').remove()">&times;</span>
+      <h2>${title}</h2>
+      <div class="contact-message">
+        <p>${message}</p>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="this.closest('.modal').remove()">${closeBtn}</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  modal.style.display = 'block';
+}

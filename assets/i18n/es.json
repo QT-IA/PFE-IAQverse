@@ -51,6 +51,7 @@
             "display": "Pantalla",
             "notifications": "Notificaciones",
             "locations": "Lugares",
+            "subscription": "Suscripción",
             "contact": "Contacto"
         },
         "aboutTitle": "Acerca de esta página",
@@ -65,6 +66,7 @@
             "technologies": "Tecnologías",
             "type": "Tipo",
             "manage_brands": "Gestionar ubicaciones",
+            "subscription": "Su suscripción",
             "contact": "Contacto"
         },
         "infoList": {
@@ -89,7 +91,45 @@
             "push": "Push",
             "alertes": "Alertas",
             "rappels": "Recordatorios",
-            "newsletters": "Boletines"
+            "newsletters": "Boletines",
+            "current_plan": "Plan actual"
+        },
+        "plans": {
+            "basic": {
+                "title": "Básico",
+                "description": "Plan básico con funciones esenciales",
+                "features": {
+                    "monitoring": "Monitoreo básico",
+                    "alerts": "Alertas simples",
+                    "reports": "Informes mensuales"
+                }
+            },
+            "pro": {
+                "title": "Pro",
+                "description": "Plan profesional con funciones avanzadas",
+                "features": {
+                    "advanced": "Monitoreo avanzado",
+                    "custom": "Alertas personalizadas",
+                    "realtime": "Informes en tiempo real",
+                    "api": "Acceso API"
+                }
+            },
+            "enterprise": {
+                "title": "Empresa",
+                "description": "Solución completa para grandes organizaciones",
+                "features": {
+                    "unlimited": "Monitoreo ilimitado",
+                    "integration": "Integraciones personalizadas",
+                    "support": "Soporte dedicado 24/7",
+                    "training": "Capacitación del equipo",
+                    "sla": "SLA garantizado"
+                }
+            }
+        },
+        "enterprise_modal": {
+            "title": "Contacto para Plan Empresa",
+            "message": "Para el plan Empresa, por favor contáctenos directamente:\n\n📧 Email: <a href=\"mailto:enterprise@iaqverse.com\" style=\"color: inherit; text-decoration: underline;\">enterprise@iaqverse.com</a>\n📞 Teléfono: +1 (555) 123-4567\n🌐 Sitio web: <a href=\"https://www.iaqverse.com/enterprise\" target=\"_blank\" style=\"color: inherit; text-decoration: underline;\">www.iaqverse.com/enterprise</a>\n\nNuestro equipo le ayudará a configurar la solución perfecta para su organización.",
+            "close": "Cerrar"
         }
     },
     "digitalTwin": {
@@ -200,7 +240,9 @@
         "yes": "Sí",
         "no": "No",
         "cancel": "Cancelar",
-        "save": "Guardar"
+        "save": "Guardar",
+        "select": "Seleccionar",
+        "selected": "Seleccionado"
     },
     "modals": {
         "add_brand": "Agregar ubicación",
@@ -215,6 +257,7 @@
         "save_error": "Error al guardar",
         "order_saved": "Nuevo orden guardado",
         "rooms_order_saved": "Orden de salas guardado",
+        "plan_saved": "Plan de suscripción actualizado",
         "location_exists": "Ya existe una ubicación con ese nombre",
         "add_success": "Ubicación agregada con éxito",
         "add_error": "Error al agregar la ubicación",
