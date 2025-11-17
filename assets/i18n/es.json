@@ -74,6 +74,7 @@
             "display": "Gestión de pantalla e idioma",
             "notifications": "Su configuración de notificaciones",
             "rooms": "Agregar y eliminar salas",
+            "subscription": "Elija su suscripción",
             "contact": "Contáctenos"
         },
         "fields": {
@@ -101,7 +102,8 @@
                 "features": {
                     "monitoring": "Monitoreo básico",
                     "alerts": "Alertas simples",
-                    "reports": "Informes mensuales"
+                    "reports": "Informes mensuales",
+                    "users": "Número de usuarios: 1"
                 }
             },
             "pro": {
@@ -111,17 +113,19 @@
                     "advanced": "Monitoreo avanzado",
                     "custom": "Alertas personalizadas",
                     "realtime": "Informes en tiempo real",
-                    "api": "Acceso API"
+                    "api": "Acceso API",
+                    "users": "Número de usuarios: 10"
                 }
             },
             "enterprise": {
                 "title": "Empresa",
                 "description": "Solución completa para grandes organizaciones",
                 "features": {
-                    "unlimited": "Monitoreo ilimitado",
+                    "advanced": "Monitoreo avanzado",
                     "integration": "Integraciones personalizadas",
-                    "support": "Soporte dedicado 24/7",
+                    "users": "Número de usuarios: Ilimitado",
                     "training": "Capacitación del equipo",
+                    "support": "Soporte dedicado 24/7",
                     "sla": "SLA garantizado"
                 }
             }
@@ -136,7 +140,7 @@
         "title": "Gemelos Digitales",
         "visualisation": "Visualización",
         "aboutTitle": "Acerca de esta página",
-        "aboutParagraph": "Esta vista Gemelos Digitales le permite visualizar alertas de calidad del aire interior en tiempo real.",
+        "aboutParagraph": "Esta interfaz Digital Twin le permite visualizar las alertas de calidad del aire interior en tiempo real, explorar habitaciones en 3D y revisar las acciones preventivas recomendadas.",
         "actions": "Acciones",
         "details": "Detalles",
         "preventive": {
@@ -151,13 +155,13 @@
             "action": "Acción"
         },
         "tip": {
-            "table": "La tabla de la izquierda muestra las acciones recomendadas.",
-            "visual": "La visualización resalta las zonas afectadas en la habitación.",
-            "details": "Los detalles del centro explican las causas de las alertas."
+            "table": "El panel Acciones Preventivas (arriba) muestra recomendaciones basadas en predicciones a 30 minutos.",
+            "visual": "La visualización 3D (izquierda) muestra habitaciones con puntos de alerta coloreados según la severidad.",
+            "details": "La tabla Acciones (derecha) lista intervenciones recomendadas con su estado y asunto.",
+            "noDetails": "Sin detalles disponibles",
+            "allGood": "Todos los parámetros están dentro de las normas",
+            "recommendedAction": "Acción recomendada"
         },
-              "noDetails": "Sin detalles disponibles",
-      "allGood": "Todos los parámetros están dentro de las normas",
-        "recommendedAction": "Acción recomendada",
         "details": {
       "title": "Detalles",
             "low": "demasiado bajo",

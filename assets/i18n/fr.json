@@ -74,6 +74,7 @@
       "display": "Gestion de l'affichage et de la langue",
       "notifications": "Gestions de vos notifications",
       "rooms": "Ajout et suppression des salles",
+      "subscription": "Choix de votre abonnement",
       "contact": "Contactez nous"
     },
     "fields": {
@@ -101,7 +102,7 @@
         "features": {
           "monitoring": "Monitoring de base",
           "alerts": "Alertes simples",
-          "reports": "Rapports mensuels"
+          "users": "Nombre d'utilisateur : 3"
         }
       },
       "pro": {
@@ -110,18 +111,18 @@
         "features": {
           "advanced": "Monitoring avancé",
           "custom": "Alertes personnalisées",
-          "realtime": "Rapports en temps réel",
-          "api": "Accès API"
+          "users": "Nombre d'utilisateur : 10"
         }
       },
       "enterprise": {
         "title": "Entreprise",
         "description": "Solution complète pour les grandes organisations",
         "features": {
-          "unlimited": "Monitoring illimité",
+          "advanced": "Monitoring avancé",
           "integration": "Intégrations personnalisées",
-          "support": "Support dédié 24/7",
+          "users": "Nombre d'utilisateur : Illimité",
           "training": "Formation équipe",
+          "support": "Support dédié 24/7",
           "sla": "SLA garanti"
         }
       }
@@ -136,9 +137,8 @@
     "title": "Jumeaux numériques",
     "visualisation": "Visualisation",
     "aboutTitle": "À propos de cette page",
-    "aboutParagraph": "Cette interface Digital Twin vous permet de visualiser les alertes de qualité de l'air intérieur en temps réel.",
+    "aboutParagraph": "Cette interface Digital Twin vous permet de visualiser les alertes de qualité de l'air intérieur en temps réel, d'explorer les pièces en 3D et de consulter les actions préventives recommandées.",
     "actions": "Actions",
-    "details": "Détails",
     "preventive": {
       "title": "Actions Préventives",
       "subtitle": "Basées sur les prédictions (30 min)",
@@ -151,13 +151,13 @@
       "action": "Action"
     },
     "tip": {
-      "table": "Le tableau à gauche montre les actions recommandées.",
-      "visual": "La visualisation indique les zones concernées dans la pièce.",
-      "details": "Les détails au centre expliquent les causes des alertes."
-    },
-          "noDetails": "Aucun détail disponible",
+      "table": "Le panneau Actions Préventives (en haut) montre les recommandations basées sur les prédictions à 30 minutes.",
+      "visual": "La visualisation 3D (gauche) affiche les pièces avec les points d'alerte colorés selon la sévérité.",
+      "details": "Le tableau Actions (droite) liste les interventions recommandées avec leur statut et sujet.",
+      "noDetails": "Aucun détail disponible",
       "allGood": "Tous les paramètres sont dans les normes",
-    "recommendedAction": "Action recommandée",
+      "recommendedAction": "Action recommandée"
+    },
     "details": {
       "title": "Détails",
       "low": "trop bas",

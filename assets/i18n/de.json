@@ -74,6 +74,7 @@
             "display": "Anzeige- und Spracheinstellungen",
             "notifications": "Ihre Benachrichtigungseinstellungen",
             "rooms": "Räume hinzufügen und entfernen",
+            "subscription": "Wählen Sie Ihr Abonnement",
             "contact": "Kontaktieren Sie uns"
         },
         "fields": {
@@ -101,7 +102,8 @@
                 "features": {
                     "monitoring": "Basis-Monitoring",
                     "alerts": "Einfache Warnungen",
-                    "reports": "Monatliche Berichte"
+                    "reports": "Monatliche Berichte",
+                    "users": "Anzahl der Benutzer: 1"
                 }
             },
             "pro": {
@@ -111,17 +113,19 @@
                     "advanced": "Erweitertes Monitoring",
                     "custom": "Benutzerdefinierte Warnungen",
                     "realtime": "Echtzeit-Berichte",
-                    "api": "API-Zugang"
+                    "api": "API-Zugang",
+                    "users": "Anzahl der Benutzer: 10"
                 }
             },
             "enterprise": {
                 "title": "Enterprise",
                 "description": "Vollständige Lösung für große Organisationen",
                 "features": {
-                    "unlimited": "Unbegrenztes Monitoring",
+                    "advanced": "Erweitertes Monitoring",
                     "integration": "Benutzerdefinierte Integrationen",
-                    "support": "Dedizierter 24/7-Support",
+                    "users": "Anzahl der Benutzer: Unbegrenzt",
                     "training": "Team-Schulung",
+                    "support": "Dedizierter 24/7-Support",
                     "sla": "Garantierter SLA"
                 }
             }
@@ -136,7 +140,7 @@
         "title": "Digitaler Zwilling",
         "visualisation": "Visualisierung",
         "aboutTitle": "Über diese Seite",
-        "aboutParagraph": "Diese Digitaler Zwilling-Ansicht zeigt Ihnen Echtzeit-Warnungen zur Innenraumluftqualität.",
+        "aboutParagraph": "Diese Digital Twin-Schnittstelle ermöglicht es Ihnen, Warnungen zur Innenraumluftqualität in Echtzeit zu visualisieren, Räume in 3D zu erkunden und empfohlene Präventivmaßnahmen zu überprüfen.",
         "actions": "Aktionen",
         "details": "Details",
         "preventive": {
@@ -151,13 +155,13 @@
             "action": "Aktion"
         },
         "tip": {
-            "table": "Die Tabelle links zeigt die empfohlenen Maßnahmen.",
-            "visual": "Die Visualisierung zeigt die betroffenen Bereiche im Raum an.",
-            "details": "Die Details in der Mitte erklären die Ursachen der Warnungen."
+            "table": "Das Panel Präventive Maßnahmen (oben) zeigt Empfehlungen basierend auf 30-Minuten-Vorhersagen.",
+            "visual": "Die 3D-Visualisierung (links) zeigt Räume mit farbigen Alarmpunkten nach Schweregrad.",
+            "details": "Die Tabelle Aktionen (rechts) listet empfohlene Interventionen mit ihrem Status und Betreff.",
+            "noDetails": "Keine Details verfügbar",
+            "allGood": "Alle Parameter liegen im Normbereich",
+            "recommendedAction": "Empfohlene Maßnahme"
         },
-        "noDetails": "Keine Details verfügbar",
-      "allGood": "Alle Parameter liegen im Normbereich",
-        "recommendedAction": "Empfohlene Maßnahme",
         "details": {
       "title": "Details",
             "low": "zu niedrig",
