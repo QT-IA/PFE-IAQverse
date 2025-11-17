@@ -74,6 +74,7 @@
             "display": "Impostazioni schermo e lingua",
             "notifications": "Impostazioni notifiche",
             "rooms": "Aggiungi o rimuovi stanze",
+            "subscription": "Scegli il tuo abbonamento",
             "contact": "Contattaci"
         },
         "fields": {
@@ -101,7 +102,8 @@
                 "features": {
                     "monitoring": "Monitoraggio base",
                     "alerts": "Allarmi semplici",
-                    "reports": "Rapporti mensili"
+                    "reports": "Rapporti mensili",
+                    "users": "Numero di utenti: 1"
                 }
             },
             "pro": {
@@ -111,17 +113,19 @@
                     "advanced": "Monitoraggio avanzato",
                     "custom": "Allarmi personalizzati",
                     "realtime": "Rapporti in tempo reale",
-                    "api": "Accesso API"
+                    "api": "Accesso API",
+                    "users": "Numero di utenti: 10"
                 }
             },
             "enterprise": {
                 "title": "Enterprise",
                 "description": "Soluzione completa per grandi organizzazioni",
                 "features": {
-                    "unlimited": "Monitoraggio illimitato",
+                    "advanced": "Monitoraggio avanzato",
                     "integration": "Integrazioni personalizzate",
-                    "support": "Supporto dedicato 24/7",
+                    "users": "Numero di utenti: Illimitato",
                     "training": "Formazione team",
+                    "support": "Supporto dedicato 24/7",
                     "sla": "SLA garantito"
                 }
             }
@@ -136,7 +140,7 @@
         "title": "Gemello Digitale",
         "visualisation": "Visualizzazione",
         "aboutTitle": "Informazioni",
-        "aboutParagraph": "Questa vista del Gemello Digitale mostra avvisi in tempo reale sulla qualità dell'aria interna.",
+        "aboutParagraph": "Questa interfaccia Digital Twin consente di visualizzare gli avvisi sulla qualità dell'aria interna in tempo reale, esplorare le stanze in 3D e rivedere le azioni preventive raccomandate.",
         "actions": "Azioni",
         "details": "Dettagli",
         "preventive": {
@@ -151,13 +155,13 @@
             "action": "Azione"
         },
         "tip": {
-            "table": "La tabella a sinistra mostra le azioni raccomandate.",
-            "visual": "La visualizzazione indica le aree interessate nella stanza.",
-            "details": "I dettagli al centro spiegano le cause degli avvisi."
+            "table": "Il pannello Azioni Preventive (in alto) mostra raccomandazioni basate su previsioni a 30 minuti.",
+            "visual": "La visualizzazione 3D (sinistra) mostra stanze con punti di allarme colorati secondo la severità.",
+            "details": "La tabella Azioni (destra) elenca interventi raccomandati con il loro stato e soggetto.",
+            "noDetails": "Nessun dettaglio disponibile",
+            "allGood": "Tutti i parametri sono entro i limiti",
+            "recommendedAction": "Azione raccomandata"
         },
-        "noDetails": "Nessun dettaglio disponibile",
-      "allGood": "Tutti i parametri sono entro i limiti",
-        "recommendedAction": "Azione raccomandata",
         "details": {
       "title": "Dettagli",
             "low": "troppo basso",

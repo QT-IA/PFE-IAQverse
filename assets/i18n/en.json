@@ -74,6 +74,7 @@
       "display": "Display and language management",
       "notifications": "Your notification settings",
       "rooms": "Add and remove rooms",
+      "subscription": "Choose your subscription",
       "contact": "Contact us"
     },
     "fields": {
@@ -101,7 +102,7 @@
         "features": {
           "monitoring": "Basic monitoring",
           "alerts": "Simple alerts",
-          "reports": "Monthly reports"
+          "users": "Number of users: 3"
         }
       },
       "pro": {
@@ -110,18 +111,18 @@
         "features": {
           "advanced": "Advanced monitoring",
           "custom": "Custom alerts",
-          "realtime": "Real-time reports",
-          "api": "API access"
+          "users": "Number of users: 10"
         }
       },
       "enterprise": {
         "title": "Enterprise",
         "description": "Complete solution for large organizations",
         "features": {
-          "unlimited": "Unlimited monitoring",
+          "advanced": "Advanced monitoring",
           "integration": "Custom integrations",
-          "support": "24/7 dedicated support",
+          "users": "Number of users: Unlimited",
           "training": "Team training",
+          "support": "24/7 dedicated support",
           "sla": "Guaranteed SLA"
         }
       }
@@ -136,7 +137,7 @@
     "title": "Digital Twin",
     "visualisation": "Visualization",
     "aboutTitle": "About this page",
-    "aboutParagraph": "This Digital Twin view lets you visualize indoor air quality alerts in real time.",
+    "aboutParagraph": "This Digital Twin interface lets you visualize indoor air quality alerts in real time, explore rooms in 3D, and review recommended preventive actions.",
     "actions": "Actions",
     "preventive": {
       "title": "Preventive Actions",
@@ -150,13 +151,13 @@
       "action": "Action"
     },
     "tip": {
-      "table": "The table on the left shows recommended actions.",
-      "visual": "The visualization highlights affected zones in the room.",
-      "details": "Center details explain the causes of alerts."
-    },
-          "noDetails": "No details available",
+      "table": "The Preventive Actions panel (top) shows recommendations based on 30-minute predictions.",
+      "visual": "The 3D visualization (left) displays rooms with colored alert points according to severity.",
+      "details": "The Actions table (right) lists recommended interventions with their status and subject.",
+      "noDetails": "No details available",
       "allGood": "All parameters are within normal range",
-    "recommendedAction": "Recommended action",
+      "recommendedAction": "Recommended action"
+    },
     "details": {
       "title": "Details",
       "low": "too low",
