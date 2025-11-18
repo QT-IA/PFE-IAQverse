@@ -997,9 +997,9 @@ def add_iaq_record(payload: dict):
     if "enseigne" not in rec or rec.get("enseigne") is None:
         rec["enseigne"] = "Maison"
     if "salle" not in rec or rec.get("salle") is None:
-        rec["salle"] = "Bureau"
+        rec["salle"] = "Chambre"
     if "capteur_id" not in rec or rec.get("capteur_id") is None:
-        rec["capteur_id"] = "Bureau1"
+        rec["capteur_id"] = "Chambre1"
     iaq_database.append(rec)
     logger.info(f"Seeded IAQ record, iaq_database size={len(iaq_database)}: {rec}")
     return rec
@@ -1017,8 +1017,8 @@ async def post_rows_periodically(interval: int = INTERVAL_SECONDS, loop_forever:
                 "temperature": 21.0,
                 "humidity": 40.0,
                 "enseigne": "Maison",
-                "salle": "Bureau",
-                "capteur_id": "Bureau1",
+                "salle": "Chambre",
+                "capteur_id": "Chambre1",
             })
             logger.info("No DATA_DF found; posted a single test record")
             return

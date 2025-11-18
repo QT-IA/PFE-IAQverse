@@ -117,6 +117,13 @@
         const allAlertPoints = document.querySelectorAll(".alert-point");
         console.log(`[alerts-engine] Found ${allAlertPoints.length} alert-points in DOM`);
         
+        // Si aucun point n'existe, attendre un peu et réessayer
+        if (allAlertPoints.length === 0) {
+            console.log('[alerts-engine] No alert-points found, waiting and retrying...');
+            setTimeout(() => applyAlertPointsActivation(map, actionsMap), 1000);
+            return;
+        }
+        
         if (!activeEnseigneId || !activeRoomId) {
             console.warn('[alerts-engine] No active context, deactivating all');
             // Pas de contexte actif, désactiver tous les alert-points
@@ -206,6 +213,7 @@
             // Activer ou désactiver selon la map
             // Tous les alert-points de la pièce active sont activés avec "info" par défaut
             const severity = (map && map[key]) ? map[key] : 'info';
+            console.log(`[alerts-engine] Activating alert-point ${key} with severity: ${severity} (was in map: ${!!(map && map[key])})`);
             el.setAttribute("data-active", "true");
             el.setAttribute("data-severity", severity);
             
@@ -244,6 +252,64 @@
         } catch (e) { }
     }
 
+    /**
+     * Met à jour le label du compteur d'alertes visibles
+     */
+    function updateAlertCountLabel() {
+        console.log('[alerts-engine] updateAlertCountLabel called');
+        const label = document.querySelector('.room-label');
+        console.log('[alerts-engine] Found label element:', label);
+        if (!label) {
+            console.error('[alerts-engine] .room-label element not found!');
+            return;
+        }
+
+        // Compter seulement les points d'alerte visibles avec des positions distinctes
+        const allPoints = document.querySelectorAll('.alert-point');
+        const visiblePoints = Array.from(allPoints).filter(point => {
+            const style = window.getComputedStyle(point);
+            return style.display !== 'none' && point.offsetWidth > 0 && point.offsetHeight > 0;
+        });
+        
+        // Grouper par position pour éviter de compter les points superposés
+        const positionGroups = {};
+        visiblePoints.forEach(point => {
+            const left = point.style.left;
+            const top = point.style.top;
+            const key = `${left}-${top}`;
+            if (!positionGroups[key]) {
+                positionGroups[key] = [];
+            }
+            positionGroups[key].push(point);
+        });
+        
+        // Compter un point par position unique
+        const count = Object.keys(positionGroups).length;
+        console.log('[alerts-engine] Found', visiblePoints.length, 'visible points at', Object.keys(positionGroups).length, 'unique positions');
+
+        const singularText = window.i18n && window.i18n.t ? window.i18n.t('digitalTwin.alertCount.singular', { count }) : null;
+        const pluralText = window.i18n && window.i18n.t ? window.i18n.t('digitalTwin.alertCount.plural', { count }) : null;
+        
+        const text = count === 1 ? 
+            (singularText || `${count} Alerte`) :
+            (pluralText || `${count} Alertes`);
+        
+        console.log('[alerts-engine] i18n singular:', singularText, 'plural:', pluralText);        console.log('[alerts-engine] Setting text to:', text);
+        label.textContent = text;
+        
+        // Forcer un reflow pour s'assurer que le texte est rendu
+        label.style.display = 'none';
+        label.offsetHeight; // Trigger reflow
+        label.style.display = '';
+        
+        console.log('[alerts-engine] Label textContent after setting:', label.textContent);
+        console.log('[alerts-engine] Label innerHTML:', label.innerHTML);
+        console.log('[alerts-engine] Label is visible:', label.offsetWidth > 0 && label.offsetHeight > 0);
+    }
+
+    // Exposer la fonction globalement
+    window.updateAlertCountLabel = updateAlertCountLabel;
+
     // Définition des alert-points par défaut (positions et cibles)
     const DEFAULT_ALERT_POINTS = [
         {
@@ -258,7 +324,7 @@
         },
         {
             key: 'ventilation',
-            targetNames: 'Ventilation|VMC|ventilation|vmc|extracteur',
+            targetNames: 'Ventilation|VMC|ventilation|vmc|extracteur|Clim|clim',
             style: 'top: 10%; left: 50%; transform: translate(-50%, -50%);'
         },
         {
@@ -270,36 +336,34 @@
 
     /**
      * Génère les alert-points pour une pièce spécifique
+     * Met à jour les attributs des alert-points existants au lieu de les recréer
      */
     function renderAlertPoints(enseigneId, pieceId) {
         console.log(`[alerts-engine] renderAlertPoints called for ${enseigneId}/${pieceId}`);
-        
+
         const container = document.getElementById('alert-points-container');
         if (!container) {
             console.error('[alerts-engine] alert-points-container not found in DOM!');
             return;
         }
-        
-        console.log('[alerts-engine] Container found, clearing and generating alert-points...');
-        
-        // Vider le conteneur
-        container.innerHTML = '';
-        
-        // Créer les alert-points pour cette pièce
-        DEFAULT_ALERT_POINTS.forEach(point => {
-            const alertPoint = document.createElement('div');
-            alertPoint.className = 'alert-point';
-            alertPoint.setAttribute('data-i18n-key', point.key);
-            alertPoint.setAttribute('data-target-names', point.targetNames);
-            alertPoint.setAttribute('data-enseigne', enseigneId);
-            alertPoint.setAttribute('data-piece', pieceId);
-            alertPoint.setAttribute('data-active', 'false');
-            alertPoint.setAttribute('style', point.style);
-            container.appendChild(alertPoint);
-            console.log(`[alerts-engine] Created alert-point: ${point.key}`);
+
+        // Au lieu de vider complètement, mettre à jour les attributs des alert-points existants
+        const existingPoints = container.querySelectorAll('.alert-point');
+        console.log(`[alerts-engine] Found ${existingPoints.length} existing alert-points to update`);
+
+        existingPoints.forEach(point => {
+            // Mettre à jour les attributs sans changer les noms d'objets 3D
+            point.setAttribute('data-enseigne', enseigneId);
+            point.setAttribute('data-piece', pieceId);
+            point.setAttribute('data-active', 'false'); // Par défaut inactif
+            console.log(`[alerts-engine] Updated alert-point: ${point.getAttribute('data-i18n-key')}`);
         });
-        
-        console.log(`[alerts-engine] Successfully generated ${DEFAULT_ALERT_POINTS.length} alert-points`);
+
+        // Si aucun point n'existe, ne rien faire (les points seront créés par autoGenerateAlertPoints)
+        if (existingPoints.length === 0) {
+            console.log('[alerts-engine] No existing points found - they will be created by autoGenerateAlertPoints');
+            return;
+        }
     }
 
     // Track active enseigne/salle

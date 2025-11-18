@@ -17,8 +17,8 @@ class IAQData(BaseModel):
     temperature: Optional[float] = None
     humidity: Optional[float] = None
     enseigne: Optional[str] = "Maison"
-    salle: Optional[str] = "Bureau"
-    capteur_id: Optional[str] = "Bureau1"
+    salle: Optional[str] = "Chambre"
+    capteur_id: Optional[str] = "Chambre1"
 
     @field_validator("*", mode="before")
     def empty_to_none(cls, v: Any) -> Any:

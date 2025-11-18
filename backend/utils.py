@@ -90,8 +90,8 @@ def load_dataset_df(path: Optional[Path] = None) -> Optional[pd.DataFrame]:
     out["temperature"] = to_num(temp_col)
     out["humidity"] = to_num(hum_col)
     out["enseigne"] = "Maison"
-    out["salle"] = "Bureau"
-    out["capteur_id"] = "Bureau1"
+    out["salle"] = "Chambre"
+    out["capteur_id"] = "Chambre1"
 
     out = out.dropna(subset=["timestamp"]).sort_values("timestamp").reset_index(drop=True)
 
@@ -141,7 +141,7 @@ def extract_sensors_from_config(config):
     
     Format de retour:
     [
-        {"enseigne": "Maison", "salle": "Bureau", "capteur_id": "Bureau1"},
+        {"enseigne": "Maison", "salle": "Chambre", "capteur_id": "Chambre1"},
         ...
     ]
     """

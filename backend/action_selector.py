@@ -457,7 +457,7 @@ def example_usage():
     # 2. Configuration des modules disponibles dans la salle
     room_modules = RoomModules(
         enseigne="Maison",
-        salle="Bureau",
+        salle="Chambre",
         modules={
             "fenetre": ModuleCapability(
                 module_type="fenetre",
