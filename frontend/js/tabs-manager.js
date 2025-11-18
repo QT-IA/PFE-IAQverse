@@ -26,7 +26,6 @@ async function initTabsManager() {
         // Restaurer l'enseigne et la pièce sauvegardées AVANT de rendre les tabs
         const savedEnseigne = localStorage.getItem('activeEnseigne');
         const savedRoom = localStorage.getItem('activeRoom');
-        console.log('[tabs-manager] Restauration depuis localStorage:', { savedEnseigne, savedRoom });
 
         if (config.lieux.enseignes.length > 0) {
             const defaultEnseigne = savedEnseigne ||
@@ -36,7 +35,6 @@ async function initTabsManager() {
             const enseigne = config.lieux.enseignes.find(e => e.id === defaultEnseigne);
             if (savedRoom && enseigne?.pieces?.some(p => p.id === savedRoom)) {
                 activeRoom = savedRoom;
-                    console.log('[tabs-manager] activeRoom défini avant switchEnseigne:', activeRoom);
             }
 
                 // Passer keepActiveRoom=true pour ne pas écraser activeRoom qui vient d'être restauré
@@ -97,7 +95,6 @@ function renderLocationTabs() {
  * @param {string} enseigneId - L'ID de l'enseigne
  */
 function renderRoomTabs(enseigneId) {
-    console.log('[tabs-manager] renderRoomTabs:', { enseigneId, currentActiveRoom: activeRoom });
     const roomTabs = document.getElementById('room-tabs');
     if (!roomTabs) return;
 
@@ -137,12 +134,9 @@ function renderRoomTabs(enseigneId) {
 
     // Si aucune pièce n'est active, activer la première SEULEMENT si pas en cours de restauration localStorage
     if (!activeRoom && enseigne.pieces.length > 0) {
-        console.log('[tabs-manager] No activeRoom, auto-selecting first piece');
         // N'auto-sélectionner que si on n'est pas en train de restaurer depuis localStorage
         // (activeRoom sera déjà défini par initTabsManager dans ce cas)
         switchRoom(enseigne.pieces[0].id);
-    } else {
-        console.log('[tabs-manager] activeRoom already set, skipping auto-selection');
     }
 }
 
@@ -152,13 +146,11 @@ function renderRoomTabs(enseigneId) {
  * @param {boolean} keepActiveRoom - Si true, ne pas réinitialiser activeRoom (utilisé lors de la restauration depuis localStorage)
  */
 function switchEnseigne(enseigneId, keepActiveRoom = false) {
-    console.log('[tabs-manager] switchEnseigne:', { enseigneId, keepActiveRoom, currentActiveRoom: activeRoom });
     activeEnseigne = enseigneId;
     if (!keepActiveRoom) {
         activeRoom = null; // Réinitialiser la pièce active (sauf si on restaure depuis localStorage)
     }
     localStorage.setItem('activeEnseigne', enseigneId);
-    console.log('[tabs-manager] After switchEnseigne, activeRoom:', activeRoom);
     
     // Mettre à jour l'apparence des onglets d'enseignes
     document.querySelectorAll('.location-tab').forEach(tab => {
@@ -228,34 +220,26 @@ let monitoringInterval = null;
 
 async function fetchRoomScore(enseigneNom, roomNom) {
     try {
-        const url = `http://localhost:8000/api/iaq/measurements?enseigne=${encodeURIComponent(enseigneNom)}&salle=${encodeURIComponent(roomNom)}&hours=1`;
-        console.log(`[tabs-manager] Fetching score for ${enseigneNom}:${roomNom} from ${url}`);
+        const url = `http://localhost:8000/api/iaq/data?enseigne=${encodeURIComponent(enseigneNom)}&salle=${encodeURIComponent(roomNom)}&hours=1`;
         
         const response = await fetch(url);
         if (!response.ok) {
-            console.warn(`[tabs-manager] HTTP ${response.status} for ${enseigneNom}:${roomNom}`);
             return null;
         }
         
         const data = await response.json();
-        console.log(`[tabs-manager] Received ${data?.length || 0} data points for ${enseigneNom}:${roomNom}`);
         
         if (!Array.isArray(data) || data.length === 0) {
-            console.warn(`[tabs-manager] No data for ${enseigneNom}:${roomNom}`);
             return null;
         }
         
         const latest = data[data.length - 1];
-        console.log(`[tabs-manager] Latest data for ${enseigneNom}:${roomNom}:`, latest);
         
         // Utiliser global_score de l'API backend
         if (typeof latest.global_score === 'number') {
-            console.log(`[tabs-manager] ✅ Score from API for ${enseigneNom}:${roomNom}: ${latest.global_score}`);
             return latest.global_score;
         } else {
-            console.warn(`[tabs-manager] ⚠️ No global_score in API response for ${enseigneNom}:${roomNom}`);
-            console.warn(`[tabs-manager] Available data:`, Object.keys(latest));
-            // Retourner null pour éviter de bloquer le monitoring, mais logger clairement le problème
+            // Retourner null pour éviter de bloquer le monitoring
             return null;
         }
     } catch (error) {
@@ -267,8 +251,6 @@ async function fetchRoomScore(enseigneNom, roomNom) {
 async function updateAllRoomScores() {
     const config = getConfig();
     if (!config || !config.lieux || !config.lieux.enseignes) return;
-    
-    console.log('[tabs-manager] Updating scores for all rooms...');
     
     // Fetch scores for ALL rooms in parallel (including active one to ensure consistency)
     const promises = [];
@@ -289,20 +271,12 @@ async function updateAllRoomScores() {
     const results = await Promise.all(promises);
     
     // Update scores and tab alerts
-    let scoresUpdated = 0;
     results.forEach(({ enseigneId, roomId, score }) => {
         if (score !== null) {
             const key = `${enseigneId}:${roomId}`;
-            const oldScore = roomScores.get(key);
-            if (oldScore !== score) {
-                console.log(`[tabs-manager] Score changed for ${key}: ${oldScore} -> ${score}`);
-            }
             roomScores.set(key, score);
-            scoresUpdated++;
         }
     });
-    
-    console.log(`[tabs-manager] Updated ${scoresUpdated} room scores, total stored: ${roomScores.size}`);
     
     // Always refresh UI to ensure consistency
     refreshAllTabAlerts();
@@ -311,8 +285,6 @@ async function updateAllRoomScores() {
 function refreshAllTabAlerts() {
     const config = getConfig();
     if (!config || !config.lieux || !config.lieux.enseignes) return;
-    
-    console.log('[tabs-manager] Refreshing all tab alerts with scores:', Array.from(roomScores.entries()));
     
     // Update ALL room tabs that exist in the DOM (not just for active enseigne)
     document.querySelectorAll('.room-tab[data-room-id]').forEach(roomTab => {
@@ -329,10 +301,8 @@ function refreshAllTabAlerts() {
         if (roomScore !== null && roomScore !== undefined) {
             if (roomScore < 70) {
                 roomTab.classList.add('has-alert');
-                console.log(`[tabs-manager] Added alert to room tab ${roomId}, score: ${roomScore}`);
             } else {
                 roomTab.classList.remove('has-alert');
-                console.log(`[tabs-manager] Removed alert from room tab ${roomId}, score: ${roomScore}`);
             }
         }
     });
@@ -350,10 +320,8 @@ function refreshAllTabAlerts() {
         if (enseigneTab) {
             if (enseigneHasAlert) {
                 enseigneTab.classList.add('has-alert');
-                console.log(`[tabs-manager] Added alert to enseigne tab ${ens.id}`);
             } else {
                 enseigneTab.classList.remove('has-alert');
-                console.log(`[tabs-manager] Removed alert from enseigne tab ${ens.id}`);
             }
         }
     });
@@ -361,8 +329,6 @@ function refreshAllTabAlerts() {
 
 function startBackgroundMonitoring() {
     if (monitoringInterval) return; // Already running
-    
-    console.log('[tabs-manager] Starting background monitoring service');
     
     // Initial update
     updateAllRoomScores();
@@ -375,7 +341,6 @@ function stopBackgroundMonitoring() {
     if (monitoringInterval) {
         clearInterval(monitoringInterval);
         monitoringInterval = null;
-        console.log('[tabs-manager] Stopped background monitoring service');
     }
 }
 

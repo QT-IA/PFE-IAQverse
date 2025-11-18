@@ -199,7 +199,7 @@ function openEditModal(element) {
 
   const updates = {}; setByPath(updates, path, newVal); setByPath(settingsConfig, path, newVal);
     try {
-      const response = await fetch('http://localhost:8000/api/iaq/config', {
+      const response = await fetch('http://localhost:8000/config', {
         method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates)
       });
       if (!response.ok) throw new Error('Erreur lors de la sauvegarde');
@@ -344,7 +344,7 @@ function enableDragAndDrop() {
   settingsConfig.lieux.enseignes.sort((a, b) => newOrder.indexOf(a.id) - newOrder.indexOf(b.id));
       if (settingsConfig.lieux.enseignes.length > 0) settingsConfig.lieux.active = settingsConfig.lieux.enseignes[0].id;
 
-      fetch('http://localhost:8000/api/iaq/config', {
+      fetch('http://localhost:8000/config', {
         method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settingsConfig)
       }).then(() => showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.order_saved') || 'Nouvel ordre enregistré' : 'Nouvel ordre enregistré')).catch(err => console.error(err));
     });
@@ -396,7 +396,7 @@ function enablePieceDragAndDrop() {
 
         enseigne.pieces.sort((a, b) => newOrder.indexOf(a.id) - newOrder.indexOf(b.id));
 
-        fetch('http://localhost:8000/api/iaq/config', {
+        fetch('http://localhost:8000/config', {
           method: 'PUT',
           method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settingsConfig)
   }).then(() => showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.rooms_order_saved') || 'Ordre des pièces enregistré' : 'Ordre des pièces enregistré')).catch(err => console.error(err));
@@ -443,7 +443,7 @@ async function addEnseigne() {
   settingsConfig.lieux.active = newEn.id;
 
     try {
-  const response = await fetch('http://localhost:8000/api/iaq/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settingsConfig) });
+  const response = await fetch('http://localhost:8000/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settingsConfig) });
       if (!response.ok) throw new Error('Erreur lors de la sauvegarde');
   const result = await response.json(); if (result && result.config) settingsConfig = result.config;
   document.getElementById('editModal').style.display = 'none';
@@ -489,7 +489,7 @@ async function addPiece(enseigneId) {
         fd.append('file', glbFile, filename);
         fd.append('filename', filename);
 
-        const upResp = await fetch('http://localhost:8000/api/iaq/assets/rooms/files', {
+        const upResp = await fetch('http://localhost:8000/api/rooms/files', {
           method: 'PUT', body: fd
         });
         if (!upResp.ok) throw new Error('Erreur upload');
@@ -506,7 +506,7 @@ async function addPiece(enseigneId) {
     }
 
     try {
-      const response = await fetch('http://localhost:8000/api/iaq/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settingsConfig) });
+      const response = await fetch('http://localhost:8000/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settingsConfig) });
       if (!response.ok) throw new Error('Erreur lors de la sauvegarde');
       const result = await response.json(); if (result && result.config) settingsConfig = result.config;
   document.getElementById('editModal').style.display = 'none';
@@ -551,7 +551,7 @@ async function editEnseigne(enseigneId) {
     enseigne.adresse = formData.get('adresse');
 
     try {
-      const response = await fetch('http://localhost:8000/api/iaq/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settingsConfig) });
+      const response = await fetch('http://localhost:8000/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settingsConfig) });
       if (!response.ok) throw new Error('Erreur lors de la sauvegarde');
       const result = await response.json(); if (result && result.config) settingsConfig = result.config;
   document.getElementById('editModal').style.display = 'none';
@@ -584,7 +584,7 @@ async function removeEnseigne(enseigneId) {
   }
   try {
     if (pathsToDelete.length > 0) {
-      await fetch('http://localhost:8000/api/iaq/assets/rooms/files', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(pathsToDelete) });
+      await fetch('http://localhost:8000/api/rooms/files', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(pathsToDelete) });
     }
     } catch (err) {
     console.error('Erreur suppression fichiers GLB:', err);
@@ -609,7 +609,7 @@ async function removePiece(enseigneId, pieceId) {
     if (piece && piece.glbModel) pathsToDelete.push(piece.glbModel);
     try {
       if (pathsToDelete.length > 0) {
-        await fetch('http://localhost:8000/api/iaq/assets/rooms/files', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(pathsToDelete) });
+        await fetch('http://localhost:8000/api/rooms/files', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(pathsToDelete) });
       }
     } catch (err) {
       console.error('Erreur suppression fichier GLB:', err);
@@ -625,7 +625,7 @@ async function removePiece(enseigneId, pieceId) {
 
 // Enregistrement global de la configuration (envoi complet si nécessaire)
 async function saveConfigAll() {
-  const response = await fetch('http://localhost:8000/api/iaq/config', {
+  const response = await fetch('http://localhost:8000/config', {
     method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settingsConfig)
   });
   if (!response.ok) throw new Error('Erreur lors de la sauvegarde');
@@ -717,7 +717,7 @@ async function saveConfigSection() {
 
     } catch(e) { console.warn('saveConfigSection language apply failed', e); }
 
-    const response = await fetch('http://localhost:8000/api/iaq/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const response = await fetch('http://localhost:8000/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const result = await response.json();
     console.info('saveConfigSection: save response ok=', response.ok, ' result=', result);
     if (!response.ok) throw new Error(result.detail || 'Erreur lors de la sauvegarde');
@@ -804,7 +804,7 @@ function updateDataPathsDisplay() {
         const newMode = select.value === 'sombre' ? 'Sombre' : 'Clair';
   const updates = {}; setByPath(updates, 'affichage.mode', newMode); setByPath(settingsConfig, 'affichage.mode', newMode);
         try {
-          const r = await fetch('http://localhost:8000/api/iaq/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) });
+          const r = await fetch('http://localhost:8000/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) });
           if (r.ok) showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.mode_updated') || 'Mode mis à jour' : 'Mode mis à jour'); else showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.save_error') || 'Erreur lors de la sauvegarde' : 'Erreur lors de la sauvegarde', true);
         } catch (err) { console.error(err); showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.save_error') || 'Erreur lors de la sauvegarde' : 'Erreur lors de la sauvegarde', true); }
       });
@@ -979,7 +979,7 @@ async function selectPlan(planType) {
     settingsConfig.abonnement.plan_actuel = planType;
 
     // Sauvegarder via l'API
-    const response = await fetch('http://localhost:8000/api/iaq/config', {
+    const response = await fetch('http://localhost:8000/config', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(settingsConfig)

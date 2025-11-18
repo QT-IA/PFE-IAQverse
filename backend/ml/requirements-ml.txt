@@ -13,6 +13,9 @@ joblib>=1.3.0
 # Requêtes HTTP
 requests>=2.31.0
 
+# Scheduler pour réentraînement périodique
+schedule>=1.2.0
+
 # Visualisation (optionnel)
 matplotlib>=3.7.0
 seaborn>=0.12.0

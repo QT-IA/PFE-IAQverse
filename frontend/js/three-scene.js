@@ -81,7 +81,6 @@ function disposeObject(root) {
 function loadPieceModel(roomId) {
   // Prevent concurrent loads
   if (isLoading) {
-    console.warn('Un modèle est déjà en cours de chargement, appel ignoré');
     return;
   }
 
@@ -132,9 +131,7 @@ function loadPieceModel(roomId) {
         }
       },
       function (xhr) {
-        if (xhr.lengthComputable) {
-          console.log('Chargement GLB: ' + Math.round((xhr.loaded / xhr.total) * 100) + '%');
-        }
+        // Progress callback
       },
       function (error) {
         isLoading = false;

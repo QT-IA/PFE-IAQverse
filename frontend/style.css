@@ -1248,6 +1248,92 @@ a:hover img {
     gap: 8px;
     color: var(--text-primary);
     font-weight: 600;
+    flex-wrap: wrap;
+}
+
+.preventive-value-current {
+    color: var(--text-primary);
+}
+
+.preventive-value-predicted {
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
+.preventive-value-percent {
+    font-size: 0.85em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.preventive-value-percent.increasing {
+    color: #d32f2f;
+    background-color: rgba(211, 47, 47, 0.1);
+}
+
+.preventive-value-percent.decreasing {
+    color: #388e3c;
+    background-color: rgba(56, 142, 60, 0.1);
+}
+
+.preventive-value-trend {
+    font-size: 0.8em;
+    margin-top: 4px;
+}
+
+.trend-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background-color: var(--card-bg);
+}
+
+.trend-indicator.trend-increasing {
+    color: #d32f2f;
+}
+
+.trend-indicator.trend-decreasing {
+    color: #388e3c;
+}
+
+.trend-indicator.trend-stable {
+    color: var(--text-secondary);
+}
+
+.preventive-value-forecast {
+    font-size: 0.75em;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+.forecast-time {
+    font-style: italic;
+}
+
+.preventive-ml-badge {
+    margin-top: 6px;
+}
+
+.ml-indicator, .ml-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-size: 0.75em;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+}
+
+.value-row.trend-row,
+.value-row.forecast-row,
+.value-row.ml-row {
+    margin-top: 6px;
 }
 
 .preventive-value-arrow {

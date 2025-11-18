@@ -256,6 +256,42 @@ class InfluxDBClient:
             logger.error(f"Erreur requête InfluxDB: {e}")
             return []
     
+    def query_data(self, flux_query: str) -> List[Dict[str, Any]]:
+        """
+        Exécute une requête Flux et retourne les résultats au format JSON simple.
+        Utilisé par l'API pour récupérer les données avec pivot.
+        Normalise les noms de champs en minuscules pour compatibilité ML.
+        """
+        if not self._available:
+            return []
+        
+        try:
+            tables = self.query_api.query(flux_query)
+            
+            results = []
+            for table in tables:
+                for record in table.records:
+                    # Créer un dict avec tous les champs du record
+                    row = {
+                        "timestamp": record.get_time().isoformat(),
+                    }
+                    # Ajouter toutes les valeurs (tags + fields)
+                    for key, value in record.values.items():
+                        if key not in ["_time", "_start", "_stop", "_measurement", "result", "table"]:
+                            if key.startswith("_"):
+                                continue
+                            # Normaliser les noms en minuscules pour compatibilité
+                            normalized_key = key.lower()
+                            row[normalized_key] = value
+                    
+                    results.append(row)
+            
+            return results
+            
+        except Exception as e:
+            logger.error(f"Erreur query_data InfluxDB: {e}")
+            return []
+    
     def close(self):
         """Ferme la connexion InfluxDB"""
         if self.client:

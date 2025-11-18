@@ -9,7 +9,7 @@ import logging
 
 from ..core import get_influx_client, settings
 from ..utils import sanitize_for_storage
-from ..action_selector import IAQScoreCalculator
+from ..iaq_score import calculate_iaq_score
 from .ingest import iaq_database
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,6 @@ router = APIRouter(prefix="/api", tags=["query"])
 def get_iaq_data(
     enseigne: Optional[str] = None,
     salle: Optional[str] = None,
-    capteur_id: Optional[str] = None,
     sensor_id: Optional[str] = None,
     start: Optional[str] = None,
     end: Optional[str] = None,
@@ -35,7 +34,7 @@ def get_iaq_data(
     Paramètres de filtrage:
     - enseigne: Filtrer par enseigne
     - salle: Filtrer par salle
-    - capteur_id/sensor_id: Filtrer par capteur
+    - sensor_id: Filtrer par capteur
     
     Paramètres temporels:
     - start: Date de début (ISO format)
@@ -54,15 +53,62 @@ def get_iaq_data(
         bucket=settings.INFLUXDB_BUCKET
     )
     
-    # Si sensor_id est fourni, l'utiliser comme capteur_id
-    if sensor_id:
-        capteur_id = sensor_id
-    
-    if influx and influx.available and not raw:
-        # TODO: Implémenter la requête InfluxDB avec agrégation
-        pass
+    if influx and influx.available:
+        try:
+            # Déterminer la période
+            if hours is not None and not start and not end:
+                start_time = f"-{hours}h"
+            else:
+                start_time = start if start else "-24h"
+            
+            # Construire la requête Flux
+            filters = []
+            if enseigne:
+                filters.append(f'r.enseigne == "{enseigne}"')
+            if salle:
+                filters.append(f'r.salle == "{salle}"')
+            if sensor_id:
+                filters.append(f'r.sensor_id == "{sensor_id}"')
+            
+            filter_clause = " and ".join(filters) if filters else "true"
+            
+            flux_query = f'''
+                from(bucket: "{settings.INFLUXDB_BUCKET}")
+                    |> range(start: {start_time})
+                    |> filter(fn: (r) => r._measurement == "iaq_raw")
+                    |> filter(fn: (r) => {filter_clause})
+                    |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
+                    |> sort(columns: ["_time"])
+            '''
+            
+            influx_data = influx.query_data(flux_query)
+            
+            if influx_data:
+                # Ajouter global_score pour chaque point
+                for record in influx_data:
+                    try:
+                        predictions = {
+                            "co2": record.get("co2"),
+                            "pm25": record.get("pm25"),
+                            "tvoc": record.get("tvoc"),
+                            "humidity": record.get("humidity")
+                        }
+                        clean_predictions = {k: (v if v is not None else 0) for k, v in predictions.items()}
+                        score_data = calculate_iaq_score(clean_predictions)
+                        record["global_score"] = score_data["global_score"]
+                        record["global_level"] = score_data["global_level"]
+                    except Exception as e:
+                        logger.warning(f"Erreur calcul score: {e}")
+                        record["global_score"] = None
+                        record["global_level"] = "unknown"
+                
+                logger.info(f"✅ Données récupérées depuis InfluxDB: {len(influx_data)} points")
+                return influx_data
+        except Exception as e:
+            logger.warning(f"Erreur requête InfluxDB, fallback mémoire: {e}")
     
     # Fallback sur la mémoire
+    logger.info("📝 Utilisation fallback mémoire")
     if not iaq_database:
         return []
     
@@ -98,12 +144,9 @@ def get_iaq_data(
         else:
             return []
     
-    if capteur_id:
-        c = capteur_id.strip().lower()
-        # Chercher dans capteur_id ou sensor_id
-        if "capteur_id" in df.columns:
-            df = df[df["capteur_id"].astype(str).str.strip().str.lower() == c]
-        elif "sensor_id" in df.columns:
+    if sensor_id:
+        c = sensor_id.strip().lower()
+        if "sensor_id" in df.columns:
             df = df[df["sensor_id"].astype(str).str.strip().str.lower() == c]
         else:
             return []
@@ -152,7 +195,7 @@ def get_iaq_data(
                 }
                 if any(v is not None for v in predictions.values()):
                     clean_predictions = {k: (v if v is not None else 0) for k, v in predictions.items()}
-                    score_data = IAQScoreCalculator.calculate_global_score(clean_predictions)
+                    score_data = calculate_iaq_score(clean_predictions)
                     record["global_score"] = score_data["global_score"]
                     record["global_level"] = score_data["global_level"]
             except Exception as e:
@@ -190,7 +233,7 @@ def get_iaq_data(
         pass
     
     try:
-        cols_to_keep = [c for c in ["enseigne", "salle", "capteur_id", "sensor_id"] if c in df.columns]
+        cols_to_keep = [c for c in ["enseigne", "salle", "sensor_id"] if c in df.columns]
         if cols_to_keep:
             def choose_val(s):
                 m = s.dropna()
@@ -231,7 +274,7 @@ def get_iaq_data(
             }
             if any(v is not None for v in predictions.values()):
                 clean_predictions = {k: (v if v is not None else 0) for k, v in predictions.items()}
-                score_data = IAQScoreCalculator.calculate_global_score(clean_predictions)
+                score_data = calculate_iaq_score(clean_predictions)
                 record["global_score"] = score_data["global_score"]
                 record["global_level"] = score_data["global_level"]
         except Exception as e:

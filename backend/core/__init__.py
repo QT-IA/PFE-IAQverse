@@ -1,18 +1,16 @@
 """
-Core infrastructure components for IAQverse
+Core services for IAQverse
+Simplified architecture - essential services only
 """
-from .settings import settings, Settings
+from .settings import Settings, settings
 from .influx_client import get_influx_client, InfluxDBClient
-from .sqlite_registry import get_sqlite_registry, SQLiteRegistry
 from .websocket_manager import get_websocket_manager, ConnectionManager
 
 __all__ = [
-    "settings",
     "Settings",
+    "settings",
     "get_influx_client",
     "InfluxDBClient",
-    "get_sqlite_registry",
-    "SQLiteRegistry",
     "get_websocket_manager",
     "ConnectionManager",
 ]

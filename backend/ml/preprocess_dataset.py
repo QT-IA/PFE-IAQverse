@@ -323,14 +323,23 @@ def reechantillonner_donnees(dataframe, frequence):
 
 
 def sauvegarder_dataset(dataframe, dossier_sortie, nom_fichier="preprocessed_dataset.csv"):
+    """Sauvegarde le dataset au format CSV propre (sans guillemets excessifs)"""
     # Créer le dossier de sortie s'il n'existe pas
     dossier_sortie.mkdir(parents=True, exist_ok=True)
     
     # Chemin complet du fichier
     chemin_sortie = dossier_sortie / nom_fichier
     
-    # Sauvegarder sans index, avec guillemets minimaux
-    dataframe.to_csv(chemin_sortie, index=False, sep=',', quoting=1)
+    # Sauvegarder avec QUOTE_MINIMAL (guillemets uniquement si nécessaire)
+    # quoting=1 = QUOTE_MINIMAL (évite les guillemets sur les nombres)
+    # Utiliser quotechar='"' et escapechar=None par défaut
+    dataframe.to_csv(
+        chemin_sortie, 
+        index=False, 
+        sep=',',
+        quoting=1,  # QUOTE_MINIMAL - guillemets uniquement pour strings avec virgules
+        float_format='%.6f'  # Limiter la précision des flottants
+    )
     
     logger.info(f"✓ Dataset sauvegardé: {chemin_sortie}")
     return chemin_sortie
@@ -364,8 +373,8 @@ def main():
     3. Génère un dataset agrégé à 5 minutes pour le ML
     4. Sauvegarde les statistiques
     """
-    # Définir les chemins des dossiers
-    dossier_base = Path(__file__).parent.parent
+    # Définir les chemins des dossiers (CORRECTION: aller au dossier parent parent)
+    dossier_base = Path(__file__).parent.parent.parent  # backend/ml -> backend -> racine
     dossier_r1 = dossier_base / "assets" / "datasets" / "R1"
     dossier_sortie = dossier_base / "assets" / "datasets" / "ml_data"
     

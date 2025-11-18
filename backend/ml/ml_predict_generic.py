@@ -106,8 +106,8 @@ class RealtimeGenericPredictor:
             self.config = json.load(f)
         
         logger.info(f"Configuration: {self.config['model_type']}")
-        logger.info(f"Salles entraînées: {self.config['salles_trained']}")
-        logger.info(f"Capteurs entraînés: {self.config['capteurs_trained']}")
+        logger.info(f"Salles entraînées: {self.config.get('trained_rooms', self.config.get('salles_trained', []))}")
+        logger.info(f"Capteurs entraînés: {self.config.get('trained_sensors', self.config.get('capteurs_trained', []))}")
         
         # Charger le scaler
         scaler_path = self.model_dir / "generic_scaler.joblib"
@@ -138,7 +138,7 @@ class RealtimeGenericPredictor:
     
     def fetch_recent_data_direct(self, enseigne: Optional[str] = None, 
                                  salle: Optional[str] = None, 
-                                 capteur_id: Optional[str] = None,
+                                 sensor_id: Optional[str] = None,
                                  limit: int = 100) -> pd.DataFrame:
         """
         Récupère les données DIRECTEMENT depuis iaq_database via l'API.
@@ -146,35 +146,45 @@ class RealtimeGenericPredictor:
         Args:
             enseigne: Filtrer par enseigne
             salle: Filtrer par salle
-            capteur_id: Filtrer par capteur
+            sensor_id: Filtrer par capteur
             limit: Nombre de lignes à récupérer
             
         Returns:
             DataFrame avec les données récentes
         """
         try:
-            url = f"{self.api_base_url}/api/iaq/measurements/raw"
-            params = {}
+            url = f"{self.api_base_url}/api/iaq/data"
+            params = {
+                'hours': 2  # 2 heures de données (suffisant pour lookback)
+            }
             if enseigne:
                 params['enseigne'] = enseigne
             if salle:
                 params['salle'] = salle
-            if capteur_id:
-                params['capteur_id'] = capteur_id
-            if limit:
-                params['limit'] = limit
+            if sensor_id:
+                params['sensor_id'] = sensor_id
             
             response = requests.get(url, params=params, timeout=10)
             response.raise_for_status()
             
             data = response.json()
-            if not data:
-                logger.warning(f"Aucune donnée pour enseigne={enseigne}, salle={salle}, capteur={capteur_id}")
+            if not data or len(data) == 0:
+                logger.warning(f"Aucune donnée pour enseigne={enseigne}, salle={salle}, capteur={sensor_id}")
                 return pd.DataFrame()
             
             df = pd.DataFrame(data)
             df['timestamp'] = pd.to_datetime(df['timestamp'])
             df = df.sort_values('timestamp')
+            
+            # Convertir les colonnes numériques en float
+            numeric_cols = ['co2', 'pm25', 'tvoc', 'temperature', 'humidity']
+            for col in numeric_cols:
+                if col in df.columns:
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
+            
+            # Limiter au nombre demandé
+            if limit and len(df) > limit:
+                df = df.tail(limit)
             
             logger.info(f"Données récupérées: {len(df)} points")
             return df
@@ -184,97 +194,112 @@ class RealtimeGenericPredictor:
             return pd.DataFrame()
     
     def create_features(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Crée les mêmes features que lors de l'entraînement."""
+        """Crée les mêmes features que lors de l'entraînement (aligné avec ml_train.py)."""
         df = df.copy()
         
         # Features temporelles
         df['hour'] = df['timestamp'].dt.hour
         df['day_of_week'] = df['timestamp'].dt.dayofweek
-        df['is_weekend'] = (df['day_of_week'] >= 5).astype(int)
         
         # Encodage salle/capteur (gérer les valeurs inconnues)
         df['salle_encoded'] = df['salle'].apply(
             lambda x: self.salle_encoder.transform([x])[0] 
             if x in self.salle_encoder.classes_ else -1
         )
-        df['capteur_encoded'] = df['capteur_id'].apply(
+        df['sensor_encoded'] = df['sensor_id'].apply(
             lambda x: self.capteur_encoder.transform([x])[0] 
             if x in self.capteur_encoder.classes_ else -1
         )
         
-        # Tendances et moyennes mobiles PAR CAPTEUR
-        for (salle, capteur) in df[['salle', 'capteur_id']].drop_duplicates().values:
-            mask = (df['salle'] == salle) & (df['capteur_id'] == capteur)
+        # Features lag et moyennes mobiles PAR CAPTEUR (comme ml_train.py)
+        for (salle, capteur) in df[['salle', 'sensor_id']].drop_duplicates().values:
+            mask = (df['salle'] == salle) & (df['sensor_id'] == capteur)
             sensor_df = df[mask].copy()
             
             for col in ['co2', 'pm25', 'tvoc', 'temperature', 'humidity']:
                 if col in sensor_df.columns:
-                    df.loc[mask, f'{col}_diff'] = sensor_df[col].diff()
+                    # Moyennes mobiles 3 et 6
                     df.loc[mask, f'{col}_ma3'] = sensor_df[col].rolling(window=3, min_periods=1).mean()
+                    df.loc[mask, f'{col}_ma6'] = sensor_df[col].rolling(window=6, min_periods=1).mean()
+                    # Features lag
+                    df.loc[mask, f'{col}_lag1'] = sensor_df[col].shift(1)
+                    df.loc[mask, f'{col}_lag2'] = sensor_df[col].shift(2)
         
         # Remplir les NaN
-        df = df.fillna(method='bfill').fillna(method='ffill')
+        df = df.bfill().ffill()
         
         return df
     
     def predict(self, enseigne: str = "Maison", salle: Optional[str] = None, 
-                capteur_id: Optional[str] = None) -> Dict:
+                sensor_id: Optional[str] = None) -> Dict:
         """
         Effectue une prédiction pour une salle/capteur donné.
         
         Args:
             enseigne: Nom de l'enseigne
-            salle: Nom de la salle (optionnel si capteur_id fourni)
-            capteur_id: ID du capteur
+            salle: Nom de la salle (optionnel si sensor_id fourni)
+            sensor_id: ID du capteur
             
         Returns:
             Dict avec les prédictions et recommandations
         """
         # Récupérer les données récentes directement de iaq_database
-        df = self.fetch_recent_data_direct(enseigne, salle, capteur_id, limit=100)
+        df = self.fetch_recent_data_direct(enseigne, salle, sensor_id, limit=100)
         
         if df.empty or len(df) < 3:
             return {
                 "error": "Not enough recent data for prediction",
                 "enseigne": enseigne,
                 "salle": salle,
-                "capteur_id": capteur_id
+                "sensor_id": sensor_id
             }
         
         # Prendre le dernier capteur s'il y en a plusieurs
-        if capteur_id is None and 'capteur_id' in df.columns:
-            capteur_id = df['capteur_id'].iloc[-1]
+        if sensor_id is None and 'sensor_id' in df.columns:
+            sensor_id = df['sensor_id'].iloc[-1]
         if salle is None and 'salle' in df.columns:
             salle = df['salle'].iloc[-1]
         
         # Filtrer pour ce capteur spécifique
-        df = df[(df['salle'] == salle) & (df['capteur_id'] == capteur_id)]
+        df = df[(df['salle'] == salle) & (df['sensor_id'] == sensor_id)]
         
         if df.empty:
-            return {"error": f"No data for capteur {capteur_id} in room {salle}"}
+            return {"error": f"No data for capteur {sensor_id} in room {salle}"}
         
         # Créer les features
         df_features = self.create_features(df)
         
-        # Préparer les features pour la prédiction
-        # Utiliser l'ordre des features enregistré dans la config si disponible
+        # Colonnes à exclure des features
+        # Utiliser EXACTEMENT les features du training (ordre important)
         if self.config and 'feature_columns' in self.config:
-            # Les colonnes de features attendues par le modèle sont la moyenne des colonnes listées
-            feature_cols = [c for c in df_features.columns 
-                            if c not in ['timestamp', 'enseigne', 'salle', 'capteur_id']]
-            # S'assurer que les colonnes de base (co2, pm25, tvoc, temperature, humidity) sont présentes
-            expected_base = list(self.config.get('feature_columns', []))
-            # Recréer l'ordre: prendre d'abord les expected_base s'ils existent, puis le reste
-            ordered = [c for c in expected_base if c in feature_cols]
-            remaining = [c for c in feature_cols if c not in ordered]
-            feature_cols = ordered + remaining
+            feature_cols = self.config['feature_columns']
+            # Vérifier que toutes les features existent
+            missing = [col for col in feature_cols if col not in df_features.columns]
+            if missing:
+                logger.warning(f"Features manquantes: {missing}")
+                return {"error": f"Missing features: {missing}"}
+            
+            logger.info(f"Using {len(feature_cols)} features from config")
         else:
-            feature_cols = [col for col in df_features.columns 
-                           if col not in ['timestamp', 'enseigne', 'salle', 'capteur_id']]
+            # Fallback si pas de config
+            exclude_cols = ['timestamp', 'enseigne', 'salle', 'capteur_id', 'sensor_id', 'global_score', 'global_level']
+            feature_cols = [col for col in df_features.columns if col not in exclude_cols]
+            logger.warning(f"No config, using {len(feature_cols)} auto-detected features")
         
         # Prendre la moyenne des dernières lignes (lookback window)
-        lookback = min(self.config['lookback_minutes'], len(df_features))
-        X_recent = df_features.tail(lookback)[feature_cols].values
+        lookback = min(self.config.get('lookback_minutes', 10), len(df_features))
+        X_recent_df = df_features.tail(lookback)[feature_cols]
+        
+        logger.info(f"X_recent_df shape: {X_recent_df.shape}, columns: {list(X_recent_df.columns)}")
+        
+        # Convertir toutes les colonnes en float pour éviter les erreurs de type
+        for col in X_recent_df.columns:
+            X_recent_df[col] = pd.to_numeric(X_recent_df[col], errors='coerce')
+        
+        # Remplir les NaN éventuels
+        X_recent_df = X_recent_df.fillna(0)
+        
+        X_recent = X_recent_df.values
         X_input = np.mean(X_recent, axis=0).reshape(1, -1)
         
         # Normaliser
@@ -309,15 +334,28 @@ class RealtimeGenericPredictor:
             logger.error(f"Nombre de prédictions ({len(preds_vector)}) != targets attendues ({len(target_cols)})")
             return {"error": "Model output size mismatch with config target_columns"}
 
-        # Associer les prédictions aux noms de cibles
-        predictions = {target: float(preds_vector[idx]) for idx, target in enumerate(target_cols)}
+        # Associer les prédictions aux noms de cibles (en gérant NaN/Inf)
+        predictions = {}
+        for idx, target in enumerate(target_cols):
+            val = float(preds_vector[idx])
+            # Remplacer NaN/Inf par None pour compatibilité JSON
+            if np.isnan(val) or np.isinf(val):
+                predictions[target] = None
+            else:
+                predictions[target] = val
         
-        # Valeurs actuelles
+        # Valeurs actuelles (en gérant NaN/Inf)
+        def safe_float(series, idx=-1):
+            if series.empty:
+                return None
+            val = float(series.iloc[idx])
+            return None if (np.isnan(val) or np.isinf(val)) else val
+        
         current_values = {
-            "co2": float(df['co2'].iloc[-1]) if 'co2' in df.columns else None,
-            "pm25": float(df['pm25'].iloc[-1]) if 'pm25' in df.columns else None,
-            "tvoc": float(df['tvoc'].iloc[-1]) if 'tvoc' in df.columns else None,
-            "humidity": float(df['humidity'].iloc[-1]) if 'humidity' in df.columns else None,
+            "co2": safe_float(df['co2']) if 'co2' in df.columns else None,
+            "pm25": safe_float(df['pm25']) if 'pm25' in df.columns else None,
+            "tvoc": safe_float(df['tvoc']) if 'tvoc' in df.columns else None,
+            "humidity": safe_float(df['humidity']) if 'humidity' in df.columns else None,
         }
         
         # Analyser les risques
@@ -327,7 +365,7 @@ class RealtimeGenericPredictor:
             "timestamp": datetime.now().isoformat(),
             "enseigne": enseigne,
             "salle": salle,
-            "capteur_id": capteur_id,
+            "capteur_id": sensor_id,
             "current_values": current_values,
             "predicted_values": predictions,
             # `forecast_minutes` est le nombre de pas (5min) prévus ; convertir en minutes
@@ -353,32 +391,49 @@ class RealtimeGenericPredictor:
             
             current_level = self._get_risk_level(current_val, thresholds)
             predicted_level = self._get_risk_level(predicted_val, thresholds)
+            trend = "increasing" if predicted_val > current_val else "decreasing"
             
             risks[metric] = {
                 "current_value": round(current_val, 2),
                 "predicted_value": round(predicted_val, 2),
                 "current_level": current_level,
                 "predicted_level": predicted_level,
-                "trend": "increasing" if predicted_val > current_val else "decreasing",
+                "trend": trend,
                 "change_percent": round(((predicted_val - current_val) / current_val * 100), 2) if current_val > 0 else 0
             }
             
-            if predicted_level in ["critical", "danger"]:
+            # Logique améliorée pour éviter les incohérences
+            # 1. Si actuellement critique/danger ET en augmentation -> URGENT
+            if current_level in ["critical", "danger"] and trend == "increasing":
+                action = {
+                    "metric": metric,
+                    "level": current_level,
+                    "action": RECOMMENDED_ACTIONS[metric][current_level],
+                    "priority": "urgent",
+                    "estimated_time_to_critical": "Maintenant - déjà critique et en augmentation"
+                }
+                actions_needed.append(action)
+            # 2. Si actuellement critique/danger mais en diminution -> HIGH (situation s'améliore)
+            elif current_level in ["critical", "danger"] and trend == "decreasing":
+                # Ne pas générer d'action URGENTE si ça s'améliore
+                if predicted_level in ["critical", "danger"]:
+                    # Reste critique même en diminuant
+                    action = {
+                        "metric": metric,
+                        "level": current_level,
+                        "action": RECOMMENDED_ACTIONS[metric][current_level],
+                        "priority": "high",
+                        "estimated_time_to_critical": "Actuellement critique, amélioration prévue"
+                    }
+                    actions_needed.append(action)
+            # 3. Si prédit critique/danger (mais pas encore) -> HIGH/MEDIUM
+            elif predicted_level in ["critical", "danger"] and current_level not in ["critical", "danger"]:
                 action = {
                     "metric": metric,
                     "level": predicted_level,
                     "action": RECOMMENDED_ACTIONS[metric][predicted_level],
                     "priority": "high" if predicted_level == "danger" else "medium",
                     "estimated_time_to_critical": f"{self.config['forecast_minutes'] * 5} minutes"
-                }
-                actions_needed.append(action)
-            elif current_level in ["critical", "danger"]:
-                action = {
-                    "metric": metric,
-                    "level": current_level,
-                    "action": RECOMMENDED_ACTIONS[metric][current_level],
-                    "priority": "urgent",
-                    "estimated_time_to_critical": "Now - already critical"
                 }
                 actions_needed.append(action)
         
