@@ -116,6 +116,8 @@ function displayGlobalPreventiveActions(allRoomActions) {
     const container = document.getElementById('preventive-global-container');
     if (!container) return;
     
+    const t = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t : (()=>undefined);
+    
     if (!allRoomActions || allRoomActions.length === 0) {
         container.innerHTML = `
             <div class="preventive-all-good">
@@ -124,8 +126,6 @@ function displayGlobalPreventiveActions(allRoomActions) {
         `;
         return;
     }
-    
-    const t = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t : (()=>undefined);
     
     const deviceI18nMap = {
         'window': 'window',
