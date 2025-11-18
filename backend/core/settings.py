@@ -3,9 +3,10 @@ Configuration centrale pour l'application IAQverse
 """
 from pathlib import Path
 from typing import Optional
-from pydantic import BaseSettings
+import os
 
-class Settings(BaseSettings):
+
+class Settings:
     """Configuration globale de l'application"""
     
     # Application
@@ -30,40 +31,36 @@ class Settings(BaseSettings):
     ROOMS_DIR: Path = ASSETS_DIR / "rooms"
     
     # InfluxDB
-    INFLUXDB_ENABLED: bool = False  # Désactivé par défaut, activé si disponible
-    INFLUXDB_URL: str = "http://localhost:8086"
-    INFLUXDB_TOKEN: Optional[str] = None
-    INFLUXDB_ORG: str = "iaqverse"
-    INFLUXDB_BUCKET: str = "iaq_data"
+    INFLUXDB_ENABLED: bool = os.getenv("INFLUXDB_ENABLED", "false").lower() == "true"
+    INFLUXDB_URL: str = os.getenv("INFLUXDB_URL", "http://localhost:8086")
+    INFLUXDB_TOKEN: Optional[str] = os.getenv("INFLUXDB_TOKEN")
+    INFLUXDB_ORG: str = os.getenv("INFLUXDB_ORG", "iaqverse")
+    INFLUXDB_BUCKET: str = os.getenv("INFLUXDB_BUCKET", "iaq_data")
     
     # SQLite
     SQLITE_DB_PATH: Path = BASE_DIR / "database" / "sqlite.db"
     
     # WebSocket
-    WEBSOCKET_ENABLED: bool = True
-    WEBSOCKET_PING_INTERVAL: int = 30
-    WEBSOCKET_PING_TIMEOUT: int = 10
+    WEBSOCKET_ENABLED: bool = os.getenv("WEBSOCKET_ENABLED", "true").lower() == "true"
+    WEBSOCKET_PING_INTERVAL: int = int(os.getenv("WEBSOCKET_PING_INTERVAL", "30"))
+    WEBSOCKET_PING_TIMEOUT: int = int(os.getenv("WEBSOCKET_PING_TIMEOUT", "10"))
     
     # MQTT (optionnel)
-    MQTT_ENABLED: bool = False
-    MQTT_BROKER: str = "localhost"
-    MQTT_PORT: int = 1883
-    MQTT_USERNAME: Optional[str] = None
-    MQTT_PASSWORD: Optional[str] = None
-    MQTT_TOPIC_PREFIX: str = "iaqverse"
+    MQTT_ENABLED: bool = os.getenv("MQTT_ENABLED", "false").lower() == "true"
+    MQTT_BROKER: str = os.getenv("MQTT_BROKER", "localhost")
+    MQTT_PORT: int = int(os.getenv("MQTT_PORT", "1883"))
+    MQTT_USERNAME: Optional[str] = os.getenv("MQTT_USERNAME")
+    MQTT_PASSWORD: Optional[str] = os.getenv("MQTT_PASSWORD")
+    MQTT_TOPIC_PREFIX: str = os.getenv("MQTT_TOPIC_PREFIX", "iaqverse")
     
     # ML Services
-    ML_PREDICTOR_INTERVAL: int = 600  # 10 minutes
-    ML_TRAINER_INTERVAL: int = 86400  # 24 heures
-    ML_FORECAST_MINUTES: int = 30
+    ML_PREDICTOR_INTERVAL: int = int(os.getenv("ML_PREDICTOR_INTERVAL", "600"))  # 10 minutes
+    ML_TRAINER_INTERVAL: int = int(os.getenv("ML_TRAINER_INTERVAL", "86400"))  # 24 heures
+    ML_FORECAST_MINUTES: int = int(os.getenv("ML_FORECAST_MINUTES", "30"))
     
     # Data retention
-    DATA_RETENTION_DAYS: int = 90
-    MAX_MEMORY_RECORDS: int = 10000  # Limite pour la mémoire temporaire
-    
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    DATA_RETENTION_DAYS: int = int(os.getenv("DATA_RETENTION_DAYS", "90"))
+    MAX_MEMORY_RECORDS: int = int(os.getenv("MAX_MEMORY_RECORDS", "10000"))
 
 
 # Instance globale
