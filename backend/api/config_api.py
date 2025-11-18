@@ -3,14 +3,42 @@ API endpoints pour la configuration de l'application
 """
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from pathlib import Path
-from typing import List
+from typing import List, Dict
 import logging
 
 from ..utils import load_config, save_config, extract_sensors_from_config
+from .ingest import iaq_database
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["config"])
+
+
+@router.get("/api/locations")
+def get_locations():
+    """
+    Retourne les emplacements disponibles (enseignes et salles) à partir des données
+    """
+    try:
+        locations: Dict[str, List[str]] = {}
+        
+        # Extraire des données en mémoire
+        for record in iaq_database:
+            enseigne = record.get("enseigne")
+            salle = record.get("salle")
+            
+            if enseigne and salle:
+                if enseigne not in locations:
+                    locations[enseigne] = []
+                if salle not in locations[enseigne]:
+                    locations[enseigne].append(salle)
+        
+        logger.info(f"Locations disponibles: {locations}")
+        return locations
+        
+    except Exception as e:
+        logger.error(f"Erreur lors de la récupération des locations: {e}")
+        return {}
 
 
 @router.get("/config")

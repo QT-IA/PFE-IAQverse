@@ -1,12 +1,26 @@
 {
-  "lookback_minutes": 12,
-  "forecast_minutes": 6,
+  "model_type": "voting_multi_output",
   "feature_columns": [
+    "humidity",
     "co2",
-    "pm25",
     "tvoc",
+    "pm25",
     "temperature",
-    "humidity"
+    "humidity_ma3",
+    "pm25_ma3",
+    "co2_ma3",
+    "tvoc_ma6",
+    "pm25_ma6",
+    "humidity_ma6",
+    "co2_lag1",
+    "humidity_lag1",
+    "pm25_lag1",
+    "tvoc_lag2",
+    "tvoc_lag1",
+    "sensor_encoded",
+    "salle_encoded",
+    "hour",
+    "day_of_week"
   ],
   "target_columns": [
     "co2",
@@ -14,43 +28,13 @@
     "tvoc",
     "humidity"
   ],
-  "model_type": "voting_multi_output",
-  "metrics_by_target": {
-    "co2": {
-      "mse": 670.4667819841582,
-      "mae": 16.96452939832873,
-      "r2": 0.976054116410981
-    },
-    "pm25": {
-      "mse": 29.691588149242804,
-      "mae": 1.0183641978232452,
-      "r2": 0.6893979716924628
-    },
-    "tvoc": {
-      "mse": 2697.3187391882275,
-      "mae": 40.40417006700049,
-      "r2": 0.25930247117830174
-    },
-    "humidity": {
-      "mse": 2.616431979796062,
-      "mae": 1.1289560407727406,
-      "r2": 0.49810346553489904
-    }
-  },
-  "metrics_global": {
-    "mse": 850.0233853253567,
-    "mae": 14.87900492598129,
-    "r2": 0.6057145062041622
-  },
-  "salles_trained": [
+  "trained_rooms": [
     "Bureau"
   ],
-  "capteurs_trained": [
+  "trained_sensors": [
     "Bureau1",
     "Bureau2",
     "Bureau3",
     "Bureau4"
-  ],
-  "training_date": "2025-11-11T17:51:09.100420",
-  "version": "3.0"
+  ]
 }

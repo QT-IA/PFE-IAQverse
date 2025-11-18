@@ -71,7 +71,7 @@ function getComfortShapes(maxTemp, maxHum) {
 // Configuration
 const REFRESH_MS = 3000; // 3s
 /* Fichier des graphiques IAQ - mise à jour dynamique sans rechargement de la page */
-const API_URL_DATA = "http://localhost:8000/api/iaq/measurements";
+const API_URL_DATA = "http://localhost:8000/api/iaq/data";
 const chartIds = ["co2-chart", "pm25-chart", "comfort-chart", "tvoc-chart"];
 // Evite le conflit avec la variable globale "config" utilisée par index.html
 const plotlyConfig = { responsive: true, displayModeBar: false };
@@ -257,7 +257,7 @@ function initEmptyCharts() {
 function resetCharts() {
   chartIds.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ""; });
   initEmptyCharts();
-  seenTimestamps = new Set();
+  seenTimestamps.clear(); // Vider l'historique des timestamps pour ne charger que la nouvelle salle
 }
 
 // Transforme les données en traces Plotly
@@ -372,11 +372,11 @@ function updateChartsWithData(data) {
   
 }
 
-// Récupère les données depuis l’API
+// Récupère les données depuis l'API
 async function fetchAndUpdate() {
   try {
     if (typeof window === "undefined" || typeof window.fetch !== "function") throw new Error("fetch indisponible dans ce contexte");
-    const params = new URLSearchParams({ enseigne: currentEnseigne || "", salle: currentSalle || "", hours: String(1), step: "5min" });
+    const params = new URLSearchParams({ enseigne: currentEnseigne || "", salle: currentSalle || "", hours: String(1), step: "1min" });
     const url = `${API_URL_DATA}?${params.toString()}`;
     console.debug("IAQ fetch:", url);
     const res = await window.fetch(url, { cache: "no-store" });
@@ -391,10 +391,13 @@ async function fetchAndUpdate() {
     const hasData = co2El && co2El.data && co2El.data[0] && co2El.data[0].x && co2El.data[0].x.length > 0;
     if (!hasData) { updateChartsWithData(data); return; }
     const xs = fresh.map(d => (d.timestamp ? new Date(d.timestamp) : null));
-    Plotly.extendTraces("co2-chart", { x: [xs], y: [fresh.map(d => d.co2)] }, [0]);
-    Plotly.extendTraces("pm25-chart", { x: [xs], y: [fresh.map(d => d.pm25)] }, [0]);
-    Plotly.extendTraces("comfort-chart", { x: [xs, xs], y: [fresh.map(d => d.temperature), fresh.map(d => d.humidity)] }, [0, 1]);
-    Plotly.extendTraces("tvoc-chart", { x: [xs], y: [fresh.map(d => d.tvoc)] }, [0]);
+    
+    // Limiter à 1 heure de données (60 points avec step=1min)
+    const maxPoints = 60;
+    Plotly.extendTraces("co2-chart", { x: [xs], y: [fresh.map(d => d.co2)] }, [0], maxPoints);
+    Plotly.extendTraces("pm25-chart", { x: [xs], y: [fresh.map(d => d.pm25)] }, [0], maxPoints);
+    Plotly.extendTraces("comfort-chart", { x: [xs, xs], y: [fresh.map(d => d.temperature), fresh.map(d => d.humidity)] }, [0, 1], maxPoints);
+    Plotly.extendTraces("tvoc-chart", { x: [xs], y: [fresh.map(d => d.tvoc)] }, [0], maxPoints);
     // Après extension des traces, mettre à jour la sévérité seulement si nouvelle valeur numérique
     try {
       const co2Box = document.getElementById('co2-chart');
@@ -442,6 +445,30 @@ async function fetchAndUpdate() {
   } catch (err) {
     console.error("Erreur fetch IAQ :", err);
     chartIds.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = `<div style="padding:16px;color:#c00">Erreur: ${err.message}</div>`; });
+  }
+}
+
+// Helper function to fetch predicted score from API
+async function getPredictedScore(enseigne, salle) {
+  try {
+    const url = `http://localhost:8000/api/predict/score?enseigne=${encodeURIComponent(enseigne)}&salle=${encodeURIComponent(salle)}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      console.warn(`Failed to fetch prediction: ${response.status}`);
+      return null;
+    }
+    const data = await response.json();
+    
+    // Si le modèle n'est pas disponible, retourner null
+    if (data.error || data.predicted_score === null) {
+      console.log('ML model not available, using fallback');
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error fetching predicted score:', error);
+    return null;
   }
 }
 
@@ -533,23 +560,13 @@ if (typeof window !== "undefined" && typeof Plotly !== "undefined") {
   const handleFirstRoomChange = () => {
     if (isFirstLoad) {
       isFirstLoad = false;
-      console.log('[charts] First roomChanged received, starting data fetch');
       fetchAndUpdate();
-      fetchPredictedScore(); // Récupérer le score prédit initial
       setInterval(fetchAndUpdate, REFRESH_MS);
-      // Note: fetchPredictedScore timer is handled separately below for minute synchronization
     }
   };
   
   // Écouter le premier événement roomChanged pour savoir que le contexte est prêt
   document.addEventListener('roomChanged', handleFirstRoomChange, { once: true });
-  
-  // Également écouter les changements de pièce pour mettre à jour le score prédit
-  document.addEventListener('roomChanged', () => {
-    if (!isFirstLoad) {
-      fetchPredictedScore();
-    }
-  });
   
   // Charger la dernière prédiction sauvegardée au démarrage
   try {
@@ -566,20 +583,8 @@ if (typeof window !== "undefined" && typeof Plotly !== "undefined") {
   
   // Fallback: si aucun roomChanged n'est émis après 1 seconde, démarrer quand même
   setTimeout(() => {
-    if (isFirstLoad) {
-      console.log('[charts] No roomChanged after 1s, starting data fetch anyway');
-      handleFirstRoomChange();
-    }
+    if (isFirstLoad) handleFirstRoomChange();
   }, 1000);
-  
-  // Programmer la mise à jour du score prédit toutes les minutes, synchronisée
-  const now = new Date();
-  const secondsUntilNextMinute = 60 - now.getSeconds();
-  const initialDelay = secondsUntilNextMinute * 1000;
-  setTimeout(() => {
-    fetchPredictedScore();
-    setInterval(fetchPredictedScore, 60000); // Ensuite toutes les minutes
-  }, initialDelay);
   
   let resizeTimer = null;
   window.addEventListener("resize", () => {
@@ -722,7 +727,6 @@ if (typeof window !== 'undefined'){
   // Écouter les changements d'onglet pour réinitialiser les bordures
   document.addEventListener('roomChanged', () => {
     try {
-      console.log('[charts] roomChanged event received, clearing borders');
       if (typeof window.clearChartDangerBorders === 'function') {
         window.clearChartDangerBorders();
       }
@@ -731,10 +735,34 @@ if (typeof window !== 'undefined'){
   
   document.addEventListener('enseigneChanged', () => {
     try {
-      console.log('[charts] enseigneChanged event received, clearing borders');
       if (typeof window.clearChartDangerBorders === 'function') {
         window.clearChartDangerBorders();
       }
     } catch(e) {}
   });
+}
+
+// ==========================================
+// PREDICTED SCORE AUTO-UPDATE (independent of Plotly)
+// ==========================================
+// Mettre à jour le score prédit régulièrement (toutes les 30 secondes)
+// Ce code s'exécute même si Plotly n'est pas chargé
+if (typeof window !== "undefined") {
+  // Attendre que le DOM soit prêt
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupPredictedScoreInterval);
+  } else {
+    setupPredictedScoreInterval();
+  }
+  
+  function setupPredictedScoreInterval() {
+    // Appel initial après un court délai
+    setTimeout(() => fetchPredictedScore(), 500);
+    
+    // Mise à jour toutes les 30 secondes
+    setInterval(() => fetchPredictedScore(), 30000);
+    
+    // Mise à jour immédiate lors du changement de pièce
+    document.addEventListener('roomChanged', () => fetchPredictedScore());
+  }
 }

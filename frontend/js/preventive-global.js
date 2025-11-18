@@ -41,8 +41,6 @@ async function fetchAndDisplayGlobalPreventiveActions() {
             return;
         }
         
-        console.log('[preventive-global] Config loaded, enseignes:', cfg.lieux.enseignes.length);
-        
         const allRoomActions = [];
         
         // Parcourir toutes les enseignes et toutes les pièces
@@ -88,8 +86,6 @@ async function fetchAndDisplayGlobalPreventiveActions() {
             }
         }
         
-        console.log('[preventive-global] Found actions for', allRoomActions.length, 'rooms');
-        
         // Sauvegarder dans sessionStorage
         sessionStorage.setItem('globalPreventiveActions', JSON.stringify(allRoomActions));
         
@@ -103,11 +99,27 @@ async function fetchAndDisplayGlobalPreventiveActions() {
             try {
                 const cachedData = JSON.parse(cached);
                 displayGlobalPreventiveActions(cachedData);
+                
+                // Ajouter un badge discret pour indiquer utilisation du cache
+                const badge = document.createElement('div');
+                badge.style.cssText = 'font-size: 11px; color: #999; text-align: center; margin-top: 10px;';
+                badge.textContent = '📦 Données en cache';
+                container.appendChild(badge);
+                
+                console.info('[preventive-global] Using cached data after error');
             } catch (e) {
-                container.innerHTML = `<div class="preventive-error">${t('digitalTwin.preventive.loading_error') || 'Erreur lors du chargement des prédictions'}</div>`;
+                console.error('[preventive-global] Failed to parse cache:', e);
+                container.innerHTML = `<div class="preventive-info" style="color: #666;">
+                    ℹ️ ${t('digitalTwin.preventive.loading') || 'Chargement des prédictions...'}<br>
+                    <small>Veuillez patienter</small>
+                </div>`;
             }
         } else {
-            container.innerHTML = `<div class="preventive-error">${t('digitalTwin.preventive.loading_error') || 'Erreur lors du chargement des prédictions'}</div>`;
+            console.warn('[preventive-global] No cache available, showing info message');
+            container.innerHTML = `<div class="preventive-info" style="color: #666;">
+                ℹ️ ${t('digitalTwin.preventive.loading') || 'Chargement des prédictions...'}<br>
+                <small>Les données seront disponibles dans quelques instants</small>
+            </div>`;
         }
     }
 }
@@ -194,7 +206,7 @@ function displayGlobalPreventiveActions(allRoomActions) {
                             <span class="preventive-action-toggle">▼</span>
                         </div>
                     </div>
-                    <div class="preventive-action-details">
+                        <div class="preventive-action-details">
                         <div class="preventive-action-verb">${actionVerb}</div>
                         <div class="preventive-action-reason">${buildReasonText(action, t)}</div>
                         <div class="preventive-action-values">
@@ -202,10 +214,26 @@ function displayGlobalPreventiveActions(allRoomActions) {
                                 <span class="preventive-value-label">${action.parameter} :</span>
                             </div>
                             <div class="preventive-value-change">
-                                <span>${action.current_value} ${action.unit}</span>
+                                <span class="preventive-value-current">${action.current_value} ${action.unit}</span>
                                 <span class="preventive-value-arrow">${t('digitalTwin.preventive.arrow') || '→'}</span>
-                                <span>${action.predicted_value} ${action.unit}</span>
+                                <span class="preventive-value-predicted">${action.predicted_value || action.current_value} ${action.unit}</span>
+                                ${action.change_percent !== undefined ? 
+                                    `<span class="preventive-value-percent ${action.change_percent > 0 ? 'increasing' : 'decreasing'}">
+                                        (${action.change_percent > 0 ? '+' : ''}${action.change_percent.toFixed(1)}%)
+                                    </span>` : ''}
                             </div>
+                            ${action.trend ? `<div class="preventive-value-trend">
+                                <span class="trend-indicator trend-${action.trend}">
+                                    ${action.trend === 'increasing' ? '📈' : action.trend === 'decreasing' ? '📉' : '➡️'}
+                                    ${action.trend === 'increasing' ? 'En augmentation' : action.trend === 'decreasing' ? 'En diminution' : 'Stable'}
+                                </span>
+                            </div>` : ''}
+                            ${action.forecast_minutes ? `<div class="preventive-value-forecast">
+                                <span class="forecast-time">Prévision à ${action.forecast_minutes} minutes</span>
+                            </div>` : ''}
+                            ${action.is_ml_action ? `<div class="preventive-ml-badge">
+                                <span class="ml-indicator">🤖 Prédiction ML</span>
+                            </div>` : ''}
                         </div>
                     </div>
                 </div>
@@ -270,7 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const initialDelay = secondsUntilNextMinute * 1000;
         setTimeout(() => {
             fetchAndDisplayGlobalPreventiveActions();
-            setInterval(fetchAndDisplayGlobalPreventiveActions, 60000);
+            setInterval(fetchAndDisplayGlobalPreventiveActions, 30000);
         }, initialDelay);
     } catch (e) {
         console.error('[preventive-global] Error in DOMContentLoaded:', e);

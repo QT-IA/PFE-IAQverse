@@ -298,17 +298,46 @@ async function fetchAndDisplayPreventiveActions() {
         
         console.log('[preventive] Fetching with params:', params.toString());
         
-        // Récupérer depuis /api/iaq/actions/preventive
-        const response = await fetch(`${API_ENDPOINTS.preventiveActions}?${params}`);
-        const data = await response.json();
+        const url = `${API_ENDPOINTS.preventiveActions}?${params}`;
         
-        // Sauvegarder dans sessionStorage
-        sessionStorage.setItem('preventiveActions', JSON.stringify(data));
-        
-        // Le score est inclus dans la réponse
-        await fetchAndDisplayPreventiveScore(params);
-        
-        displayPreventiveActions(data);
+        // Vérifier si apiCallWithCache existe, sinon utiliser fetch standard
+        if (typeof window.apiCallWithCache === 'function') {
+            await window.apiCallWithCache(
+                url,
+                'preventiveActions',
+                (data, fromCache) => {
+                    // Le score est inclus dans la réponse
+                    fetchAndDisplayPreventiveScore(params).catch(e => console.warn('[preventive] Score fetch failed:', e));
+                    displayPreventiveActions(data);
+                    
+                    // Ajouter un badge si depuis le cache
+                    if (fromCache) {
+                        const badge = document.createElement('div');
+                        badge.className = 'cache-badge';
+                        badge.textContent = '📦 Données en cache';
+                        badge.style.cssText = 'font-size: 12px; color: #666; margin-top: 10px; text-align: center;';
+                        container.appendChild(badge);
+                    }
+                },
+                (error) => {
+                    console.error('[preventive] All retries failed (apiCallWithCache):', error);
+                    container.innerHTML = `<div class="preventive-error">
+                        ⚠️ [API] Service de prédiction temporairement indisponible.<br>
+                        <small>Les données seront rechargées automatiquement.</small>
+                    </div>`;
+                },
+                { maxRetries: 2, retryDelay: 1000, useCacheOnError: true }
+            );
+        } else {
+            // Fallback : fetch standard sans retry
+            console.warn('[preventive] apiCallWithCache not available, using standard fetch');
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            sessionStorage.setItem('preventiveActions', JSON.stringify(data));
+            await fetchAndDisplayPreventiveScore(params).catch(e => console.warn('[preventive] Score fetch failed:', e));
+            displayPreventiveActions(data);
+        }
         
     } catch (error) {
         console.error('[preventive] Error fetching actions:', error);
@@ -318,11 +347,25 @@ async function fetchAndDisplayPreventiveActions() {
             try {
                 const cachedData = JSON.parse(cached);
                 displayPreventiveActions(cachedData);
+                // Ajouter un badge "données en cache"
+                const badge = document.createElement('div');
+                badge.className = 'cache-badge';
+                badge.textContent = '📦 Données en cache';
+                badge.style.cssText = 'font-size: 12px; color: #666; margin-top: 10px; text-align: center;';
+                container.appendChild(badge);
             } catch (e) {
-                container.innerHTML = '<div class="preventive-error">Erreur lors du chargement des prédictions</div>';
+                console.error('[preventive] Error parsing cache:', e);
+                container.innerHTML = `<div class="preventive-error">
+                    ⚠️ [CACHE] Service de prédiction temporairement indisponible.<br>
+                    <small>Les données seront rechargées automatiquement.</small>
+                </div>`;
             }
         } else {
-            container.innerHTML = '<div class="preventive-error">Erreur lors du chargement des prédictions</div>';
+            console.error('[preventive] No cache available after error');
+            container.innerHTML = `<div class="preventive-error">
+                ⚠️ [NO CACHE] Service de prédiction temporairement indisponible.<br>
+                <small>Les données seront rechargées automatiquement.</small>
+            </div>`;
         }
     }
 }
@@ -334,7 +377,12 @@ function displayPreventiveActions(data) {
     const container = document.getElementById('preventive-actions-container');
     if (!container) return;
     
-    if (data.error || !data.actions || data.actions.length === 0) {
+    const t = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t : (()=>undefined);
+    
+    console.log('[displayPreventiveActions] Received data:', data);
+    console.log('[displayPreventiveActions] Actions type:', typeof data.actions, 'isArray:', Array.isArray(data.actions));
+    
+    if (data.error || !data.actions || !Array.isArray(data.actions) || data.actions.length === 0) {
         container.innerHTML = `
             <div class="preventive-empty">
                 <span class="preventive-icon"></span>
@@ -343,8 +391,6 @@ function displayPreventiveActions(data) {
         `;
         return;
     }
-    
-    const t = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t : (()=>undefined);
     
     const deviceI18nMap = {
         'window': 'window',
@@ -405,8 +451,23 @@ function displayPreventiveActions(data) {
                     <div class="value-row">
                         <span class="value-current">${action.current_value} ${action.unit}</span>
                         <span class="value-arrow">${t('digitalTwin.preventive.arrow') || '→'}</span>
-                        <span class="value-predicted">${action.predicted_value} ${action.unit}</span>
+                        <span class="value-predicted">${action.predicted_value || action.current_value} ${action.unit}</span>
+                        ${action.change_percent !== undefined ? 
+                            `<span class="value-percent ${action.change_percent > 0 ? 'increasing' : 'decreasing'}">
+                                (${action.change_percent > 0 ? '+' : ''}${action.change_percent.toFixed(1)}%)
+                            </span>` : ''}
                     </div>
+                    ${action.trend ? `<div class="value-row trend-row">
+                        <span class="trend-indicator trend-${action.trend}">
+                            ${action.trend === 'increasing' ? '📈 En augmentation' : action.trend === 'decreasing' ? '📉 En diminution' : '➡️ Stable'}
+                        </span>
+                    </div>` : ''}
+                    ${action.forecast_minutes ? `<div class="value-row forecast-row">
+                        <span class="forecast-time">⏱️ Prévision à ${action.forecast_minutes} min</span>
+                    </div>` : ''}
+                    ${action.is_ml_action ? `<div class="value-row ml-row">
+                        <span class="ml-badge">🤖 Prédiction ML</span>
+                    </div>` : ''}
                 </div>
             </div>
         `;
@@ -417,8 +478,6 @@ function displayPreventiveActions(data) {
 
 // Sync alert-point elements into the actions table as rows
 function syncAlertPointsToTable() {
-    console.log('[digital-twin] syncAlertPointsToTable called');
-    
     const tbody = document.querySelector('.actions-table tbody');
     if (!tbody) {
         console.warn('[digital-twin] Actions table tbody not found');
@@ -450,7 +509,6 @@ function syncAlertPointsToTable() {
                 const ens = cfg.lieux.enseignes.find(e => e.id === activeEnseigneId);
                 if (ens && ens.pieces && ens.pieces.length > 0) {
                     activeRoomId = ens.pieces[0].id;
-                    console.log(`[digital-twin] No active tab, using first room: ${activeRoomId}`);
                 }
             }
             
@@ -462,26 +520,18 @@ function syncAlertPointsToTable() {
     };
     
     const { activeEnseigneId, activeRoomId } = getActiveContext();
-    console.log(`[digital-twin] Active context: ${activeEnseigneId}/${activeRoomId}`);
 
     // Only include active alert points that belong to the current enseigne/salle
     const allActivePoints = Array.from(document.querySelectorAll('.alert-point[data-active="true"]'));
-    console.log(`[digital-twin] Found ${allActivePoints.length} active alert-points`);
     
     const points = allActivePoints.filter(pt => {
         const ptEnseigne = pt.getAttribute('data-enseigne');
         const ptPiece = pt.getAttribute('data-piece');
         const matches = (ptEnseigne === activeEnseigneId && ptPiece === activeRoomId);
-        if (!matches) {
-            console.log(`[digital-twin] Filtering out: ${ptEnseigne}/${ptPiece}`);
-        }
         return matches;
     });
     
-    console.log(`[digital-twin] Filtered to ${points.length} alert-points for active context`);
-    
     if (!points || points.length === 0) {
-        console.log('[digital-twin] No alert-points to display in table');
         return;
     }
 
@@ -492,11 +542,9 @@ function syncAlertPointsToTable() {
     points.forEach(pt => { 
         const explicitKey = pt.getAttribute('data-i18n-key');
         const severity = pt.getAttribute('data-severity');
-        console.log(`[digital-twin] Processing alert-point: ${explicitKey}, severity: ${severity}, active: ${pt.getAttribute('data-active')}`);
         
         const names = (pt.getAttribute('data-target-names') || '').split('|').map(s => s.trim()).filter(Boolean);
         if (!explicitKey && names.length === 0) {
-            console.log('[digital-twin] Skipping alert-point: no key or names');
             return;
         }
         // Candidate key: use first name, sanitized to ascii lowercase
@@ -518,7 +566,6 @@ function syncAlertPointsToTable() {
             'info': { emoji: '🟢', cls: 'alert-green' }
         };
         const sev = severityMap[severityLower] || severityMap['danger'];
-        console.log(`[digital-twin] Alert ${explicitKey}: severity ${severityLower} -> emoji ${sev.emoji}`);
 
     const tr = document.createElement('tr');
         tr.className = `dynamic-alert ${sev.cls}`;
@@ -566,7 +613,6 @@ function syncAlertPointsToTable() {
 
         // queue row with severity weight for sorting
         const weight = severityLower === 'danger' ? 0 : (severityLower === 'warning' ? 1 : 2);
-        console.log(`[digital-twin] Adding row for ${explicitKey} with weight ${weight}`);
         builtRows.push({ tr, weight });
     });
 
@@ -598,11 +644,9 @@ function syncAlertPointsToTable() {
     // Toujours mettre à jour le panneau s'il est ouvert et que le sujet existe encore
     if (isPanelOpen && previousSubject) {
         if (subjectStillExists && newDetailsForSubject !== null) {
-            console.log(`[digital-twin] Refreshing details panel for subject "${previousSubject}"`);
             showDetails(previousSubject, newDetailsForSubject, true); // forceRefresh = true
         } else if (!subjectStillExists) {
             // Si le sujet n'existe plus, fermer le panneau
-            console.log(`[digital-twin] Subject "${previousSubject}" no longer exists, closing panel`);
             const panel = document.getElementById('details-panel');
             if (panel) {
                 panel.classList.add('hidden');
@@ -624,8 +668,8 @@ document.addEventListener('DOMContentLoaded', () => {
     try { 
         syncAlertPointsToTable(); 
         fetchAndDisplayPreventiveActions();
-        // Rafraîchir les actions préventives toutes les minutes
-        setInterval(fetchAndDisplayPreventiveActions, 60000);
+        // Rafraîchir les actions préventives toutes les 30 secondes
+        setInterval(fetchAndDisplayPreventiveActions, 30000);
     } catch(e){
         console.error('[digital-twin] Error in DOMContentLoaded:', e);
     } 

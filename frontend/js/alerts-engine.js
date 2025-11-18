@@ -1,7 +1,7 @@
 /* Alerts Engine: evaluates IAQ data against thresholds and toggles alert-points visibility/severity */
 (function (window) {
     const REFRESH_MS = 5000; // polling frequency
-    const API_URL_DATA = "http://localhost:8000/api/iaq/measurements";
+    const API_URL_DATA = "http://localhost:8000/api/iaq/data";
     // Centralise all thresholds here to avoid magic numbers
     const THRESHOLDS = {
         CO2: { WARNING: 800, DANGER: 1200 },
@@ -111,11 +111,8 @@
     }
 
     function applyAlertPointsActivation(map, actionsMap) {
-        console.log('[alerts-engine] applyAlertPointsActivation called', { map, activeEnseigneId, activeRoomId });
-        
         // Récupérer tous les alert-points
         const allAlertPoints = document.querySelectorAll(".alert-point");
-        console.log(`[alerts-engine] Found ${allAlertPoints.length} alert-points in DOM`);
         
         if (!activeEnseigneId || !activeRoomId) {
             console.warn('[alerts-engine] No active context, deactivating all');
@@ -221,15 +218,11 @@
             // Masquer les alert-points de type "info" dans la 3D (mais garder data-active pour le tableau)
             if (severity === 'info') {
                 el.style.display = 'none';
-                console.log(`[alerts-engine] Alert ${key} is info severity - hidden in 3D but will appear in table`);
             } else {
                 el.style.display = ''; // Afficher les autres sévérités
                 activatedCount++;
-                console.log(`[alerts-engine] Activated ${key} with severity ${severity}`);
             }
         });
-        
-        console.log(`[alerts-engine] Activated ${activatedCount}/${allAlertPoints.length} alert-points`);
         
         // Sync actions table
         try {
@@ -272,15 +265,11 @@
      * Génère les alert-points pour une pièce spécifique
      */
     function renderAlertPoints(enseigneId, pieceId) {
-        console.log(`[alerts-engine] renderAlertPoints called for ${enseigneId}/${pieceId}`);
-        
         const container = document.getElementById('alert-points-container');
         if (!container) {
             console.error('[alerts-engine] alert-points-container not found in DOM!');
             return;
         }
-        
-        console.log('[alerts-engine] Container found, clearing and generating alert-points...');
         
         // Vider le conteneur
         container.innerHTML = '';
@@ -296,10 +285,7 @@
             alertPoint.setAttribute('data-active', 'false');
             alertPoint.setAttribute('style', point.style);
             container.appendChild(alertPoint);
-            console.log(`[alerts-engine] Created alert-point: ${point.key}`);
         });
-        
-        console.log(`[alerts-engine] Successfully generated ${DEFAULT_ALERT_POINTS.length} alert-points`);
     }
 
     // Track active enseigne/salle
@@ -335,14 +321,11 @@
             
             activeRoomId = piece ? piece.id : null;
             activeRoomName = piece ? piece.nom || piece.id : null;
-            
-            console.log(`[alerts-engine] Context: ${activeEnseigneId}/${activeRoomId} (${activeEnseigneName}/${activeRoomName})`);
         } catch (e) { 
             console.error('[alerts-engine] initActiveContext error:', e);
         }
     }
     document.addEventListener("roomChanged", (ev) => {
-        console.log('[alerts-engine] roomChanged event received', ev.detail);
         try {
             const cfg =
                 typeof window.getConfig === "function"
@@ -366,16 +349,12 @@
             activeRoomId = piece ? piece.id : activeRoomId;
             activeRoomName = piece ? piece.nom || piece.id : activeRoomName;
             
-            console.log(`[alerts-engine] Room changed to ${activeEnseigneId}/${activeRoomId} (${activeEnseigneName}/${activeRoomName})`);
-            
             // Régénérer les alert-points pour la nouvelle pièce
             if (activeEnseigneId && activeRoomId) {
-                console.log('[alerts-engine] Regenerating alert-points for new room...');
                 renderAlertPoints(activeEnseigneId, activeRoomId);
             }
             
             // Rafraîchir immédiatement les alertes
-            console.log('[alerts-engine] Fetching IAQ data for new room...');
             fetchLatestIAQ();
         } catch (e) { 
             console.error('[alerts-engine] roomChanged error:', e);
@@ -383,20 +362,15 @@
     });
 
     document.addEventListener("enseigneChanged", (ev) => {
-        console.log('[alerts-engine] enseigneChanged event received', ev.detail);
         try {
             initActiveContext();
             
-            console.log(`[alerts-engine] Enseigne changed to ${activeEnseigneId}/${activeRoomId}`);
-            
             // Régénérer les alert-points pour la nouvelle enseigne
             if (activeEnseigneId && activeRoomId) {
-                console.log('[alerts-engine] Regenerating alert-points for new enseigne...');
                 renderAlertPoints(activeEnseigneId, activeRoomId);
             }
             
             // Rafraîchir immédiatement les alertes
-            console.log('[alerts-engine] Fetching IAQ data for new enseigne...');
             fetchLatestIAQ();
         } catch (e) { 
             console.error('[alerts-engine] enseigneChanged error:', e);
@@ -501,13 +475,10 @@
     }
 
     async function start() {
-        console.log('[alerts-engine] Starting initialization...');
-        
         // Attendre que la config soit chargée
         try {
             if (typeof window.loadConfig === 'function') {
                 await window.loadConfig();
-                console.log('[alerts-engine] Config loaded');
             }
         } catch (e) {
             console.warn('[alerts-engine] Could not load config:', e);
@@ -523,7 +494,6 @@
         const handleFirstRoomChange = () => {
             if (isFirstLoad) {
                 isFirstLoad = false;
-                console.log('[alerts-engine] First roomChanged received, starting alert checks');
                 fetchLatestIAQ();
                 setInterval(fetchLatestIAQ, REFRESH_MS);
             }
@@ -535,10 +505,8 @@
         // Fallback: si aucun roomChanged après 1 seconde, démarrer quand même
         setTimeout(() => {
             if (isFirstLoad) {
-                console.log('[alerts-engine] No roomChanged after 1s, starting anyway');
                 // Générer les alert-points pour la pièce active
                 if (activeEnseigneId && activeRoomId) {
-                    console.log(`[alerts-engine] Generating alert-points for ${activeEnseigneId}/${activeRoomId}`);
                     renderAlertPoints(activeEnseigneId, activeRoomId);
                 }
                 handleFirstRoomChange();

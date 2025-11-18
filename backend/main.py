@@ -1,789 +1,640 @@
 """
-API FastAPI pour le systeme IAQ
-Point d'entree principal de l'application
+API FastAPI pour le système IAQverse - Version 2.0
+Architecture modulaire et microservices
 """
-
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Body
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from datetime import datetime
-from typing import List, Optional
 from pathlib import Path
-import pandas as pd
-import numpy as np
+from typing import Optional, List
 import asyncio
 import logging
+import pandas as pd
+import numpy as np
+from datetime import datetime
 
-from .modelsAPI import IAQData, PreventiveAction, ActionExecution
-from .utils import (
-    sanitize_for_storage,
-    load_dataset_df,
-    load_config,
-    save_config,
-    extract_sensors_from_config
+# Import des modules core
+from .core import settings, get_influx_client, get_websocket_manager
+
+# Import des routers API
+from .api import (
+    ingest_router,
+    query_router,
+    config_router,
+    iaq_database
 )
-from .action_selector import IAQScoreCalculator
 
+# Import des utilitaires
+from .utils import load_dataset_df
+
+# Configuration du logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("uvicorn.error")
 
+# Création de l'application FastAPI
 app = FastAPI(
-    title="API IAQ - Indoor Air Quality",
-    description="API pour la surveillance et la gestion de la qualité de l'air intérieur",
-    version="1.0.0",
-    docs_url="/api/iaq/docs",
-    redoc_url="/api/iaq/redoc",
-    openapi_url="/api/iaq/openapi.json"
+    title=settings.APP_NAME,
+    version=settings.APP_VERSION,
+    description="Plateforme IAQ avec jumeau numérique, ML et IoT"
 )
 
+# Configuration CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Bases de donnees en memoire
-iaq_database: List[dict] = []
-preventive_actions_log: List[dict] = []
-actions_execution_log: List[dict] = []
+# Enregistrement des routers
+app.include_router(ingest_router)
+app.include_router(query_router)
+app.include_router(config_router)
 
-# Chargement du dataset au demarrage
+# Chargement du dataset au démarrage
 DATA_DF = load_dataset_df()
 
-# Tache de posting periodique
+# Tâche de posting périodique
 posting_task: Optional[asyncio.Task] = None
-INTERVAL_SECONDS = 3
+INTERVAL_SECONDS = 5  # Post toutes les 5 secondes (mode debug)
+
+# Prédicteur ML (initialisé paresseusement)
+ml_predictor = None
+
+
+def get_ml_predictor():
+    """Initialise le prédicteur ML une seule fois"""
+    global ml_predictor
+    if ml_predictor is None:
+        try:
+            from .ml.ml_predict_generic import RealtimeGenericPredictor
+            ml_predictor = RealtimeGenericPredictor(model_dir=settings.ML_MODELS_DIR)
+            logger.info("✅ ML Predictor initialized")
+        except Exception as e:
+            logger.error(f"❌ Failed to load ML predictor: {e}")
+            ml_predictor = False
+    return ml_predictor if ml_predictor is not False else None
 
 
 # ============================================================================
-# ENDPOINT ARCHITECTURE - DOCUMENTATION API
+# ENDPOINTS ML PREDICTION
 # ============================================================================
 
-@app.get("/api/iaq/architecture", response_class=HTMLResponse, tags=["Documentation"])
-def get_architecture_html():
-    """
-    Retourne une page HTML jolie et interactive de la documentation de l'architecture.
-    """
-    html_path = Path(__file__).resolve().parent.parent / 'assets' / 'architecture.html'
-    
-    if not html_path.exists():
-        raise HTTPException(status_code=404, detail="Page introuvable")
-    
-    with open(html_path, 'r', encoding='utf-8') as f:
-        return f.read()
-
-
-# ============================================================================
-# ENDPOINTS IAQ DATA - MESURES
-# ============================================================================
-
-@app.get("/api/iaq/measurements", tags=["Measurements"])
-def get_iaq_measurements(
+@app.get("/api/predict/score")
+def get_predicted_score(
     enseigne: Optional[str] = None,
     salle: Optional[str] = None,
-    capteur_id: Optional[str] = None,
-    start: Optional[str] = None,
-    end: Optional[str] = None,
-    hours: Optional[int] = None,
-    step: Optional[str] = None,
-    raw: bool = False
+    sensor_id: Optional[str] = None
 ):
     """
-    Endpoint unifie pour recuperer les donnees IAQ avec filtrage et agregation flexibles.
-    
-    Parametres de filtrage:
-    - enseigne: Filtrer par enseigne
-    - salle: Filtrer par salle
-    - capteur_id: Filtrer par capteur
-    
-    Parametres temporels:
-    - start: Date de debut (ISO format)
-    - end: Date de fin (ISO format)
-    - hours: Recupere les N dernieres heures (si start/end absents)
-    
-    Parametres d'agregation:
-    - step: Intervalle d'agregation (5min, daily, weekly)
-    - raw: Si True, retourne les donnees brutes sans agregation
+    Retourne le score IAQ prédit dans 30 minutes par le modèle ML.
+    Si le modèle n'est pas disponible, utilise un fallback basé sur les tendances.
     """
-    if not iaq_database:
-        return []
-    
     try:
-        df = pd.DataFrame(iaq_database)
-    except Exception:
-        return []
-    
-    if df.empty or "timestamp" not in df.columns:
-        return []
-    
-    df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce", utc=True)
-    try:
-        if df["timestamp"].dt.tz is None:
-            df["timestamp"] = df["timestamp"].dt.tz_localize("UTC")
-        else:
-            df["timestamp"] = df["timestamp"].dt.tz_convert("UTC")
-    except Exception:
-        pass
-    
-    if enseigne:
-        e = enseigne.strip().lower()
-        if "enseigne" in df.columns:
-            df = df[df["enseigne"].astype(str).str.strip().str.lower() == e]
-        else:
-            return []
-    
-    if salle:
-        s = salle.strip().lower()
-        if "salle" in df.columns:
-            df = df[df["salle"].astype(str).str.strip().str.lower() == s]
-        else:
-            return []
-    
-    if capteur_id:
-        c = capteur_id.strip().lower()
-        if "capteur_id" in df.columns:
-            df = df[df["capteur_id"].astype(str).str.strip().str.lower() == c]
-        else:
-            return []
-    
-    if df.empty:
-        return []
-    
-    try:
-        start_ts = pd.to_datetime(start, utc=True) if start else None
-        end_ts = pd.to_datetime(end, utc=True) if end else None
-    except Exception:
-        raise HTTPException(status_code=400, detail="Format de date invalide")
-    
-    if hours is not None and start_ts is None and end_ts is None:
-        try:
-            end_ts = pd.to_datetime(df["timestamp"].max(), utc=True)
-            if pd.isna(end_ts):
-                return []
-            start_ts = end_ts - pd.Timedelta(hours=hours)
-        except Exception:
-            return []
-    
-    if start_ts is not None:
-        df = df[df["timestamp"] >= start_ts]
-    if end_ts is not None:
-        df = df[df["timestamp"] <= end_ts]
-    
-    if df.empty:
-        return []
-    
-    if raw or step is None:
-        df = df.sort_values("timestamp")
-        df["timestamp"] = df["timestamp"].dt.strftime("%Y-%m-%dT%H:%M:%S")
-        out = df.to_dict(orient="records")
+        predictor = get_ml_predictor()
         
-        # Calculer global_score pour les données brutes aussi
-        for record in out:
-            try:
-                predictions = {
-                    "co2": record.get("co2"),
-                    "pm25": record.get("pm25"),
-                    "tvoc": record.get("tvoc"),
-                    "humidity": record.get("humidity")
-                }
-                # Ne calculer que si on a au moins une valeur
-                if any(v is not None for v in predictions.values()):
-                    # Remplacer None par 0 pour le calcul (valeurs neutres)
-                    clean_predictions = {k: (v if v is not None else 0) for k, v in predictions.items()}
-                    score_data = IAQScoreCalculator.calculate_global_score(clean_predictions)
-                    record["global_score"] = score_data["global_score"]
-                    record["global_level"] = score_data["global_level"]
-            except Exception as e:
-                logger.warning(f"Erreur calcul score raw: {e}")
-                record["global_score"] = None
-                record["global_level"] = None
-        
-        return [sanitize_for_storage(r) for r in out]
-    
-    step_l = step.lower()
-    freq_map = {"5min": "5min", "daily": "D", "weekly": "W"}
-    
-    if step_l not in freq_map:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Parametre 'step' invalide. Valeurs acceptees: {', '.join(freq_map.keys())}"
-        )
-    
-    df = df.dropna(subset=["timestamp"]).set_index("timestamp").sort_index()
-    
-    freq = freq_map[step_l]
-    metrics = ["co2", "pm25", "tvoc", "temperature", "humidity"]
-    
-    try:
-        resampled = df.resample(freq, label="left", closed="left").mean(numeric_only=True)
-    except TypeError:
-        resampled = df.resample(freq, label="left", closed="left").mean()
-    
-    resampled = resampled.reindex(columns=[c for c in metrics if c in resampled.columns])
-    
-    try:
-        resampled = resampled.round(2)
-    except Exception:
-        pass
-    
-    try:
-        cols_to_keep = [c for c in ["enseigne", "salle", "capteur_id"] if c in df.columns]
-        if cols_to_keep:
-            def choose_val(s):
-                m = s.dropna()
-                if m.empty:
-                    return None
-                mode = m.mode()
-                return mode.iat[0] if not mode.empty else m.iat[0]
+        # Essayer d'abord avec le modèle ML
+        if predictor:
+            if not enseigne:
+                enseigne = "Maison"
             
-            meta = df[cols_to_keep].resample(freq, label="left", closed="left").agg(
-                lambda s: choose_val(s)
+            prediction_result = predictor.predict(
+                enseigne=enseigne,
+                salle=salle,
+                sensor_id=sensor_id
             )
-            resampled = resampled.join(meta)
-    except Exception:
-        pass
-    
-    resampled = resampled.dropna(how="all")
-    if resampled.empty:
-        return []
-    
+            
+            if "error" not in prediction_result:
+                predicted_values = prediction_result.get("predicted_values", {})
+                
+                if predicted_values:
+                    from .iaq_score import calculate_iaq_score
+                    score_data = calculate_iaq_score(predicted_values)
+                    
+                    return {
+                        "predicted_score": score_data["global_score"],
+                        "predicted_level": score_data["global_level"],
+                        "forecast_minutes": prediction_result.get("forecast_minutes", 30),
+                        "predictions": predicted_values,
+                        "enseigne": prediction_result.get("enseigne"),
+                        "salle": prediction_result.get("salle"),
+                        "sensor_id": prediction_result.get("sensor_id"),
+                        "timestamp": prediction_result.get("timestamp"),
+                        "is_ml_prediction": True
+                    }
+        
+        # Fallback: calcul simple basé sur les tendances
+        logger.info("Using fallback prediction based on trends")
+        return _calculate_fallback_prediction(enseigne, salle)
+            
+    except Exception as e:
+        logger.error(f"Error in predict score endpoint: {e}")
+        return _calculate_fallback_prediction(enseigne, salle)
+
+
+def _calculate_fallback_prediction(enseigne: Optional[str], salle: Optional[str]):
+    """Calcule une prédiction simple basée sur les tendances récentes"""
     try:
-        resampled.index = resampled.index.tz_convert("UTC")
-    except Exception:
-        pass
-    
-    resampled = resampled.reset_index()
-    resampled["timestamp"] = resampled["timestamp"].dt.strftime("%Y-%m-%dT%H:%M:%S")
-    
-    out = resampled.to_dict(orient="records")
-    
-    # Calculer global_score pour chaque enregistrement
-    for record in out:
-        try:
-            predictions = {
-                "co2": record.get("co2"),
-                "pm25": record.get("pm25"),
-                "tvoc": record.get("tvoc"),
-                "humidity": record.get("humidity")
+        from .iaq_score import calculate_iaq_score
+        from .api.query import get_iaq_data
+        
+        # Utiliser l'API pour obtenir les données récentes
+        data_response = get_iaq_data(
+            enseigne=enseigne,
+            salle=salle,
+            hours=1,
+            raw=False
+        )
+        
+        # La réponse peut être une liste directement ou un dict avec une clé Data
+        if isinstance(data_response, dict) and "Data" in data_response:
+            recent_data = data_response["Data"]
+        elif isinstance(data_response, list):
+            recent_data = data_response
+        else:
+            recent_data = []
+        
+        if len(recent_data) < 3:
+            return {
+                "error": "Insufficient data for prediction",
+                "predicted_score": None,
+                "predicted_level": None,
+                "is_ml_prediction": False
             }
-            # Ne calculer que si on a au moins une valeur
-            if any(v is not None for v in predictions.values()):
-                # Remplacer None par 0 pour le calcul (valeurs neutres)
-                clean_predictions = {k: (v if v is not None else 0) for k, v in predictions.items()}
-                score_data = IAQScoreCalculator.calculate_global_score(clean_predictions)
-                record["global_score"] = score_data["global_score"]
-                record["global_level"] = score_data["global_level"]
-        except Exception as e:
-            logger.warning(f"Erreur calcul score: {e}")
-            record["global_score"] = None
-            record["global_level"] = None
-    
-    return [sanitize_for_storage(r) for r in out]
-
-
-@app.get("/api/iaq/health", tags=["Health"])
-def health_check():
-    """Health check endpoint pour monitoring."""
-    return {
-        "status": "healthy",
-        "version": "1.0.0",
-        "database_size": len(iaq_database),
-        "preventive_actions_count": len(preventive_actions_log),
-        "executions_count": len(actions_execution_log)
-    }
-
-
-@app.get("/api/iaq/measurements/debug", tags=["Measurements"], include_in_schema=False)
-def debug_measurements():
-    """Endpoint de debug: affiche iaq_database dans les logs (dev uniquement)."""
-    logger.info(f"iaq_database dump ({len(iaq_database)} items): {iaq_database}")
-    return {"count": len(iaq_database), "sample": iaq_database[:20]}
-
-
-@app.get("/api/iaq/measurements/raw", tags=["Measurements"])
-def get_measurements_raw(
-    enseigne: Optional[str] = None,
-    salle: Optional[str] = None,
-    capteur_id: Optional[str] = None,
-    limit: Optional[int] = None
-):
-    """
-    Accès direct aux données brutes pour le système ML.
-    Retourne les mesures non agrégées avec filtrage optionnel.
-    """
-    if not iaq_database:
-        return []
-    
-    filtered = iaq_database
-    
-    if enseigne:
-        e = enseigne.strip().lower()
-        filtered = [d for d in filtered if str(d.get("enseigne", "")).strip().lower() == e]
-    
-    if salle:
-        s = salle.strip().lower()
-        filtered = [d for d in filtered if str(d.get("salle", "")).strip().lower() == s]
-    
-    if capteur_id:
-        c = capteur_id.strip().lower()
-        filtered = [d for d in filtered if str(d.get("capteur_id", "")).strip().lower() == c]
-    
-    try:
-        filtered = sorted(filtered, key=lambda x: x.get("timestamp", ""), reverse=True)
-    except Exception:
-        pass
-    
-    if limit and limit > 0:
-        return filtered[:limit]
-    
-    return filtered
-
-
-
-# ============================================================================
-# ENDPOINTS CONFIGURATION
-# ============================================================================
-
-@app.get("/api/iaq/config", tags=["Configuration"])
-def get_config():
-    """Récupère la configuration complète de l'application."""
-    config = load_config()
-    if config is None:
-        raise HTTPException(status_code=500, detail="Impossible de charger la configuration")
-    return config
-
-
-@app.put("/api/iaq/config", tags=["Configuration"])
-async def update_config(updates: dict):
-    """Met à jour la configuration de l'application."""
-    logger.info(f"Received config updates: {list(updates.keys())}")
-    config = load_config()
-    if config is None:
-        raise HTTPException(status_code=500, detail="Impossible de charger la configuration")
-    
-    def update_config(base, updates):
-        for key, value in updates.items():
-            if isinstance(value, dict) and key in base and isinstance(base[key], dict):
-                update_config(base[key], value)
-            else:
-                base[key] = value
-    
-    update_config(config, updates)
-    
-    if save_config(config):
-        return {"message": "Configuration mise a jour", "config": config}
-    raise HTTPException(status_code=500, detail="Erreur lors de la sauvegarde")
-
-
-@app.get("/api/iaq/sensors", tags=["Sensors"])
-def get_sensors():
-    """
-    Récupère la liste de tous les capteurs configurés.
-    Extrait automatiquement depuis config.json.
-    """
-    try:
-        config = load_config()
-        if config is None:
-            raise HTTPException(status_code=500, detail="Impossible de charger la configuration")
         
-        sensors = extract_sensors_from_config(config)
+        # Prendre les 10 dernières valeurs avec un global_score
+        scored_data = [d for d in recent_data if "global_score" in d and d["global_score"] is not None]
+        scored_data = scored_data[-10:]
         
-        logger.info(f"GET /api/iaq/sensors: {len(sensors)} capteur(s) configure(s)")
+        if len(scored_data) < 2:
+            return {
+                "error": "Insufficient scored data",
+                "predicted_score": None,
+                "predicted_level": None,
+                "is_ml_prediction": False
+            }
         
-        return {"sensors": sensors}
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Erreur dans GET /api/iaq/sensors: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# ============================================================================
-# ENDPOINTS ASSETS - FICHIERS 3D
-# ============================================================================
-
-@app.post("/api/iaq/assets/rooms/files", tags=["Assets"])
-async def upload_room_file(file: UploadFile = File(...), filename: str = Form(...)):
-    """
-    Upload d'un fichier 3D (.glb) pour modéliser une salle.
-    Le fichier est enregistré dans assets/rooms/.
-    """
-    try:
-        if not filename.lower().endswith('.glb'):
-            raise HTTPException(status_code=400, detail="Le nom de fichier doit se terminer par .glb")
-
-        rooms_dir = Path(__file__).resolve().parent.parent / 'assets' / 'rooms'
-        rooms_dir.mkdir(parents=True, exist_ok=True)
-
-        safe_name = Path(filename).name
-        target = rooms_dir / safe_name
-
-        contents = await file.read()
-        with open(target, 'wb') as f:
-            f.write(contents)
-
-        rel = f"/assets/rooms/{safe_name}"
-        logger.info(f"Uploaded GLB to {target}")
-        return {"path": rel}
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.exception(f"Erreur lors de l'upload GLB: {e}")
-        raise HTTPException(status_code=500, detail="Erreur lors de l'upload du fichier")
-
-
-@app.delete("/api/iaq/assets/rooms/files", tags=["Assets"])
-async def delete_room_files(paths: List[str] = Body(...)):
-    """
-    Supprime des fichiers 3D dans le dossier assets/rooms.
-    Validation de sécurité pour éviter toute suppression arbitraire.
-    """
-    rooms_dir = Path(__file__).resolve().parent.parent / 'assets' / 'rooms'
-    rooms_dir.mkdir(parents=True, exist_ok=True)
-    deleted = []
-    not_found = []
-    errors = {}
-    
-    for p in paths:
-        try:
-            name = str(p or '')
-            if name.startswith('/'):
-                name = name.lstrip('/')
-            if name.startswith('assets/rooms/'):
-                name = name[len('assets/rooms/'):]
-            name = Path(name).name
-            target = rooms_dir / name
-            
-            try:
-                resolved = target.resolve()
-            except Exception as e:
-                errors[p] = f"Invalid path: {e}"
-                continue
-            
-            if resolved.parent != rooms_dir.resolve():
-                errors[p] = 'Path outside allowed directory'
-                continue
-            
-            if target.exists():
-                target.unlink()
-                deleted.append(f"/assets/rooms/{name}")
-            else:
-                not_found.append(p)
-        except Exception as e:
-            errors[p] = str(e)
-    
-    return {"deleted": deleted, "not_found": not_found, "errors": errors}
-
-
-# ============================================================================
-# ENDPOINTS ACTIONS - PREVENTIVES ET EXECUTIONS
-# ============================================================================
-
-@app.post("/api/iaq/actions/preventive", tags=["Actions"])
-async def create_preventive_action(action_data: PreventiveAction):
-    """
-    Crée et enregistre des actions préventives recommandées par le système ML.
-    """
-    try:
-        action_dict = action_data.dict()
-        preventive_actions_log.append(action_dict)
+        # Extraire les scores
+        scores = [d["global_score"] for d in scored_data]
+        current_score = scores[-1]
         
-        capteur_info = f"/{action_dict.get('capteur_id', 'N/A')}" if action_dict.get('capteur_id') else ""
-        logger.info(f"Actions preventives recues pour {action_dict['enseigne']}/{action_dict['salle']}{capteur_info}")
-        logger.info(f"Nombre d'actions: {len(action_dict['actions'])}")
+        # Calculer la tendance
+        if len(scores) >= 3:
+            # Diviser en deux moitiés pour voir la tendance
+            half = len(scores) // 2
+            first_half_avg = sum(scores[:half]) / half
+            second_half_avg = sum(scores[half:]) / (len(scores) - half)
+            trend = second_half_avg - first_half_avg
+        else:
+            trend = scores[-1] - scores[0]
         
-        for action in action_dict['actions']:
-            logger.info(f"- [{action.get('priority', 'N/A')}] {action.get('metric', 'N/A')}: {action.get('action', 'N/A')}")
+        # Prédiction = score actuel + tendance (limité entre 0 et 100)
+        predicted_score = max(0, min(100, current_score + trend))
         
-        if len(preventive_actions_log) > 1000:
-            preventive_actions_log[:] = preventive_actions_log[-1000:]
+        # Déterminer le niveau
+        if predicted_score >= 90:
+            predicted_level = "excellent"
+        elif predicted_score >= 70:
+            predicted_level = "good"
+        elif predicted_score >= 50:
+            predicted_level = "moderate"
+        else:
+            predicted_level = "poor"
+        
+        logger.info(f"Fallback prediction: current={current_score}, trend={trend:.2f}, predicted={predicted_score:.1f}")
         
         return {
-            "status": "success",
-            "message": f"Actions preventives enregistrees: {len(action_dict['actions'])} actions",
-            "timestamp": action_dict['timestamp']
+            "predicted_score": round(predicted_score, 1),
+            "predicted_level": predicted_level,
+            "forecast_minutes": 30,
+            "current_score": current_score,
+            "trend": round(trend, 2),
+            "enseigne": enseigne,
+            "salle": salle,
+            "is_ml_prediction": False,
+            "method": "trend_based_fallback"
         }
-    
+        
     except Exception as e:
-        logger.error(f"Erreur lors de l'enregistrement des actions preventives: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error in fallback prediction: {e}")
+        return {
+            "error": f"Fallback prediction failed: {str(e)}",
+            "predicted_score": None,
+            "predicted_level": None,
+            "is_ml_prediction": False
+        }
 
 
-@app.get("/api/iaq/actions/preventive", tags=["Actions"])
+@app.get("/api/predict/preventive-actions")
 def get_preventive_actions(
     enseigne: Optional[str] = None,
     salle: Optional[str] = None,
-    capteur_id: Optional[str] = None,
-    limit: int = 50
+    sensor_id: Optional[str] = None
 ):
-    """Récupère l'historique des actions préventives avec filtrage optionnel."""
-    filtered = preventive_actions_log
-    
-    if enseigne:
-        e = enseigne.strip().lower()
-        filtered = [a for a in filtered if str(a.get("enseigne", "")).strip().lower() == e]
-    
-    if salle:
-        s = salle.strip().lower()
-        filtered = [a for a in filtered if str(a.get("salle", "")).strip().lower() == s]
-    
-    if capteur_id:
-        c = capteur_id.strip().lower()
-        filtered = [a for a in filtered if str(a.get("capteur_id", "")).strip().lower() == c]
-    
-    try:
-        filtered = sorted(filtered, key=lambda x: x.get("timestamp", ""), reverse=True)
-    except Exception:
-        pass
-    
-    return filtered[:limit]
-
-
-@app.get("/api/iaq/actions/preventive/stats", tags=["Actions"])
-def get_preventive_actions_stats():
-    """Retourne des statistiques détaillées sur les actions préventives."""
-    if not preventive_actions_log:
-        return {
-            "total_actions": 0,
-            "by_room": {},
-            "by_sensor": {},
-            "by_metric": {},
-            "by_priority": {}
-        }
-    
-    stats = {
-        "total_entries": len(preventive_actions_log),
-        "total_actions": sum(len(entry.get("actions", [])) for entry in preventive_actions_log),
-        "by_room": {},
-        "by_sensor": {},
-        "by_metric": {},
-        "by_priority": {},
-        "most_recent": preventive_actions_log[-1].get("timestamp") if preventive_actions_log else None
-    }
-    
-    for entry in preventive_actions_log:
-        salle = entry.get("salle", "Unknown")
-        stats["by_room"][salle] = stats["by_room"].get(salle, 0) + 1
-        
-        capteur = entry.get("capteur_id", "Unknown")
-        stats["by_sensor"][capteur] = stats["by_sensor"].get(capteur, 0) + 1
-    
-    for entry in preventive_actions_log:
-        for action in entry.get("actions", []):
-            metric = action.get("metric", "Unknown")
-            priority = action.get("priority", "Unknown")
-            
-            stats["by_metric"][metric] = stats["by_metric"].get(metric, 0) + 1
-            stats["by_priority"][priority] = stats["by_priority"].get(priority, 0) + 1
-    
-    return stats
-
-
-# ============================================================================
-# ENDPOINTS LOCATIONS - LIEUX ET MODULES
-# ============================================================================
-
-@app.get("/api/iaq/locations/{enseigne}/rooms/{salle}/modules", tags=["Locations"])
-def get_room_modules(enseigne: str, salle: str):
     """
-    Récupère la configuration des modules IoT disponibles pour une salle spécifique.
+    Analyse les prédictions ML et retourne les actions préventives à prendre.
+    Utilise le service ML pour prédire les valeurs futures et générer les actions.
+    Si le modèle ML n'est pas disponible, utilise un fallback basé sur les seuils.
     """
     try:
-        config = load_config()
-        if not config:
-            raise HTTPException(status_code=500, detail="Configuration non disponible")
+        predictor = get_ml_predictor()
         
-        enseignes = config.get("lieux", {}).get("enseignes", [])
+        if not enseigne:
+            enseigne = "Maison"
         
-        for ens in enseignes:
-            if ens.get("nom", "").strip().lower() == enseigne.strip().lower():
-                pieces = ens.get("pieces", [])
-                
-                for piece in pieces:
-                    if piece.get("nom", "").strip().lower() == salle.strip().lower():
-                        modules = piece.get("modules", {})
-                        
-                        return {
-                            "enseigne": enseigne,
-                            "salle": salle,
-                            "piece_id": piece.get("id"),
-                            "modules": modules
-                        }
-        
-        raise HTTPException(
-            status_code=404,
-            detail=f"Salle '{salle}' non trouvee dans l'enseigne '{enseigne}'"
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Erreur lors de la recuperation des modules: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/api/iaq/actions/executions", tags=["Actions"])
-async def create_action_execution(action: ActionExecution):
-    """
-    Exécute une action sur un module IoT (ventilation, purification, etc.).
-    Cette version simule l'exécution (logs uniquement).
-    """
-    try:
-        timestamp = datetime.now().isoformat()
-        
-        try:
-            room_modules = get_room_modules(action.enseigne, action.salle)
-            modules = room_modules.get("modules", {})
-            
-            module_config = modules.get(action.module_type)
-            
-            if not module_config:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"Module '{action.module_type}' non trouve dans la salle '{action.salle}'"
-                )
-            
-            if not module_config.get("controllable", False):
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Module '{action.module_type}' n'est pas controlable"
+        # Si le modèle ML est disponible, l'utiliser
+        if predictor:
+            try:
+                # Faire la prédiction ML complète avec risk_analysis
+                prediction_result = predictor.predict(
+                    enseigne=enseigne,
+                    salle=salle,
+                    sensor_id=sensor_id
                 )
                 
-        except HTTPException:
-            raise
+                if "error" not in prediction_result:
+                    # Extraire les données de prédiction
+                    current_values = prediction_result.get("current_values", {})
+                    predicted_values = prediction_result.get("predicted_values", {})
+                    risk_analysis = prediction_result.get("risk_analysis", {})
+                    
+                    # Générer les actions depuis l'analyse de risque ML
+                    actions = _generate_actions_from_ml_risk_analysis(
+                        current_values=current_values,
+                        predicted_values=predicted_values,
+                        risk_analysis=risk_analysis,
+                        forecast_minutes=prediction_result.get("forecast_minutes", 30)
+                    )
+                    
+                    logger.info(f"ML prediction generated {len(actions)} actions for {enseigne}/{salle}")
+                    
+                    return {
+                        "actions": actions,
+                        "current_values": current_values,
+                        "predicted_values": predicted_values,
+                        "forecast_minutes": prediction_result.get("forecast_minutes", 30),
+                        "timestamp": datetime.now().isoformat(),
+                        "is_ml_prediction": True,
+                        "method": "ml_risk_analysis",
+                        "risk_analysis": risk_analysis
+                    }
+                    
+            except Exception as e:
+                logger.warning(f"ML prediction failed, using fallback: {e}")
         
-        action_log = {
-            "timestamp": timestamp,
-            "action_type": action.action_type,
-            "module_type": action.module_type,
-            "enseigne": action.enseigne,
-            "salle": action.salle,
-            "reason": action.reason,
-            "priority": action.priority,
-            "parameters": action.parameters,
-            "status": "simulated",
-            "message": "Action simulee avec succes (pas de module physique connecte)"
-        }
+        # Fallback : utiliser les données actuelles et les seuils
+        return _generate_actions_from_current_data(enseigne, salle, sensor_id)
         
-        actions_execution_log.append(action_log)
-        
-        logger.info("="*60)
-        logger.info(f"EXECUTION D'ACTION: {action.action_type.upper()}")
-        logger.info(f"Enseigne: {action.enseigne}")
-        logger.info(f"Salle: {action.salle}")
-        logger.info(f"Module: {action.module_type}")
-        logger.info(f"Priorite: {action.priority}")
-        
-        if action.reason:
-            logger.info(f"Raison: {action.reason.get('pollutant')} = {action.reason.get('value')} ({action.reason.get('level')})")
-        
-        if action.parameters:
-            logger.info(f"Parametres: {action.parameters}")
-        
-        logger.info("Status: SIMULE (TODO: integrer module physique)")
-        logger.info("="*60)
-        
-        return {
-            "success": True,
-            "timestamp": timestamp,
-            "action": action_log,
-            "message": "Action executee avec succes (mode simulation)"
-        }
-        
-    except HTTPException:
-        raise
     except Exception as e:
-        logger.error(f"Erreur lors de l'execution de l'action: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error in preventive actions endpoint: {e}")
+        return {"actions": [], "error": str(e)}
 
 
-@app.get("/api/iaq/actions/executions", tags=["Actions"])
-def get_action_executions(
-    enseigne: Optional[str] = None,
-    salle: Optional[str] = None,
-    limit: int = 50
-):
-    """Récupère l'historique des actions exécutées avec filtrage optionnel."""
-    if not actions_execution_log:
-        return []
+def _generate_actions_from_ml_risk_analysis(
+    current_values: dict, 
+    predicted_values: dict, 
+    risk_analysis: dict,
+    forecast_minutes: int = 30
+) -> list:
+    """
+    Génère des actions préventives à partir de l'analyse de risque ML.
+    Transforme les actions du ML (format technique) en format frontend (avec valeurs prédites).
+    """
+    actions = []
     
-    filtered = actions_execution_log
-    
-    if enseigne:
-        e = enseigne.strip().lower()
-        filtered = [a for a in filtered if str(a.get("enseigne", "")).strip().lower() == e]
-    
-    if salle:
-        s = salle.strip().lower()
-        filtered = [a for a in filtered if str(a.get("salle", "")).strip().lower() == s]
-    
-    try:
-        filtered = sorted(filtered, key=lambda x: x.get("timestamp", ""), reverse=True)
-    except Exception:
-        pass
-    
-    return filtered[:limit]
-
-
-@app.get("/api/iaq/actions/executions/stats", tags=["Actions"])
-def get_action_executions_stats():
-    """Retourne des statistiques détaillées sur les actions exécutées."""
-    if not actions_execution_log:
-        return {
-            "total_actions": 0,
-            "by_room": {},
-            "by_module": {},
-            "by_action_type": {},
-            "by_priority": {}
+    # Mapping des métriques ML vers les dispositifs frontend
+    DEVICE_MAPPING = {
+        "co2": {
+            "device": "window",
+            "action": "open",
+            "parameter": "CO₂",
+            "unit": "ppm",
+            "priority_map": {"warning": "medium", "critical": "high", "danger": "urgent"}
+        },
+        "pm25": {
+            "device": "air_purifier",
+            "action": "turn_on",
+            "parameter": "PM2.5",
+            "unit": "µg/m³",
+            "priority_map": {"warning": "medium", "critical": "high", "danger": "urgent"}
+        },
+        "tvoc": {
+            "device": "ventilation",
+            "action": "increase",
+            "parameter": "TVOC",
+            "unit": "ppb",
+            "priority_map": {"warning": "medium", "critical": "high", "danger": "urgent"}
         }
-    
-    stats = {
-        "total_actions": len(actions_execution_log),
-        "by_room": {},
-        "by_module": {},
-        "by_action_type": {},
-        "by_priority": {},
-        "most_recent": actions_execution_log[-1].get("timestamp") if actions_execution_log else None
     }
     
-    for action in actions_execution_log:
-        salle = action.get("salle", "Unknown")
-        stats["by_room"][salle] = stats["by_room"].get(salle, 0) + 1
-        
-        module = action.get("module_type", "Unknown")
-        stats["by_module"][module] = stats["by_module"].get(module, 0) + 1
-        
-        action_type = action.get("action_type", "Unknown")
-        stats["by_action_type"][action_type] = stats["by_action_type"].get(action_type, 0) + 1
-        
-        priority = action.get("priority", "Unknown")
-        stats["by_priority"][priority] = stats["by_priority"].get(priority, 0) + 1
+    # Extraire les actions du risk_analysis
+    actions_needed = risk_analysis.get("actions_needed", [])
+    metrics = risk_analysis.get("metrics", {})
     
-    return stats
+    for action_item in actions_needed:
+        metric = action_item.get("metric")
+        
+        if metric not in DEVICE_MAPPING:
+            continue
+        
+        device_info = DEVICE_MAPPING[metric]
+        metric_data = metrics.get(metric, {})
+        
+        current_val = metric_data.get("current_value", 0)
+        predicted_val = metric_data.get("predicted_value", 0)
+        current_level = metric_data.get("current_level", "good")
+        predicted_level = metric_data.get("predicted_level", "good")
+        
+        # Déterminer la priorité basée sur le niveau le plus critique
+        priority_map = device_info.get("priority_map", {})
+        if current_level in ["critical", "danger"]:
+            priority = "urgent"  # Situation actuelle critique
+        elif predicted_level in ["critical", "danger"]:
+            priority = priority_map.get(predicted_level, "high")  # Va devenir critique
+        else:
+            priority = priority_map.get(current_level, "medium")
+        
+        # Construire l'action avec valeurs actuelles et prédites
+        action = {
+            "device": device_info["device"],
+            "action": device_info["action"],
+            "parameter": device_info["parameter"],
+            "current_value": round(current_val, 1),
+            "predicted_value": round(predicted_val, 1),
+            "unit": device_info["unit"],
+            "priority": priority,
+            "level": current_level if current_level in ["critical", "danger"] else predicted_level,
+            "trend": metric_data.get("trend", "stable"),
+            "change_percent": metric_data.get("change_percent", 0),
+            "reason": action_item.get("action", "Action recommandée"),
+            "forecast_minutes": forecast_minutes,
+            "is_ml_action": True
+        }
+        
+        actions.append(action)
+    
+    # Trier par priorité (urgent > high > medium > low)
+    priority_order = {"urgent": 0, "high": 1, "medium": 2, "low": 3}
+    actions.sort(key=lambda x: priority_order.get(x.get("priority", "low"), 99))
+    
+    return actions
+
+
+def _generate_actions_from_current_data(enseigne: str, salle: Optional[str], sensor_id: Optional[str]):
+    """
+    Génère des actions préventives basées uniquement sur les données actuelles et les seuils.
+    """
+    try:
+        # Obtenir les données actuelles
+        current_data = None
+        if iaq_database:
+            for item in reversed(iaq_database):
+                if item.get("enseigne") == enseigne:
+                    if salle is None or item.get("salle") == salle:
+                        if sensor_id is None or item.get("sensor_id") == sensor_id:
+                            current_data = item
+                            break
+        
+        if not current_data:
+            return {"actions": [], "error": "No current data available", "is_fallback": True}
+        
+        THRESHOLDS = {
+            "co2": {"warning": 800, "danger": 1200},
+            "pm25": {"warning": 15, "danger": 35},
+            "tvoc": {"warning": 300, "danger": 1000},
+            "temperature": {"cold": 18, "hot": 24},
+            "humidity": {"dry": 30, "humid": 70}
+        }
+        
+        actions = []
+        
+        # Vérifier CO2
+        current_co2 = float(current_data.get("co2", 0))
+        if current_co2 >= THRESHOLDS["co2"]["warning"]:
+            priority = "high" if current_co2 >= THRESHOLDS["co2"]["danger"] else "medium"
+            actions.append({
+                "device": "window",
+                "action": "open",
+                "parameter": "CO₂",
+                "current_value": round(current_co2, 1),
+                "threshold": THRESHOLDS["co2"]["warning"],
+                "unit": "ppm",
+                "priority": priority,
+                "reason": f"Le CO₂ actuel ({current_co2:.0f} ppm) dépasse le seuil recommandé"
+            })
+        
+        # Vérifier PM2.5
+        current_pm = float(current_data.get("pm25", 0))
+        if current_pm >= THRESHOLDS["pm25"]["warning"]:
+            priority = "high" if current_pm >= THRESHOLDS["pm25"]["danger"] else "medium"
+            actions.append({
+                "device": "air_purifier",
+                "action": "turn_on",
+                "parameter": "PM2.5",
+                "current_value": round(current_pm, 1),
+                "threshold": THRESHOLDS["pm25"]["warning"],
+                "unit": "µg/m³",
+                "priority": priority,
+                "reason": f"Les particules fines ({current_pm:.1f} µg/m³) dépassent le seuil recommandé"
+            })
+        
+        # Vérifier TVOC
+        current_tvoc = float(current_data.get("tvoc", 0))
+        if current_tvoc >= THRESHOLDS["tvoc"]["warning"]:
+            priority = "high" if current_tvoc >= THRESHOLDS["tvoc"]["danger"] else "medium"
+            actions.append({
+                "device": "ventilation",
+                "action": "increase",
+                "parameter": "TVOC",
+                "current_value": round(current_tvoc, 1),
+                "threshold": THRESHOLDS["tvoc"]["warning"],
+                "unit": "ppb",
+                "priority": priority,
+                "reason": f"Les COV ({current_tvoc:.0f} ppb) dépassent le seuil recommandé"
+            })
+        
+        # Vérifier température
+        current_temp = float(current_data.get("temperature", 20))
+        if current_temp < THRESHOLDS["temperature"]["cold"]:
+            actions.append({
+                "device": "heating",
+                "action": "increase",
+                "parameter": "Température",
+                "current_value": round(current_temp, 1),
+                "threshold": THRESHOLDS["temperature"]["cold"],
+                "unit": "°C",
+                "priority": "medium",
+                "reason": f"La température ({current_temp:.1f}°C) est trop basse"
+            })
+        elif current_temp > THRESHOLDS["temperature"]["hot"]:
+            actions.append({
+                "device": "cooling",
+                "action": "turn_on",
+                "parameter": "Température",
+                "current_value": round(current_temp, 1),
+                "threshold": THRESHOLDS["temperature"]["hot"],
+                "unit": "°C",
+                "priority": "medium",
+                "reason": f"La température ({current_temp:.1f}°C) est trop élevée"
+            })
+        
+        # Vérifier humidité
+        current_hum = float(current_data.get("humidity", 50))
+        if current_hum < THRESHOLDS["humidity"]["dry"]:
+            actions.append({
+                "device": "humidifier",
+                "action": "turn_on",
+                "parameter": "Humidité",
+                "current_value": round(current_hum, 1),
+                "threshold": THRESHOLDS["humidity"]["dry"],
+                "unit": "%",
+                "priority": "low",
+                "reason": f"L'humidité ({current_hum:.1f}%) est trop basse"
+            })
+        elif current_hum > THRESHOLDS["humidity"]["humid"]:
+            actions.append({
+                "device": "dehumidifier",
+                "action": "turn_on",
+                "parameter": "Humidité",
+                "current_value": round(current_hum, 1),
+                "threshold": THRESHOLDS["humidity"]["humid"],
+                "unit": "%",
+                "priority": "medium",
+                "reason": f"L'humidité ({current_hum:.1f}%) est trop élevée"
+            })
+        
+        # Trier par priorité
+        priority_order = {"high": 0, "medium": 1, "low": 2}
+        actions.sort(key=lambda x: priority_order.get(x.get("priority", "low"), 99))
+        
+        logger.info(f"Generated {len(actions)} fallback actions for {enseigne}/{salle}")
+        
+        return {
+            "actions": actions,
+            "forecast_minutes": 0,
+            "timestamp": datetime.now().isoformat(),
+            "is_fallback": True,
+            "method": "threshold_based_fallback"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error generating fallback actions: {e}")
+        return {"actions": [], "error": str(e), "is_fallback": True}
+
+
 
 
 # ============================================================================
-# TACHE DE POSTING PERIODIQUE
+# WEBSOCKET ENDPOINT
+# ============================================================================
+# ============================================================================
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    """
+    Endpoint WebSocket pour les communications en temps réel.
+    Le client peut s'abonner à différents topics : measurements, predictions, actions, alerts, modules, all
+    """
+    ws_manager = get_websocket_manager()
+    
+    # Attendre la connexion et les topics
+    await ws_manager.connect(websocket, topics=["all"])
+    
+    try:
+        while True:
+            # Attendre les messages du client
+            data = await websocket.receive_json()
+            
+            # Gérer les commandes du client
+            if data.get("type") == "subscribe":
+                topics = data.get("topics", [])
+                for topic in topics:
+                    if topic in ws_manager.subscriptions:
+                        ws_manager.subscriptions[topic].add(websocket)
+                        logger.info(f"Client abonné au topic: {topic}")
+            
+            elif data.get("type") == "unsubscribe":
+                topics = data.get("topics", [])
+                for topic in topics:
+                    if topic in ws_manager.subscriptions:
+                        ws_manager.subscriptions[topic].discard(websocket)
+                        logger.info(f"Client désabonné du topic: {topic}")
+            
+            elif data.get("type") == "ping":
+                await ws_manager.send_personal_message({"type": "pong"}, websocket)
+            
+    except WebSocketDisconnect:
+        ws_manager.disconnect(websocket)
+        logger.info("Client WebSocket déconnecté")
+    except Exception as e:
+        logger.error(f"Erreur WebSocket: {e}")
+        ws_manager.disconnect(websocket)
+
+
+@app.get("/ws/stats")
+def get_websocket_stats():
+    """Retourne les statistiques des connexions WebSocket"""
+    ws_manager = get_websocket_manager()
+    return ws_manager.get_stats()
+
+
+# ============================================================================
+# TÂCHE DE POSTING PÉRIODIQUE (SIMULATION)
 # ============================================================================
 
 def add_iaq_record(payload: dict):
-    """Ajoute un enregistrement dans iaq_database."""
+    """Ajoute un enregistrement dans iaq_database ET dans InfluxDB"""
+    from .utils import sanitize_for_storage
+    
     rec = sanitize_for_storage(payload)
     if "enseigne" not in rec or rec.get("enseigne") is None:
         rec["enseigne"] = "Maison"
     if "salle" not in rec or rec.get("salle") is None:
         rec["salle"] = "Bureau"
-    if "capteur_id" not in rec or rec.get("capteur_id") is None:
-        rec["capteur_id"] = "Bureau1"
+    if "sensor_id" not in rec or rec.get("sensor_id") is None:
+        rec["sensor_id"] = "Bureau1"
+    
+    # Ajouter en mémoire
     iaq_database.append(rec)
-    logger.info(f"Seeded IAQ record, iaq_database size={len(iaq_database)}: {rec}")
+    
+    # Limiter la taille
+    if len(iaq_database) > settings.MAX_MEMORY_RECORDS:
+        iaq_database[:] = iaq_database[-settings.MAX_MEMORY_RECORDS:]
+    
+    # Écrire aussi dans InfluxDB
+    if settings.INFLUXDB_ENABLED:
+        try:
+            influx = get_influx_client(
+                url=settings.INFLUXDB_URL,
+                token=settings.INFLUXDB_TOKEN,
+                org=settings.INFLUXDB_ORG,
+                bucket=settings.INFLUXDB_BUCKET
+            )
+            if influx and influx.available:
+                # Préparer les données au format InfluxDB (minuscules pour compatibilité ML)
+                influx_data = {
+                    "sensor_id": rec.get("sensor_id", "Bureau1"),
+                    "enseigne": rec["enseigne"],
+                    "salle": rec["salle"],
+                    "timestamp": rec.get("timestamp", datetime.utcnow().isoformat()),
+                    "values": {
+                        "co2": rec.get("co2", 0),
+                        "pm25": rec.get("pm25", 0),
+                        "tvoc": rec.get("tvoc", 0),
+                        "temperature": rec.get("temperature", 0),
+                        "humidity": rec.get("humidity", 0)
+                    }
+                }
+                influx.write_measurement(influx_data)
+        except Exception as e:
+            logger.error(f"Erreur écriture InfluxDB: {e}")
+    
+    logger.info(f"Seeded IAQ record, iaq_database size={len(iaq_database)}")
     return rec
 
 
 async def post_rows_periodically(interval: int = INTERVAL_SECONDS, loop_forever: bool = True):
-    """Poste les lignes du DATA_DF une par une toutes les `interval` secondes."""
+    """Poste les lignes du DATA_DF une par une toutes les `interval` secondes"""
     try:
         if DATA_DF is None or DATA_DF.empty:
             add_iaq_record({
@@ -795,7 +646,7 @@ async def post_rows_periodically(interval: int = INTERVAL_SECONDS, loop_forever:
                 "humidity": 40.0,
                 "enseigne": "Maison",
                 "salle": "Bureau",
-                "capteur_id": "Bureau1",
+                "sensor_id": "Bureau1",
             })
             logger.info("No DATA_DF found; posted a single test record")
             return
@@ -805,17 +656,9 @@ async def post_rows_periodically(interval: int = INTERVAL_SECONDS, loop_forever:
             for row in rows:
                 payload = {}
                 for k, v in row.items():
-                    if k == "timestamp" and v is not None:
-                        try:
-                            if isinstance(v, str):
-                                payload["timestamp"] = pd.to_datetime(v).strftime("%Y-%m-%dT%H:%M:%S")
-                            else:
-                                payload["timestamp"] = pd.to_datetime(v).tz_convert("UTC").strftime("%Y-%m-%dT%H:%M:%S")
-                        except Exception:
-                            try:
-                                payload["timestamp"] = pd.to_datetime(v).strftime("%Y-%m-%dT%H:%M:%S")
-                            except Exception:
-                                payload["timestamp"] = str(v)
+                    # IMPORTANT: Utiliser le timestamp actuel pour InfluxDB (pas 2024)
+                    if k == "timestamp":
+                        payload["timestamp"] = datetime.utcnow().isoformat()
                     else:
                         if isinstance(v, (np.generic,)):
                             try:
@@ -839,33 +682,121 @@ async def post_rows_periodically(interval: int = INTERVAL_SECONDS, loop_forever:
         logger.info("post_rows_periodically task cancelled")
         raise
     except Exception as e:
-        logger.exception(f"Erreur dans la tache periodique de posting: {e}")
+        logger.exception(f"Erreur dans la tâche périodique de posting: {e}")
 
+
+# ============================================================================
+# ÉVÉNEMENTS DE DÉMARRAGE ET ARRÊT
+# ============================================================================
 
 @app.on_event("startup")
-async def startup_start_periodic_posting():
-    """Demarre la tache asynchrone de posting periodique au lancement."""
+async def startup_event():
+    """Initialisation au démarrage de l'application"""
     global posting_task
+    
+    logger.info("="*60)
+    logger.info(f"🚀 Démarrage de {settings.APP_NAME} v{settings.APP_VERSION}")
+    logger.info("="*60)
+    
+    # Initialiser InfluxDB si configuré
+    if settings.INFLUXDB_ENABLED and settings.INFLUXDB_TOKEN:
+        influx = get_influx_client(
+            url=settings.INFLUXDB_URL,
+            token=settings.INFLUXDB_TOKEN,
+            org=settings.INFLUXDB_ORG,
+            bucket=settings.INFLUXDB_BUCKET
+        )
+        if influx and influx.available:
+            logger.info("✅ InfluxDB activé")
+        else:
+            logger.warning("⚠️  InfluxDB configuré mais non disponible")
+    else:
+        logger.info("ℹ️  InfluxDB désactivé - utilisation mémoire")
+    
+    # Initialiser WebSocket manager
+    if settings.WEBSOCKET_ENABLED:
+        ws_manager = get_websocket_manager()
+        logger.info("✅ WebSocket manager initialisé")
+    
+    # Démarrer la tâche de simulation si la base est vide
     try:
-        if iaq_database:
-            logger.info(f"iaq_database non vide au startup ({len(iaq_database)} items), skip periodic posting.")
-            return
-        posting_task = asyncio.create_task(post_rows_periodically())
-        logger.info(f"Started background posting task (interval={INTERVAL_SECONDS}s)")
+        if not iaq_database:
+            posting_task = asyncio.create_task(post_rows_periodically())
+            logger.info(f"✅ Tâche de simulation démarrée (interval={INTERVAL_SECONDS}s)")
+        else:
+            logger.info(f"ℹ️  Base de données non vide ({len(iaq_database)} items), simulation désactivée")
     except Exception as e:
-        logger.exception(f"Erreur lors du demarrage de la tache periodique: {e}")
+        logger.exception(f"Erreur lors du démarrage de la tâche périodique: {e}")
+    
+    logger.info("="*60)
 
 
 @app.on_event("shutdown")
-async def shutdown_stop_periodic_posting():
-    """Annule proprement la tache periodique au shutdown de l'application."""
+async def shutdown_event():
+    """Nettoyage à l'arrêt de l'application"""
     global posting_task
-    if posting_task is None:
-        return
-    try:
-        posting_task.cancel()
-        await posting_task
-    except asyncio.CancelledError:
-        logger.info("Background posting task cancelled on shutdown")
-    except Exception as e:
-        logger.exception(f"Erreur lors de l'arret de la tache periodique: {e}")
+    
+    logger.info("🛑 Arrêt de l'application...")
+    
+    # Arrêter la tâche de simulation
+    if posting_task is not None:
+        try:
+            posting_task.cancel()
+            await posting_task
+        except asyncio.CancelledError:
+            logger.info("✅ Tâche de simulation arrêtée")
+        except Exception as e:
+            logger.exception(f"Erreur lors de l'arrêt de la tâche: {e}")
+    
+    # Fermer InfluxDB
+    influx = get_influx_client()
+    if influx:
+        influx.close()
+    
+    logger.info("✅ Arrêt propre terminé")
+
+
+# ============================================================================
+# ENDPOINT ROOT
+# ============================================================================
+
+@app.get("/")
+def root():
+    """Endpoint racine avec informations sur l'API"""
+    return {
+        "name": settings.APP_NAME,
+        "version": settings.APP_VERSION,
+        "status": "running",
+        "features": {
+            "influxdb": settings.INFLUXDB_ENABLED,
+            "websocket": settings.WEBSOCKET_ENABLED,
+            "mqtt": settings.MQTT_ENABLED
+        },
+        "endpoints": {
+            "docs": "/docs",
+            "websocket": "/ws",
+            "ingest": "/api/ingest",
+            "query": "/api/iaq/data",
+            "config": "/config"
+        }
+    }
+
+
+@app.get("/health")
+def health_check():
+    """Endpoint de santé pour monitoring"""
+    influx = get_influx_client()
+    
+    return {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "services": {
+            "api": "up",
+            "influxdb": "up" if (influx and influx.available) else "down",
+            "websocket": "up" if settings.WEBSOCKET_ENABLED else "disabled",
+            "mqtt": "up" if settings.MQTT_ENABLED else "disabled"
+        },
+        "data": {
+            "memory_records": len(iaq_database)
+        }
+    }
