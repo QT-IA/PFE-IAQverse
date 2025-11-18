@@ -2735,7 +2735,7 @@ select.form-control::after {
     text-align: center;
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    margin-bottom: 5px;
+    margin-bottom: 10px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -2772,7 +2772,7 @@ select.form-control::after {
 .plan-card li {
     padding: 5px 0;
     color: var(--text-primary);
-    font-size: 0.9em;
+    font-size: 0.8em;
     position: relative;
     padding-left: 20px;
 }
@@ -2830,12 +2830,26 @@ select.form-control::after {
 /* Responsive pour les cartes de plan */
 @media (max-width: 768px) {
     .plans-container {
-        flex-direction: column;
+        flex-direction: row;
+        flex-wrap: nowrap;
         gap: 15px;
+        overflow-x: auto;
+        padding: 15px;
+        margin: 10px 0;
+        -webkit-overflow-scrolling: touch; /* Pour un défilement fluide sur iOS */
     }
 
     .plan-card {
-        min-width: auto;
+        min-width: 250px;
+        max-width: 280px;
+        min-height: auto;
+        flex-shrink: 0;
+        margin: 5px;
+        padding: 15px 10px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
     }
 }
 
@@ -2869,15 +2883,15 @@ select.form-control::after {
 }
 
 /* Styles sombre pour les prix */
-[data-theme="dark"] .plan-price {
+[data-theme="sombre"] .plan-price {
     color: var(--accent-color);
 }
 
-[data-theme="dark"] .price-current {
+[data-theme="sombre"] .price-current {
     color: var(--accent-color);
 }
 
-[data-theme="dark"] .price-old {
+[data-theme="sombre"] .price-old {
     color: var(--text-muted);
 }
 
@@ -2929,15 +2943,15 @@ select.form-control::after {
 }
 
 /* Styles sombre pour la modale entreprise */
-[data-theme="dark"] .contact-message p {
+[data-theme="sombre"] .contact-message p {
     background: var(--bg-tertiary);
     border-color: var(--border-light);
 }
 
-[data-theme="dark"] .contact-message p a {
+[data-theme="sombre"] .contact-message p a {
     color: var(--text-secondary) !important;
 }
 
-[data-theme="dark"] .contact-message p a:hover {
+[data-theme="sombre"] .contact-message p a:hover {
     color: var(--accent-color) !important;
 }
