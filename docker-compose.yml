@@ -1,0 +1,155 @@
+version: '3.8'
+
+services:
+  # InfluxDB - Time series database
+  influxdb:
+    image: influxdb:2.7
+    container_name: iaqverse-influxdb
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    volumes:
+      - ./database/influx_data:/var/lib/influxdb2
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=adminpassword
+      - DOCKER_INFLUXDB_INIT_ORG=iaqverse
+      - DOCKER_INFLUXDB_INIT_BUCKET=iaq_data
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=iaqverse-secret-token
+    networks:
+      - iaqverse-network
+
+  # Mosquitto - MQTT Broker (optional)
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: iaqverse-mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./config/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./database/mosquitto/data:/mosquitto/data
+      - ./database/mosquitto/log:/mosquitto/log
+    networks:
+      - iaqverse-network
+
+  # Backend API
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: iaqverse-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app/backend
+      - ./assets:/app/assets
+      - ./database/sqlite.db:/app/database/sqlite.db
+    environment:
+      - INFLUXDB_ENABLED=true
+      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_TOKEN=iaqverse-secret-token
+      - INFLUXDB_ORG=iaqverse
+      - INFLUXDB_BUCKET=iaq_data
+      - MQTT_ENABLED=true
+      - MQTT_BROKER=mosquitto
+      - MQTT_PORT=1883
+      - WEBSOCKET_ENABLED=true
+    depends_on:
+      - influxdb
+      - mosquitto
+    networks:
+      - iaqverse-network
+
+  # ML Predictor Service
+  predictor:
+    build:
+      context: .
+      dockerfile: services/predictor/Dockerfile
+    container_name: iaqverse-predictor
+    restart: unless-stopped
+    volumes:
+      - ./backend/ml:/app/ml
+      - ./assets/ml_models:/app/models
+      - ./database/sqlite.db:/app/database/sqlite.db
+    environment:
+      - API_URL=http://backend:8000
+      - PREDICTION_INTERVAL=600  # 10 minutes
+      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_TOKEN=iaqverse-secret-token
+      - INFLUXDB_ORG=iaqverse
+      - INFLUXDB_BUCKET=iaq_data
+    depends_on:
+      - backend
+      - influxdb
+    networks:
+      - iaqverse-network
+
+  # ML Trainer Service
+  trainer:
+    build:
+      context: .
+      dockerfile: services/trainer/Dockerfile
+    container_name: iaqverse-trainer
+    restart: unless-stopped
+    volumes:
+      - ./backend/ml:/app/ml
+      - ./assets/ml_models:/app/models
+      - ./assets/datasets:/app/datasets
+      - ./database/sqlite.db:/app/database/sqlite.db
+    environment:
+      - API_URL=http://backend:8000
+      - TRAINING_INTERVAL=86400  # 24 hours
+      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_TOKEN=iaqverse-secret-token
+      - INFLUXDB_ORG=iaqverse
+      - INFLUXDB_BUCKET=iaq_data
+    depends_on:
+      - backend
+      - influxdb
+    networks:
+      - iaqverse-network
+
+  # Alert Worker Service
+  alerting:
+    build:
+      context: .
+      dockerfile: services/alerting/Dockerfile
+    container_name: iaqverse-alerting
+    restart: unless-stopped
+    volumes:
+      - ./services/alerting:/app/alerting
+      - ./database/sqlite.db:/app/database/sqlite.db
+    environment:
+      - API_URL=http://backend:8000
+      - WEBSOCKET_URL=ws://backend:8000/ws
+      - CHECK_INTERVAL=60  # 1 minute
+    depends_on:
+      - backend
+    networks:
+      - iaqverse-network
+
+  # Frontend (optional - can also be served separately)
+  frontend:
+    image: nginx:alpine
+    container_name: iaqverse-frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+      - ./assets:/usr/share/nginx/html/assets
+    networks:
+      - iaqverse-network
+
+networks:
+  iaqverse-network:
+    driver: bridge
+
+volumes:
+  influx_data:
+  mosquitto_data:
+  mosquitto_log:
