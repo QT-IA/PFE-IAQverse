@@ -45,7 +45,7 @@ function toggleTheme() {
 async function updateThemeInConfig(theme) {
     try {
         const response = await fetch('http://localhost:8000/api/saveConfig', {
-            method: 'PUT',
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ affichage: { mode: theme === 'sombre' ? 'Sombre' : 'Clair' } })
         });

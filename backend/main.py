@@ -10,7 +10,7 @@ import asyncio
 import logging
 import pandas as pd
 import numpy as np
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Import des modules core
 from .core import settings, get_influx_client, get_websocket_manager
@@ -19,8 +19,7 @@ from .core import settings, get_influx_client, get_websocket_manager
 from .api import (
     ingest_router,
     query_router,
-    config_router,
-    iaq_database
+    config_router
 )
 
 # Import des utilitaires
@@ -582,7 +581,7 @@ def get_websocket_stats():
 # TÂCHE DE POSTING PÉRIODIQUE (SIMULATION)
 # ============================================================================
 
-def add_iaq_record(payload: dict):
+async def add_iaq_record(payload: dict):
     """Ajoute un enregistrement dans iaq_database ET dans InfluxDB"""
     from .utils import sanitize_for_storage
     
@@ -594,12 +593,9 @@ def add_iaq_record(payload: dict):
     if "sensor_id" not in rec or rec.get("sensor_id") is None:
         rec["sensor_id"] = "Bureau1"
     
-    # Ajouter en mémoire
-    iaq_database.append(rec)
-    
-    # Limiter la taille
-    if len(iaq_database) > settings.MAX_MEMORY_RECORDS:
-        iaq_database[:] = iaq_database[-settings.MAX_MEMORY_RECORDS:]
+    # Ensure timestamp is present and is UTC ISO with 'Z'
+    if "timestamp" not in rec or not rec["timestamp"]:
+        rec["timestamp"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     
     # Écrire aussi dans InfluxDB
     if settings.INFLUXDB_ENABLED:
@@ -616,7 +612,7 @@ def add_iaq_record(payload: dict):
                     "sensor_id": rec.get("sensor_id", "Bureau1"),
                     "enseigne": rec["enseigne"],
                     "salle": rec["salle"],
-                    "timestamp": rec.get("timestamp", datetime.utcnow().isoformat()),
+                    "timestamp": rec["timestamp"],
                     "values": {
                         "co2": rec.get("co2", 0),
                         "pm25": rec.get("pm25", 0),
@@ -628,8 +624,33 @@ def add_iaq_record(payload: dict):
                 influx.write_measurement(influx_data)
         except Exception as e:
             logger.error(f"Erreur écriture InfluxDB: {e}")
+
+    # Calculer le score IAQ pour le temps réel
+    try:
+        from .iaq_score import calculate_iaq_score
+        score_inputs = {
+            "co2": rec.get("co2", 0),
+            "pm25": rec.get("pm25", 0),
+            "tvoc": rec.get("tvoc", 0),
+            "humidity": rec.get("humidity", 0)
+        }
+        # Nettoyer les inputs (None -> 0)
+        clean_inputs = {k: (v if v is not None else 0) for k, v in score_inputs.items()}
+        score_data = calculate_iaq_score(clean_inputs)
+        rec["global_score"] = score_data["global_score"]
+        rec["global_level"] = score_data["global_level"]
+    except Exception as e:
+        logger.warning(f"Erreur calcul score temps réel: {e}")
+
+    # Diffusion WebSocket
+    if settings.WEBSOCKET_ENABLED:
+        try:
+            ws_manager = get_websocket_manager()
+            await ws_manager.broadcast_measurement(rec)
+        except Exception as e:
+            logger.error(f"Erreur broadcast WebSocket: {e}")
     
-    logger.info(f"Seeded IAQ record, iaq_database size={len(iaq_database)}")
+    logger.info(f"Seeded IAQ record")
     return rec
 
 
@@ -637,8 +658,8 @@ async def post_rows_periodically(interval: int = INTERVAL_SECONDS, loop_forever:
     """Poste les lignes du DATA_DF une par une toutes les `interval` secondes"""
     try:
         if DATA_DF is None or DATA_DF.empty:
-            add_iaq_record({
-                "timestamp": datetime.utcnow().isoformat(),
+            await add_iaq_record({
+                "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
                 "co2": 400,
                 "pm25": 10,
                 "tvoc": 0.5,
@@ -658,7 +679,7 @@ async def post_rows_periodically(interval: int = INTERVAL_SECONDS, loop_forever:
                 for k, v in row.items():
                     # IMPORTANT: Utiliser le timestamp actuel pour InfluxDB (pas 2024)
                     if k == "timestamp":
-                        payload["timestamp"] = datetime.utcnow().isoformat()
+                        payload["timestamp"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
                     else:
                         if isinstance(v, (np.generic,)):
                             try:
@@ -667,7 +688,7 @@ async def post_rows_periodically(interval: int = INTERVAL_SECONDS, loop_forever:
                                 pass
                         payload[k] = None if pd.isna(v) else v
 
-                add_iaq_record(payload)
+                await add_iaq_record(payload)
                 try:
                     await asyncio.sleep(interval)
                 except asyncio.CancelledError:
@@ -718,13 +739,10 @@ async def startup_event():
         ws_manager = get_websocket_manager()
         logger.info("✅ WebSocket manager initialisé")
     
-    # Démarrer la tâche de simulation si la base est vide
+    # Démarrer la tâche de simulation
     try:
-        if not iaq_database:
-            posting_task = asyncio.create_task(post_rows_periodically())
-            logger.info(f"✅ Tâche de simulation démarrée (interval={INTERVAL_SECONDS}s)")
-        else:
-            logger.info(f"ℹ️  Base de données non vide ({len(iaq_database)} items), simulation désactivée")
+        posting_task = asyncio.create_task(post_rows_periodically())
+        logger.info(f"✅ Tâche de simulation démarrée (interval={INTERVAL_SECONDS}s)")
     except Exception as e:
         logger.exception(f"Erreur lors du démarrage de la tâche périodique: {e}")
     
@@ -797,6 +815,6 @@ def health_check():
             "mqtt": "up" if settings.MQTT_ENABLED else "disabled"
         },
         "data": {
-            "memory_records": len(iaq_database)
+            "status": "ok"
         }
     }
