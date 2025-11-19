@@ -44,6 +44,209 @@ let modelRoot = null;
 let isLoading = false; // prevent concurrent loads
 let animationStarted = false; // ensure only one animate loop
 
+let objectStates = {};
+const objectAnimations = {
+  door: {
+    axis: 'y',  // axe Y pour tourner comme une porte
+    openAngle: -Math.PI / 2,  // -90° pour ouvrir dans l'autre sens
+    closeAngle: 0,
+    duration: 1000
+  },
+  window: {
+    axis: 'y',
+    openAngle: Math.PI / 4,
+    closeAngle: 0,
+    duration: 800
+  },
+  ventilation: {
+    colorOn: 0x00ff00,  // vert quand allumé
+    colorOff: 0xff0000, // rouge par défaut
+    duration: 500,
+    particleColor: 0x0080ff, // bleu
+    particleCount: 20
+  },
+  radiator: {
+    colorOn: 0x00ff00,  // vert quand allumé
+    colorOff: 0xff0000, // rouge par défaut
+    duration: 500,
+    particleColor: 0xff4000, // rouge-orange
+    particleCount: 20
+  }
+};
+
+let activeParticles = {}; // obj.uuid -> {points, positions, colors, velocities, lifetimes, maxCount, emitting}
+
+function interpolateColor(startColor, endColor, factor) {
+  const r = startColor.r + (endColor.r - startColor.r) * factor;
+  const g = startColor.g + (endColor.g - startColor.g) * factor;
+  const b = startColor.b + (endColor.b - startColor.b) * factor;
+  return new THREE.Color(r, g, b);
+}
+
+function setObjectColor(obj, colorHex) {
+  obj.traverse(child => {
+    if (child.isMesh && child.material) {
+      child.material.color.setHex(colorHex);
+    }
+  });
+}
+
+function createParticles(obj, config) {
+  if (activeParticles[obj.uuid]) {
+    // Si le système existe déjà, juste remettre emitting à true
+    activeParticles[obj.uuid].emitting = true;
+    return;
+  }
+
+  const maxCount = config.particleCount;
+  const geometry = new THREE.BufferGeometry();
+  const positions = new Float32Array(maxCount * 3);
+  const colors = new Float32Array(maxCount * 3);
+
+  // initialiser à des positions hors vue
+  for (let i = 0; i < maxCount; i++) {
+    positions[i * 3] = 0;
+    positions[i * 3 + 1] = -100; // hors vue
+    positions[i * 3 + 2] = 0;
+    const color = new THREE.Color(config.particleColor);
+    colors[i * 3] = color.r;
+    colors[i * 3 + 1] = color.g;
+    colors[i * 3 + 2] = color.b;
+  }
+
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+  const material = new THREE.PointsMaterial({ size: 0.05, vertexColors: true, transparent: true });
+  const points = new THREE.Points(geometry, material);
+  scene.add(points);
+
+  activeParticles[obj.uuid] = {
+    points,
+    positions,
+    colors,
+    velocities: new Float32Array(maxCount * 3),
+    lifetimes: new Float32Array(maxCount),
+    maxCount,
+    emitting: true,
+    obj,
+    config,
+    nextIndex: 0
+  };
+}
+
+function stopParticles(obj) {
+  if (activeParticles[obj.uuid]) {
+    activeParticles[obj.uuid].emitting = false;
+    // attendre que toutes les particules meurent
+  }
+}
+
+function updateParticles() {
+  for (const uuid in activeParticles) {
+    const system = activeParticles[uuid];
+    const objPos = new THREE.Vector3();
+    system.obj.getWorldPosition(objPos);
+
+    // Émettre de nouvelles particules si emitting
+    if (system.emitting) {
+      for (let i = 0; i < 2; i++) { // émettre 2 par frame
+        const idx = system.nextIndex;
+        system.positions[idx * 3] = objPos.x + (Math.random() - 0.5) * 0.5;
+        system.positions[idx * 3 + 1] = objPos.y + Math.random() * 0.5;
+        system.positions[idx * 3 + 2] = objPos.z + (Math.random() - 0.5) * 0.5;
+
+        system.velocities[idx * 3] = (Math.random() - 0.5) * 0.01;
+        system.velocities[idx * 3 + 1] = Math.random() * 0.02 + 0.01;
+        system.velocities[idx * 3 + 2] = (Math.random() - 0.5) * 0.01;
+
+        system.lifetimes[idx] = Math.random() * 200 + 100;
+
+        system.nextIndex = (system.nextIndex + 1) % system.maxCount;
+      }
+    }
+
+    // Mettre à jour les particules existantes
+    let activeCount = 0;
+    for (let i = 0; i < system.maxCount; i++) {
+      if (system.lifetimes[i] > 0) {
+        activeCount++;
+        system.positions[i * 3] += system.velocities[i * 3];
+        system.positions[i * 3 + 1] += system.velocities[i * 3 + 1];
+        system.positions[i * 3 + 2] += system.velocities[i * 3 + 2];
+        system.lifetimes[i]--;
+
+        // Garder la couleur originale, ne pas fade to gray
+        // Les particules disparaissent naturellement en montant
+      } else {
+        // cacher
+        system.positions[i * 3 + 1] = -100;
+      }
+    }
+
+    system.points.geometry.attributes.position.needsUpdate = true;
+    system.points.geometry.attributes.color.needsUpdate = true;
+
+    // Si plus emitting et plus de particules actives, supprimer
+    if (!system.emitting && activeCount === 0) {
+      scene.remove(system.points);
+      system.points.geometry.dispose();
+      system.points.material.dispose();
+      delete activeParticles[uuid];
+    }
+  }
+}
+
+function animateObject(obj, config, targetState) {
+  console.warn('[three-scene] ANIMATE OBJECT CALLED for', obj.name, 'type:', obj.type, 'has geometry:', !!obj.geometry, 'parent:', obj.parent ? obj.parent.name : 'none', 'targetState:', targetState);
+  
+  const targetObj = obj;
+  console.warn('[three-scene] Animating target:', targetObj.name, 'type:', targetObj.type);
+  
+  if (config.axis) {
+    // rotation animation
+    const axis = config.axis;
+    const startRotation = targetObj.rotation[axis];
+    const targetRotation = targetState === 'open' ? config.openAngle : config.closeAngle;
+    console.log('[three-scene] Rotating', targetObj.name, 'from', startRotation, 'to', targetRotation, 'on axis', axis);
+    const startTime = Date.now();
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / config.duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3); // ease out
+      targetObj.rotation[axis] = startRotation + (targetRotation - startRotation) * eased;
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        console.log('[three-scene] Animation completed, final rotation:', targetObj.rotation[axis]);
+      }
+    };
+    animate();
+  } else if (config.colorOn) {
+    // color animation
+    const startColor = obj.material.color.clone();
+    const endColor = targetState === 'on' ? new THREE.Color(config.colorOn) : new THREE.Color(config.colorOff);
+    const startTime = Date.now();
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / config.duration, 1);
+      const eased = progress; // linear for simplicity
+      obj.material.color = interpolateColor(startColor, endColor, eased);
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        // Après l'animation de couleur, gérer les particules
+        if (targetState === 'on' && config.particleColor) {
+          createParticles(obj, config);
+        } else if (targetState === 'off') {
+          stopParticles(obj);
+        }
+      }
+    };
+    animate();
+  }
+}
+
 function frameModel(object3d, offsetFactor = 1.5) {
   // Chercher un objet nommé "Camera" dans le modèle
   let cameraObject = null;
@@ -241,12 +444,13 @@ function autoGenerateAlertPoints(modelRoot) {
   existingAutoPoints.forEach(point => point.remove());
   
   const alertPointsContainer = document.getElementById('alert-points-container');
+  console.warn('[three-scene] alertPointsContainer found:', !!alertPointsContainer);
   if (!alertPointsContainer) return;
   
   // Patterns à rechercher dans les noms d'objets (ajustés selon les vrais noms du GLB)
   const patterns = {
     'window': /Window/i,  // Cherche "Window" n'importe où dans le nom
-    'door': /Door/i,     // Cherche "Door" n'importe où dans le nom
+    'door': /DoorBoddy/i,     // Cherche "DoorBoddy" pour DoorBoddy_Cube001
     'ventilation': /Clim/i, // Cherche "Clim" n'importe où dans le nom
     'radiator': /Radiator/i // Cherche "Radiator" n'importe où dans le nom
   };
@@ -256,10 +460,15 @@ function autoGenerateAlertPoints(modelRoot) {
   Object.keys(patterns).forEach(key => foundObjects[key] = []);
   
   modelRoot.traverse(obj => {
-    if (obj.isMesh && obj.name) {
+    if (obj.name) {
       Object.entries(patterns).forEach(([type, pattern]) => {
         if (pattern.test(obj.name)) {
           foundObjects[type].push(obj); // Stocker l'objet Three.js complet
+          
+          // Définir la couleur par défaut à rouge pour ventilation et radiator
+          if (type === 'ventilation' || type === 'radiator') {
+            setObjectColor(obj, 0xff0000); // rouge
+          }
         }
       });
     }
@@ -277,6 +486,38 @@ function autoGenerateAlertPoints(modelRoot) {
     if (objects.length > 0) {
       // Créer un alert-point pour CHAQUE objet trouvé
       objects.forEach((obj, index) => {
+        console.warn('[three-scene] Creating alert point for', type, 'object:', obj.name);
+        
+        // Déterminer le nom cible pour l'animation
+        let targetName = type === 'door' ? obj.parent.name : obj.name;
+        
+        if (!objectStates[targetName]) {
+          let animationObj = obj;
+          if (type === 'door') {
+            console.warn('[three-scene] Creating pivot for door group', obj.parent.name);
+            let doorGroup = obj.parent;
+            const pivotGroup = new THREE.Group();
+            pivotGroup.name = doorGroup.name + '_pivot';
+            pivotGroup.position.copy(doorGroup.position);
+            // Assumer que la porte fait 1 unité de large, pivoter autour du bord gauche (charnière)
+            pivotGroup.position.x -= 0.5; // déplacer le pivot vers la gauche
+            doorGroup.position.set(0.5, 0, 0); // positionner la porte à droite du pivot
+            let grandParent = doorGroup.parent;
+            if (grandParent) {
+              grandParent.add(pivotGroup);
+              pivotGroup.add(doorGroup);
+              console.warn('[three-scene] Pivoted door group', doorGroup.name, 'under grandParent', grandParent.name);
+            } else {
+              console.warn('[three-scene] No grandParent for door group, cannot create pivot');
+            }
+            animationObj = pivotGroup;
+          }
+          
+          objectStates[targetName] = { object: animationObj, type: type, state: type === 'door' || type === 'window' ? 'closed' : 'off', particles: null };
+        }
+        
+        let animationObj = objectStates[targetName].object;
+        
         const severity = type === 'radiator' ? 'warning' : 'info';
         const position = typePositions[type] || { top: '50%', left: '50%' };
         
@@ -289,13 +530,42 @@ function autoGenerateAlertPoints(modelRoot) {
         const alertPoint = document.createElement('div');
         alertPoint.className = 'alert-point';
         alertPoint.setAttribute('data-i18n-key', type);
-        alertPoint.setAttribute('data-target-names', obj.name); // Garder le nom pour compatibilité
+        alertPoint.setAttribute('data-target-names', targetName); // Utiliser le nom cible
         alertPoint.setAttribute('data-severity', severity);
         alertPoint.setAttribute('data-auto-generated', 'true');
-        alertPoint.style.cssText = `top: ${finalTop}; left: ${finalLeft}; transform: translate(-50%, -50%);`;
+        alertPoint.style.cssText = `top: ${finalTop}; left: ${finalLeft}; transform: translate(-50%, -50%); width: 24px; height: 24px; border-radius: 50%; background: rgba(255, 0, 0, 0.7); cursor: pointer; position: absolute; z-index: 1000;`;
         
         // Stocker une référence directe à l'objet Three.js
-        alertPoint._threeObject = obj;
+        alertPoint._threeObject = animationObj;
+        
+        // Ajouter l'événement de clic pour animer l'objet
+        alertPoint.addEventListener('click', (event) => {
+          event.stopPropagation(); // Empêcher la propagation à OrbitControls
+          console.warn('[three-scene] Alert point clicked, data-i18n-key:', alertPoint.getAttribute('data-i18n-key'));
+          const alertType = alertPoint.getAttribute('data-i18n-key');
+          const targetName = alertPoint.getAttribute('data-target-names');
+          const stateObj = objectStates[targetName];
+          if (stateObj && objectAnimations[alertType]) {
+            const config = objectAnimations[alertType];
+            const currentState = stateObj.state;
+            const newState = currentState === (config.axis ? 'closed' : 'off') ? (config.axis ? 'open' : 'on') : (config.axis ? 'closed' : 'off');
+            console.log('[three-scene] Current state:', currentState, 'New state:', newState);
+            stateObj.state = newState;
+            animateObject(stateObj.object, config, newState);
+            
+            // Masquer le point seulement si l'action résout l'alerte (il pourra réapparaître avec les nouvelles données)
+            const resolvesAlert = (alertType === 'door' || alertType === 'window') && newState === 'closed' ||
+                                  (alertType === 'ventilation' || alertType === 'radiator') && newState === 'on';
+            if (resolvesAlert) {
+              alertPoint.style.display = 'none';
+              if (typeof window.updateAlertCountLabel === 'function') {
+                window.updateAlertCountLabel();
+              }
+            }
+          } else {
+            console.log('[three-scene] No animation config or state found for type:', alertType, 'target:', targetName);
+          }
+        });
         
         alertPointsContainer.appendChild(alertPoint);
       });
@@ -336,12 +606,9 @@ function updateAlertPoints() {
     }
     
     if (!target) {
-      console.log('[three-scene] No target found for point:', el.getAttribute('data-i18n-key'), '- hiding');
       el.style.display = 'none';
       return;
     }
-
-    console.log('[three-scene] Found target for', el.getAttribute('data-i18n-key'), '->', target.name);
 
     const worldPos = new THREE.Vector3();
     target.getWorldPosition(worldPos);
@@ -374,12 +641,9 @@ function updateAlertPoints() {
     // Ajouter une classe pour indiquer si le point est clamped (hors viewport original)
     if (ndc.z > 1 || ndc.z < -1 || ndc.x !== clampedNdc.x || ndc.y !== clampedNdc.y) {
       el.classList.add('alert-point-clamped');
-      console.log('[three-scene] Point clamped for', target.name, 'original ndc:', ndc, 'clamped:', clampedNdc);
     } else {
       el.classList.remove('alert-point-clamped');
     }
-    
-    console.log('[three-scene] Positioned point for', target.name, 'at', x, y);
   });
   
   // Mettre à jour le compteur d'alertes après repositionnement
@@ -394,6 +658,7 @@ function animate() {
   requestAnimationFrame(animate);
   controls.update();
   updateAlertPoints();
+  updateParticles();
   renderer.render(scene, camera);
 }
 
