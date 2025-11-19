@@ -69,12 +69,16 @@ function getComfortShapes(maxTemp, maxHum) {
   return shapes;
 }
 // Configuration
-const REFRESH_MS = 3000; // 3s
+const REFRESH_MS = 3000; // 3s (fallback HTTP uniquement)
 /* Fichier des graphiques IAQ - mise à jour dynamique sans rechargement de la page */
 const API_URL_DATA = "http://localhost:8000/api/iaq/data";
 const chartIds = ["co2-chart", "pm25-chart", "comfort-chart", "tvoc-chart"];
 // Evite le conflit avec la variable globale "config" utilisée par index.html
 const plotlyConfig = { responsive: true, displayModeBar: false };
+
+// Mode WebSocket: si true, utilise WebSocket temps réel au lieu du polling HTTP
+const USE_WEBSOCKET = true;
+let httpPollingInterval = null;
 
 // Utiliser des variables globales (var) pour partager avec index.html
 var currentEnseigne = window.currentEnseigne || "Maison";
@@ -560,8 +564,17 @@ if (typeof window !== "undefined" && typeof Plotly !== "undefined") {
   const handleFirstRoomChange = () => {
     if (isFirstLoad) {
       isFirstLoad = false;
-      fetchAndUpdate();
-      setInterval(fetchAndUpdate, REFRESH_MS);
+      
+      if (USE_WEBSOCKET && window.wsManager) {
+        // Mode WebSocket temps réel
+        console.log('🔌 Démarrage mode WebSocket temps réel');
+        initWebSocketMode();
+      } else {
+        // Mode polling HTTP classique
+        console.log('🔄 Démarrage mode polling HTTP');
+        fetchAndUpdate();
+        httpPollingInterval = setInterval(fetchAndUpdate, REFRESH_MS);
+      }
     }
   };
   
@@ -617,6 +630,155 @@ if (typeof window !== "undefined" && typeof Plotly !== "undefined") {
   console.warn("Charts non initialisés : fenêtre ou Plotly introuvable.");
 }
 
+/**
+ * Initialise le mode WebSocket pour les mises à jour temps réel
+ */
+function initWebSocketMode() {
+  // Charger les données initiales via HTTP
+  fetchAndUpdate();
+  
+  // Connecter le WebSocket
+  if (window.wsManager) {
+    window.wsManager.connect();
+    
+    // Écouter les nouveaux messages de mesures
+    window.wsManager.on('measurements', (data) => {
+      console.log('📊 Nouvelles mesures WebSocket:', data);
+      handleWebSocketMeasurement(data);
+    });
+    
+    // Fallback HTTP si WebSocket se déconnecte
+    window.wsManager.on('error', () => {
+      console.warn('⚠️ WebSocket erreur, fallback sur polling HTTP');
+      if (!httpPollingInterval) {
+        httpPollingInterval = setInterval(fetchAndUpdate, REFRESH_MS);
+      }
+    });
+    
+    // Écouter la reconnexion pour arrêter le polling HTTP
+    window.wsManager.on('connected', () => {
+      console.log('✅ WebSocket reconnecté, arrêt du polling HTTP');
+      if (httpPollingInterval) {
+        clearInterval(httpPollingInterval);
+        httpPollingInterval = null;
+      }
+      // Recharger les données après reconnexion
+      fetchAndUpdate();
+    });
+  }
+}
+
+/**
+ * Traite un nouveau message de mesure reçu via WebSocket
+ */
+function handleWebSocketMeasurement(data) {
+  // Format du message WebSocket du backend:
+  // { topic: 'measurements', data: { timestamp, co2, pm25, temperature, humidity, tvoc, ... } }
+  
+  const measurement = data.data || data;
+  
+  if (!measurement || !measurement.timestamp) {
+    console.warn('Message WebSocket invalide:', data);
+    return;
+  }
+  
+  // Filtrer par enseigne/salle si spécifié
+  if (currentEnseigne && measurement.enseigne && measurement.enseigne !== currentEnseigne) {
+    return;
+  }
+  if (currentSalle && measurement.salle && measurement.salle !== currentSalle) {
+    return;
+  }
+  
+  // Éviter les doublons
+  if (seenTimestamps.has(measurement.timestamp)) {
+    return;
+  }
+  seenTimestamps.add(measurement.timestamp);
+  
+  // Ajouter le point aux graphiques
+  const timestamp = new Date(measurement.timestamp);
+  const maxPoints = 60; // 1 heure de données
+  
+  try {
+    // Vérifier que les graphiques sont initialisés
+    const co2El = document.getElementById("co2-chart");
+    if (!co2El || !co2El.data || !co2El.data[0]) {
+      // Graphiques pas encore initialisés, charger via HTTP
+      fetchAndUpdate();
+      return;
+    }
+    
+    // Étendre les traces avec le nouveau point
+    if (typeof measurement.co2 === 'number') {
+      Plotly.extendTraces("co2-chart", { x: [[timestamp]], y: [[measurement.co2]] }, [0], maxPoints);
+    }
+    if (typeof measurement.pm25 === 'number') {
+      Plotly.extendTraces("pm25-chart", { x: [[timestamp]], y: [[measurement.pm25]] }, [0], maxPoints);
+    }
+    if (typeof measurement.temperature === 'number' && typeof measurement.humidity === 'number') {
+      Plotly.extendTraces("comfort-chart", 
+        { x: [[timestamp], [timestamp]], y: [[measurement.temperature], [measurement.humidity]] }, 
+        [0, 1], maxPoints);
+    }
+    if (typeof measurement.tvoc === 'number') {
+      Plotly.extendTraces("tvoc-chart", { x: [[timestamp]], y: [[measurement.tvoc]] }, [0], maxPoints);
+    }
+    
+    // Mettre à jour les sévérités et le score global
+    updateChartSeverities(measurement);
+    
+    console.debug('✅ Graphiques mis à jour via WebSocket');
+    
+  } catch (error) {
+    console.error('❌ Erreur mise à jour graphiques WebSocket:', error);
+  }
+}
+
+/**
+ * Met à jour les classes de sévérité des graphiques
+ */
+function updateChartSeverities(measurement) {
+  try {
+    const thCo2 = getThresholdsForChart('co2-chart');
+    const thPm = getThresholdsForChart('pm25-chart');
+    const thTvoc = getThresholdsForChart('tvoc-chart');
+    
+    const sCo2 = computeSeverity(measurement.co2, thCo2);
+    const sPm = computeSeverity(measurement.pm25, thPm);
+    const sTvoc = computeSeverity(measurement.tvoc, thTvoc);
+    
+    const co2Box = document.getElementById('co2-chart');
+    const pm25Box = document.getElementById('pm25-chart');
+    const tvocBox = document.getElementById('tvoc-chart');
+    
+    if (sCo2) {
+      chartSeverity['co2-chart'] = sCo2;
+      if (sCo2 === 'danger') co2Box?.classList.add('chart-danger');
+      else co2Box?.classList.remove('chart-danger');
+    }
+    if (sPm) {
+      chartSeverity['pm25-chart'] = sPm;
+      if (sPm === 'danger') pm25Box?.classList.add('chart-danger');
+      else pm25Box?.classList.remove('chart-danger');
+    }
+    if (sTvoc) {
+      chartSeverity['tvoc-chart'] = sTvoc;
+      if (sTvoc === 'danger') tvocBox?.classList.add('chart-danger');
+      else tvocBox?.classList.remove('chart-danger');
+    }
+    
+    // Mettre à jour le score global si disponible
+    if (typeof measurement.global_score === 'number' && window.setRoomScore) {
+      const trend = measurement.global_score >= 90 ? 'good' : measurement.global_score >= 70 ? 'ok' : 'bad';
+      const trendLabel = measurement.global_score >= 90 ? 'A' : measurement.global_score >= 70 ? 'B' : 'C';
+      window.setRoomScore(measurement.global_score, { trend, trendLabel, note: '' });
+    }
+  } catch (error) {
+    console.error('❌ Erreur updateChartSeverities:', error);
+  }
+}
+
 // Exposer au global
 if (typeof window !== "undefined") {
   window.resetCharts = resetCharts;
@@ -624,6 +786,8 @@ if (typeof window !== "undefined") {
   window.currentEnseigne = currentEnseigne;
   window.currentSalle = currentSalle;
   window.refreshChartsTheme = refreshChartsTheme;
+  window.initWebSocketMode = initWebSocketMode;
+  window.handleWebSocketMeasurement = handleWebSocketMeasurement;
 }
 
 // Mise à jour du thème
