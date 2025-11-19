@@ -528,12 +528,51 @@ function autoGenerateAlertPoints(modelRoot) {
         const finalLeft = `calc(${position.left} + ${offsetX}%)`;
         
         const alertPoint = document.createElement('div');
-        alertPoint.className = 'alert-point';
+        alertPoint.className = 'alert-point aesthetic-alert';
         alertPoint.setAttribute('data-i18n-key', type);
-        alertPoint.setAttribute('data-target-names', targetName); // Utiliser le nom cible
+        alertPoint.setAttribute('data-target-names', targetName);
         alertPoint.setAttribute('data-severity', severity);
         alertPoint.setAttribute('data-auto-generated', 'true');
-        alertPoint.style.cssText = `top: ${finalTop}; left: ${finalLeft}; transform: translate(-50%, -50%); width: 24px; height: 24px; border-radius: 50%; background: rgba(255, 0, 0, 0.7); cursor: pointer; position: absolute; z-index: 1000;`;
+        
+        // Déterminer la couleur de fond basé sur l'état actuel
+        const currentState = objectStates[targetName].state;
+        let bgColor = '';
+        if (type === 'door' || type === 'window') {
+          bgColor = currentState === 'closed' ? 'rgba(220, 20, 60, 0.9)' : 'rgba(34, 139, 34, 0.9)';
+        } else if (type === 'ventilation' || type === 'radiator') {
+          bgColor = currentState === 'off' ? 'rgba(220, 20, 60, 0.9)' : 'rgba(34, 139, 34, 0.9)';
+        } else {
+          bgColor = 'rgba(220, 20, 60, 0.9)';
+        }
+        
+        alertPoint.textContent = '';
+        
+        alertPoint.style.cssText = `
+          position: absolute;
+          top: ${finalTop};
+          left: ${finalLeft};
+          transform: translate(-50%, -50%);
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: ${bgColor};
+          border: 1px solid rgba(255, 255, 255, 0.5);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+          cursor: pointer;
+          z-index: 1000;
+          display: block;
+          transition: transform 0.2s ease;
+        `;
+        
+        alertPoint.setAttribute('data-bg-color', bgColor);
+        
+        alertPoint.addEventListener('mouseenter', () => {
+          alertPoint.style.transform = 'translate(-50%, -50%) scale(1.2)';
+        });
+        
+        alertPoint.addEventListener('mouseleave', () => {
+          alertPoint.style.transform = 'translate(-50%, -50%) scale(1)';
+        });
         
         // Stocker une référence directe à l'objet Three.js
         alertPoint._threeObject = animationObj;
@@ -552,6 +591,16 @@ function autoGenerateAlertPoints(modelRoot) {
             console.log('[three-scene] Current state:', currentState, 'New state:', newState);
             stateObj.state = newState;
             animateObject(stateObj.object, config, newState);
+            
+            // Mettre à jour le fond du bouton
+            let newBgColor = '';
+            if (alertType === 'door' || alertType === 'window') {
+              newBgColor = newState === 'closed' ? 'rgba(220, 20, 60, 0.9)' : 'rgba(34, 139, 34, 0.9)';
+            } else if (alertType === 'ventilation' || alertType === 'radiator') {
+              newBgColor = newState === 'off' ? 'rgba(220, 20, 60, 0.9)' : 'rgba(34, 139, 34, 0.9)';
+            }
+            alertPoint.style.background = newBgColor;
+            alertPoint.setAttribute('data-bg-color', newBgColor);
             
             // Masquer le point seulement si l'action résout l'alerte (il pourra réapparaître avec les nouvelles données)
             const resolvesAlert = (alertType === 'door' || alertType === 'window') && newState === 'closed' ||
