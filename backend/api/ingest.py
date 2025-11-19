@@ -13,8 +13,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["ingest"])
 
-# Base de données en mémoire (fallback si InfluxDB n'est pas disponible)
-iaq_database = []
+
 
 
 class IAQMeasurement(BaseModel):
@@ -78,27 +77,6 @@ async def ingest_measurement(measurement: IAQMeasurement):
         if influx and influx.available:
             influx.write_measurement(data)
         
-        # Stockage en mémoire (fallback)
-        # Convertir au format compatible avec l'ancien système
-        memory_record = {
-            "sensor_id": data["sensor_id"],
-            "capteur_id": data["sensor_id"],  # Alias pour compatibilité
-            "enseigne": data["enseigne"],
-            "salle": data["salle"],
-            "timestamp": data["timestamp"],
-        }
-        
-        # Ajouter les valeurs individuelles
-        values = data.get("values", {})
-        for key, value in values.items():
-            memory_record[key.lower()] = value
-        
-        iaq_database.append(memory_record)
-        
-        # Limiter la taille de la mémoire
-        if len(iaq_database) > settings.MAX_MEMORY_RECORDS:
-            iaq_database[:] = iaq_database[-settings.MAX_MEMORY_RECORDS:]
-        
         # Diffusion WebSocket
         if settings.WEBSOCKET_ENABLED:
             ws_manager = get_websocket_manager()
@@ -156,48 +134,13 @@ async def ingest_legacy(data: LegacyIAQData):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/iaq-database")
-def get_iaq_database(
-    enseigne: Optional[str] = None,
-    salle: Optional[str] = None,
-    sensor_id: Optional[str] = None,
-    limit: Optional[int] = 100
-):
-    """
-    Accès direct à la base de données en mémoire.
-    Utilisé comme fallback si InfluxDB n'est pas disponible.
-    """
-    filtered = iaq_database
-    
-    if enseigne:
-        e = enseigne.strip().lower()
-        filtered = [d for d in filtered if str(d.get("enseigne", "")).strip().lower() == e]
-    
-    if salle:
-        s = salle.strip().lower()
-        filtered = [d for d in filtered if str(d.get("salle", "")).strip().lower() == s]
-    
-    if sensor_id:
-        sid = sensor_id.strip().lower()
-        filtered = [d for d in filtered if str(d.get("sensor_id", "")).strip().lower() == sid]
-    
-    try:
-        filtered = sorted(filtered, key=lambda x: x.get("timestamp", ""), reverse=True)
-    except Exception:
-        pass
-    
-    if limit and limit > 0:
-        return filtered[:limit]
-    
-    return filtered
+
 
 
 @router.get("/ingest/stats")
 def get_ingest_stats():
     """Retourne des statistiques sur l'ingestion"""
     return {
-        "memory_records": len(iaq_database),
-        "max_memory_records": settings.MAX_MEMORY_RECORDS,
         "influxdb_enabled": settings.INFLUXDB_ENABLED,
         "websocket_enabled": settings.WEBSOCKET_ENABLED
     }

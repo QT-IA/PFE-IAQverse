@@ -7,7 +7,7 @@ from typing import List, Dict
 import logging
 
 from ..utils import load_config, save_config, extract_sensors_from_config
-from .ingest import iaq_database
+
 
 logger = logging.getLogger(__name__)
 
@@ -20,12 +20,17 @@ def get_locations():
     Retourne les emplacements disponibles (enseignes et salles) à partir des données
     """
     try:
+        config = load_config()
+        if not config:
+            return {}
+            
+        sensors = extract_sensors_from_config(config)
+        
         locations: Dict[str, List[str]] = {}
         
-        # Extraire des données en mémoire
-        for record in iaq_database:
-            enseigne = record.get("enseigne")
-            salle = record.get("salle")
+        for s in sensors:
+            enseigne = s.get("enseigne")
+            salle = s.get("salle")
             
             if enseigne and salle:
                 if enseigne not in locations:
@@ -33,7 +38,7 @@ def get_locations():
                 if salle not in locations[enseigne]:
                     locations[enseigne].append(salle)
         
-        logger.info(f"Locations disponibles: {locations}")
+        logger.info(f"Locations disponibles (config): {locations}")
         return locations
         
     except Exception as e:

@@ -46,7 +46,7 @@ def charger_dataset_csv(chemin_csv):
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce')
     
-    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True)
     df = df.sort_values('timestamp').reset_index(drop=True)
     
     logger.info(f"✅ {len(df)} lignes chargées")
@@ -66,7 +66,7 @@ def recuperer_donnees_influxdb():
             return pd.DataFrame()
         
         df = pd.DataFrame(data)
-        df['timestamp'] = pd.to_datetime(df['timestamp'], format='ISO8601')
+        df['timestamp'] = pd.to_datetime(df['timestamp'], format='ISO8601', utc=True)
         logger.info(f"✅ {len(df)} lignes InfluxDB récupérées")
         return df
     except Exception as e:
