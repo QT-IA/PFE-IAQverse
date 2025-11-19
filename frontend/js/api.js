@@ -1,9 +1,10 @@
 /**
  * Configuration centralisée des endpoints API - IAQverse v2.0
- * Architecture simplifiée - endpoints essentiels uniquement
+ * Architecture avec reverse proxy Nginx - tous les appels passent par le même domaine
  */
 
-const API_BASE_URL = 'http://localhost:8000';
+// Utilise le même domaine (via Nginx reverse proxy) - pas de CORS
+const API_BASE_URL = window.location.origin;
 
 const API_ENDPOINTS = {
     // Health & Monitoring
@@ -24,8 +25,8 @@ const API_ENDPOINTS = {
     predictScore: `${API_BASE_URL}/api/predict/score`,
     preventiveActions: `${API_BASE_URL}/api/predict/preventive-actions`,
     
-    // WebSocket
-    websocket: `ws://localhost:8000/ws`,
+    // WebSocket (ws:// en dev, wss:// en prod)
+    websocket: `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`,
     websocketStats: `${API_BASE_URL}/ws/stats`,
 };
 
