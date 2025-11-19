@@ -256,11 +256,8 @@
      * Met à jour le label du compteur d'alertes visibles
      */
     function updateAlertCountLabel() {
-        console.log('[alerts-engine] updateAlertCountLabel called');
         const label = document.querySelector('.room-label');
-        console.log('[alerts-engine] Found label element:', label);
         if (!label) {
-            console.error('[alerts-engine] .room-label element not found!');
             return;
         }
 
@@ -285,7 +282,6 @@
         
         // Compter un point par position unique
         const count = Object.keys(positionGroups).length;
-        console.log('[alerts-engine] Found', visiblePoints.length, 'visible points at', Object.keys(positionGroups).length, 'unique positions');
 
         const singularText = window.i18n && window.i18n.t ? window.i18n.t('digitalTwin.alertCount.singular', { count }) : null;
         const pluralText = window.i18n && window.i18n.t ? window.i18n.t('digitalTwin.alertCount.plural', { count }) : null;
@@ -294,17 +290,12 @@
             (singularText || `${count} Alerte`) :
             (pluralText || `${count} Alertes`);
         
-        console.log('[alerts-engine] i18n singular:', singularText, 'plural:', pluralText);        console.log('[alerts-engine] Setting text to:', text);
         label.textContent = text;
         
         // Forcer un reflow pour s'assurer que le texte est rendu
         label.style.display = 'none';
         label.offsetHeight; // Trigger reflow
         label.style.display = '';
-        
-        console.log('[alerts-engine] Label textContent after setting:', label.textContent);
-        console.log('[alerts-engine] Label innerHTML:', label.innerHTML);
-        console.log('[alerts-engine] Label is visible:', label.offsetWidth > 0 && label.offsetHeight > 0);
     }
 
     // Exposer la fonction globalement
