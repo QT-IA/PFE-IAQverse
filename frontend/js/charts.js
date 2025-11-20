@@ -931,7 +931,6 @@ async function getPredictedScore(enseigne, salle) {
 
     // Si le modèle n'est pas disponible, retourner null
     if (data.error || data.predicted_score === null) {
-      console.log("ML model not available, using fallback");
       return null;
     }
 

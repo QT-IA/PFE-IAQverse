@@ -233,7 +233,6 @@ def get_preventive_actions(
     """
     Analyse les prédictions ML et retourne les actions préventives à prendre.
     Utilise le service ML pour prédire les valeurs futures et générer les actions.
-    Si le modèle ML n'est pas disponible, utilise un fallback basé sur les seuils.
     """
     try:
         predictor = get_ml_predictor()
@@ -241,48 +240,65 @@ def get_preventive_actions(
         if not enseigne:
             enseigne = "Maison"
         
-        # Si le modèle ML est disponible, l'utiliser
-        if predictor:
-            try:
-                # Faire la prédiction ML complète avec risk_analysis
-                prediction_result = predictor.predict(
-                    enseigne=enseigne,
-                    salle=salle,
-                    sensor_id=sensor_id
-                )
-                
-                if "error" not in prediction_result:
-                    # Extraire les données de prédiction
-                    current_values = prediction_result.get("current_values", {})
-                    predicted_values = prediction_result.get("predicted_values", {})
-                    risk_analysis = prediction_result.get("risk_analysis", {})
-                    
-                    # Générer les actions depuis l'analyse de risque ML
-                    actions = _generate_actions_from_ml_risk_analysis(
-                        current_values=current_values,
-                        predicted_values=predicted_values,
-                        risk_analysis=risk_analysis,
-                        forecast_minutes=prediction_result.get("forecast_minutes", 30)
-                    )
-                    
-                    logger.info(f"ML prediction generated {len(actions)} actions for {enseigne}/{salle}")
-                    
-                    return {
-                        "actions": actions,
-                        "current_values": current_values,
-                        "predicted_values": predicted_values,
-                        "forecast_minutes": prediction_result.get("forecast_minutes", 30),
-                        "timestamp": datetime.now().isoformat(),
-                        "is_ml_prediction": True,
-                        "method": "ml_risk_analysis",
-                        "risk_analysis": risk_analysis
-                    }
-                    
-            except Exception as e:
-                logger.warning(f"ML prediction failed, using fallback: {e}")
+        # Si le modèle ML n'est pas disponible, retourner une erreur
+        if not predictor:
+            logger.error("ML predictor not available")
+            return {
+                "actions": [],
+                "error": "ML predictor not available",
+                "timestamp": datetime.now().isoformat()
+            }
         
-        # Fallback : utiliser les données actuelles et les seuils
-        return _generate_actions_from_current_data(enseigne, salle, sensor_id)
+        try:
+            # Faire la prédiction ML complète avec risk_analysis
+            prediction_result = predictor.predict(
+                enseigne=enseigne,
+                salle=salle,
+                sensor_id=sensor_id
+            )
+            
+            if "error" in prediction_result:
+                logger.error(f"ML prediction error: {prediction_result['error']}")
+                return {
+                    "actions": [],
+                    "error": prediction_result["error"],
+                    "timestamp": datetime.now().isoformat()
+                }
+            
+            # Extraire les données de prédiction
+            current_values = prediction_result.get("current_values", {})
+            predicted_values = prediction_result.get("predicted_values", {})
+            risk_analysis = prediction_result.get("risk_analysis", {})
+            
+            # Générer les actions depuis l'analyse de risque ML
+            actions = _generate_actions_from_ml_risk_analysis(
+                current_values=current_values,
+                predicted_values=predicted_values,
+                risk_analysis=risk_analysis,
+                forecast_minutes=prediction_result.get("forecast_minutes", 30)
+            )
+            
+            logger.info(f"ML prediction generated {len(actions)} actions for {enseigne}/{salle}")
+            
+            return {
+                "actions": actions,
+                "current_values": current_values,
+                "predicted_values": predicted_values,
+                "predicted_score": prediction_result.get("predicted_score"),
+                "forecast_minutes": prediction_result.get("forecast_minutes", 30),
+                "timestamp": datetime.now().isoformat(),
+                "is_ml_prediction": True,
+                "method": "ml_risk_analysis",
+                "risk_analysis": risk_analysis
+            }
+                
+        except Exception as e:
+            logger.error(f"ML prediction failed: {e}")
+            return {
+                "actions": [],
+                "error": f"ML prediction failed: {str(e)}",
+                "timestamp": datetime.now().isoformat()
+            }
         
     except Exception as e:
         logger.error(f"Error in preventive actions endpoint: {e}")
