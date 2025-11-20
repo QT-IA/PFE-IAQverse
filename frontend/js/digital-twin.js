@@ -537,82 +537,110 @@ function syncAlertPointsToTable() {
 
     const t = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t : (()=>undefined);
 
-    const builtRows = [];
-
+    // Grouper les points par type (data-i18n-key) pour éviter les doublons dans le tableau
+    const pointsByType = {};
+    
     points.forEach(pt => { 
         const explicitKey = pt.getAttribute('data-i18n-key');
+<<<<<<< HEAD
         const severity = pt.getAttribute('data-severity');
         
         const names = (pt.getAttribute('data-target-names') || '').split('|').map(s => s.trim()).filter(Boolean);
         if (!explicitKey && names.length === 0) {
             return;
+=======
+        if (!explicitKey) return;
+        
+        if (!pointsByType[explicitKey]) {
+            pointsByType[explicitKey] = [];
+>>>>>>> origin/dev
         }
-        // Candidate key: use first name, sanitized to ascii lowercase
-        const candidateRaw = explicitKey || names[0];
-            const sanitize = (s) => {
-                // remove only combining diacritics (U+0300–U+036F), not ASCII letters
-                try { s = s.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); } catch(e){}
-            return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
-        };
-        const candidate = sanitize(candidateRaw);
-        const subjectKey = `digitalTwin.sample.${candidate}.subject`;
-        const actionKey = `digitalTwin.sample.${candidate}.action`;
+        pointsByType[explicitKey].push(pt);
+    });
 
-        // determine severity
-        const severityLower = (severity || 'danger').toLowerCase();
+    const builtRows = [];
+
+    // Traiter chaque type unique
+    Object.entries(pointsByType).forEach(([typeKey, typePoints]) => {
+        // Prendre la sévérité la plus grave pour ce type
+        const severities = typePoints.map(pt => pt.getAttribute('data-severity') || 'info');
+        const severityWeights = { 'danger': 0, 'warning': 1, 'info': 2 };
+        const maxSeverity = severities.reduce((max, sev) => 
+            severityWeights[sev] < severityWeights[max] ? sev : max, 'info');
+        
+        console.log(`[digital-twin] Processing type ${typeKey} with ${typePoints.length} points, max severity: ${maxSeverity}`);
+        
+        const severityLower = maxSeverity.toLowerCase();
         const severityMap = {
             'danger': { emoji: '🔴', cls: 'alert-red' },
             'warning': { emoji: '🟠', cls: 'alert-yellow' },
             'info': { emoji: '🟢', cls: 'alert-green' }
         };
         const sev = severityMap[severityLower] || severityMap['danger'];
+<<<<<<< HEAD
 
     const tr = document.createElement('tr');
+=======
+        
+        const tr = document.createElement('tr');
+>>>>>>> origin/dev
         tr.className = `dynamic-alert ${sev.cls}`;
 
         const tdState = document.createElement('td'); tdState.textContent = sev.emoji;
         const tdSubj = document.createElement('td');
         const tdAct = document.createElement('td');
 
+        // Utiliser le premier point pour les clés i18n et actions
+        const firstPoint = typePoints[0];
+        const actionKeyDyn = firstPoint.getAttribute('data-action-key');
+        
+        const subjectKey = `digitalTwin.sample.${typeKey}.subject`;
+        const actionKey = `digitalTwin.sample.${typeKey}.action`;
+
         // If i18n keys exist, attach data-i18n so translations update automatically
         const subjTxt = (t && t(subjectKey)) || null;
-        // Prefer dynamic action suggested by alerts-engine via data-action-key
-    const actionKeyDyn = pt.getAttribute('data-action-key');
-    const dynI18nKey = actionKeyDyn ? `digitalTwin.actionVerbs.${actionKeyDyn}` : null;
+        const dynI18nKey = actionKeyDyn ? `digitalTwin.actionVerbs.${actionKeyDyn}` : null;
         const dynActTxt = dynI18nKey && t ? t(dynI18nKey) : null;
         const actTxtFallback = (t && t(actionKey)) || null;
 
         // Always attach data-i18n so later translation passes can update these cells
         tdSubj.setAttribute('data-i18n', subjectKey);
-        tdSubj.textContent = (subjTxt) ? subjTxt : candidateRaw;
+        tdSubj.textContent = (subjTxt) ? subjTxt : typeKey;
 
         // Action column shows dynamic recommendation when available, else subject default
         if (actionKeyDyn) tdAct.setAttribute('data-i18n', dynI18nKey);
         else tdAct.setAttribute('data-i18n', actionKey);
         tdAct.textContent = (dynActTxt) ? dynActTxt : (actTxtFallback ? actTxtFallback : ((t && t('digitalTwin.details')) || 'Détails'));
 
-        // Prepare detail object from alert-point
-        let detailObj = null;
+        // Préparer les détails combinés de tous les points de ce type
+        let combinedDetails = null;
         try {
-            const raw = pt.getAttribute('data-details');
-            detailObj = raw ? JSON.parse(raw) : null;
-        } catch(e) { detailObj = null; }
+            // Prendre les détails du premier point pour l'instant
+            const raw = firstPoint.getAttribute('data-details');
+            combinedDetails = raw ? JSON.parse(raw) : null;
+        } catch(e) { combinedDetails = null; }
         
-        // Stocker les détails dans la ligne pour pouvoir les récupérer plus tard
-        tr._detailsData = detailObj;
+        // Stocker les détails dans la ligne
+        tr._detailsData = combinedDetails;
         
         // Clicking the row should open details using the visible subject text and detail object
         tr.addEventListener('click', () => {
             const subj = tdSubj.textContent.trim();
-            showDetails(subj, detailObj);
+            showDetails(subj, combinedDetails);
         });
 
         tr.appendChild(tdState);
         tr.appendChild(tdSubj);
         tr.appendChild(tdAct);
 
+<<<<<<< HEAD
         // queue row with severity weight for sorting
         const weight = severityLower === 'danger' ? 0 : (severityLower === 'warning' ? 1 : 2);
+=======
+        // Queue row with severity weight for sorting
+        const weight = severityWeights[severityLower];
+        console.log(`[digital-twin] Adding grouped row for ${typeKey} with weight ${weight}`);
+>>>>>>> origin/dev
         builtRows.push({ tr, weight });
     });
 
