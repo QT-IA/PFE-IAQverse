@@ -542,18 +542,10 @@ function syncAlertPointsToTable() {
     
     points.forEach(pt => { 
         const explicitKey = pt.getAttribute('data-i18n-key');
-<<<<<<< HEAD
-        const severity = pt.getAttribute('data-severity');
-        
-        const names = (pt.getAttribute('data-target-names') || '').split('|').map(s => s.trim()).filter(Boolean);
-        if (!explicitKey && names.length === 0) {
-            return;
-=======
         if (!explicitKey) return;
         
         if (!pointsByType[explicitKey]) {
             pointsByType[explicitKey] = [];
->>>>>>> origin/dev
         }
         pointsByType[explicitKey].push(pt);
     });
@@ -577,13 +569,8 @@ function syncAlertPointsToTable() {
             'info': { emoji: '🟢', cls: 'alert-green' }
         };
         const sev = severityMap[severityLower] || severityMap['danger'];
-<<<<<<< HEAD
-
-    const tr = document.createElement('tr');
-=======
         
         const tr = document.createElement('tr');
->>>>>>> origin/dev
         tr.className = `dynamic-alert ${sev.cls}`;
 
         const tdState = document.createElement('td'); tdState.textContent = sev.emoji;
@@ -633,14 +620,9 @@ function syncAlertPointsToTable() {
         tr.appendChild(tdSubj);
         tr.appendChild(tdAct);
 
-<<<<<<< HEAD
-        // queue row with severity weight for sorting
-        const weight = severityLower === 'danger' ? 0 : (severityLower === 'warning' ? 1 : 2);
-=======
         // Queue row with severity weight for sorting
         const weight = severityWeights[severityLower];
         console.log(`[digital-twin] Adding grouped row for ${typeKey} with weight ${weight}`);
->>>>>>> origin/dev
         builtRows.push({ tr, weight });
     });
 
