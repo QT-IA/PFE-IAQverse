@@ -18,12 +18,30 @@ function showDetails(sujet, detail, forceRefresh = false) {
         panel.classList.add('hidden');
         list.innerHTML = '';
         currentDetailsSubject = null;
+        
+        // Forcer le resize du canvas 3D et du container après fermeture du panel
+        setTimeout(() => {
+            const twinLayout = document.querySelector('.twin-layout');
+            if (twinLayout) {
+                twinLayout.style.gridTemplateRows = 'auto'; // Réinitialiser les lignes
+            }
+            window.dispatchEvent(new Event('resize'));
+        }, 50);
         return;
     }
 
     panel.classList.remove("hidden");
     list.innerHTML = "";
     currentDetailsSubject = sujet;
+    
+    // Forcer le resize du canvas 3D et du container après ouverture du panel
+    setTimeout(() => {
+        const twinLayout = document.querySelector('.twin-layout');
+        if (twinLayout) {
+            twinLayout.style.gridTemplateRows = 'auto auto'; // Deux lignes actives
+        }
+        window.dispatchEvent(new Event('resize'));
+    }, 50);
 
     // Mettre à jour le titre avec le sujet
     const subjectSpan = document.getElementById('details-subject');
@@ -38,6 +56,14 @@ function showDetails(sujet, detail, forceRefresh = false) {
         const knownParams = new Set(['co2','pm25','tvoc','temperature','humidity']);
 
     // Helper pour formatter un item de détail avec style riche
+    const formatNumber = (num, decimals = 2) => {
+        // Accept number or numeric string
+        const n = (typeof num === 'number') ? num : (typeof num === 'string' ? Number(num) : NaN);
+        if (Number.isNaN(n)) return num; // return original if not numeric
+        // To avoid unnecessary trailing zeros, use Number to normalize
+        return Number(n.toFixed(decimals));
+    };
+
     const formatIssue = (it) => {
         if (!it) return null;
         const dirTxt = it.direction === 'low' ? (t('digitalTwin.details.low') || 'trop bas')
@@ -52,10 +78,11 @@ function showDetails(sujet, detail, forceRefresh = false) {
             ? (t('digitalTwin.details.thresholdMin') || 'seuil min')
             : (t('digitalTwin.details.thresholdMax') || 'seuil max');
         const thrTxt = (typeof it.threshold === 'number')
-            ? ` <span class="param-threshold">(${thresholdLabel} : ${it.threshold}${unit})</span>`
+            ? ` <span class="param-threshold">(${thresholdLabel} : ${formatNumber(it.threshold)}${unit})</span>`
             : '';
+        const displayedValue = (typeof it.value === 'number') ? formatNumber(it.value) : it.value;
         return {
-            html: `<span class="param-value">${paramName} ${dirTxt} : ${it.value}${unit}</span>${thrTxt}`,
+            html: `<span class="param-value">${paramName} ${dirTxt} : ${displayedValue}${unit}</span>${thrTxt}`,
             severity: it.severity || 'info',
             code: paramCode
         };
@@ -477,7 +504,7 @@ function displayPreventiveActions(data) {
 }
 
 // Sync alert-point elements into the actions table as rows
-function syncAlertPointsToTable() {
+window.syncAlertPointsToTable = function syncAlertPointsToTable() {
     const tbody = document.querySelector('.actions-table tbody');
     if (!tbody) {
         console.warn('[digital-twin] Actions table tbody not found');
@@ -537,43 +564,82 @@ function syncAlertPointsToTable() {
 
     const t = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t : (()=>undefined);
 
-    // Grouper les points par type (data-i18n-key) pour éviter les doublons dans le tableau
-    const pointsByType = {};
+    // Grouper les points par target-names (nom d'objet 3D unique) pour créer une ligne par objet
+    const pointsByTarget = {};
     
     points.forEach(pt => { 
         const explicitKey = pt.getAttribute('data-i18n-key');
-        if (!explicitKey) return;
+        const targetName = pt.getAttribute('data-target-names');
+        if (!explicitKey || !targetName) return;
         
-        if (!pointsByType[explicitKey]) {
-            pointsByType[explicitKey] = [];
+        // Clé unique basée sur le nom de l'objet 3D
+        if (!pointsByTarget[targetName]) {
+            pointsByTarget[targetName] = {
+                type: explicitKey,
+                targetName: targetName,
+                points: []
+            };
         }
-        pointsByType[explicitKey].push(pt);
+        pointsByTarget[targetName].points.push(pt);
+    });
+
+    // Compter combien d'objets de chaque type pour numérotation
+    const typeCount = {};
+    const typeObjects = {};
+    Object.entries(pointsByTarget).forEach(([targetName, group]) => {
+        const type = group.type;
+        if (!typeCount[type]) {
+            typeCount[type] = 0;
+            typeObjects[type] = [];
+        }
+        typeCount[type]++;
+        typeObjects[type].push(targetName);
     });
 
     const builtRows = [];
 
-    // Traiter chaque type unique
-    Object.entries(pointsByType).forEach(([typeKey, typePoints]) => {
-        // Prendre la sévérité la plus grave pour ce type
+    // Traiter chaque objet distinct (par targetName)
+    Object.entries(pointsByTarget).forEach(([targetName, group]) => {
+        const typeKey = group.type;
+        const typePoints = group.points;
+        
+        // Déterminer l'emoji basé sur l'état (rouge si fermé/éteint, vert si ouvert/allumé)
+        const states = typePoints.map(pt => {
+            const state = pt.getAttribute('data-state');
+            if (state) return state;
+            // Fallback : si pas de data-state, utiliser severity pour déduire l'état
+            const severity = pt.getAttribute('data-severity');
+            if (severity === 'info') {
+                // info = pas de problème = ouvert/allumé
+                const key = pt.getAttribute('data-i18n-key');
+                return (key === 'door' || key === 'window') ? 'open' : 'on';
+            } else {
+                // warning/danger = problème = fermé/éteint
+                const key = pt.getAttribute('data-i18n-key');
+                return (key === 'door' || key === 'window') ? 'closed' : 'off';
+            }
+        });
+        const hasClosedOrOff = states.some(s => s === 'closed' || s === 'off');
+        const stateEmoji = hasClosedOrOff ? '🔴' : '🟢';
+        
+        // Déterminer la classe CSS basée sur la gravité (pour les couleurs)
         const severities = typePoints.map(pt => pt.getAttribute('data-severity') || 'info');
         const severityWeights = { 'danger': 0, 'warning': 1, 'info': 2 };
         const maxSeverity = severities.reduce((max, sev) => 
             severityWeights[sev] < severityWeights[max] ? sev : max, 'info');
-        
-        console.log(`[digital-twin] Processing type ${typeKey} with ${typePoints.length} points, max severity: ${maxSeverity}`);
-        
         const severityLower = maxSeverity.toLowerCase();
         const severityMap = {
-            'danger': { emoji: '🔴', cls: 'alert-red' },
-            'warning': { emoji: '🟠', cls: 'alert-yellow' },
-            'info': { emoji: '🟢', cls: 'alert-green' }
+            'danger': { cls: 'alert-red' },
+            'warning': { cls: 'alert-yellow' },
+            'info': { cls: 'alert-green' }
         };
         const sev = severityMap[severityLower] || severityMap['danger'];
         
         const tr = document.createElement('tr');
         tr.className = `dynamic-alert ${sev.cls}`;
 
-        const tdState = document.createElement('td'); tdState.textContent = sev.emoji;
+        const tdState = document.createElement('td'); 
+        tdState.textContent = stateEmoji; // Emoji basé sur l'état
         const tdSubj = document.createElement('td');
         const tdAct = document.createElement('td');
 
@@ -585,14 +651,21 @@ function syncAlertPointsToTable() {
         const actionKey = `digitalTwin.sample.${typeKey}.action`;
 
         // If i18n keys exist, attach data-i18n so translations update automatically
-        const subjTxt = (t && t(subjectKey)) || null;
+        let subjTxt = (t && t(subjectKey)) || typeKey;
+        
+        // Si plusieurs objets du même type, ajouter un numéro (Fenêtre 1, Fenêtre 2, etc.)
+        if (typeCount[typeKey] > 1) {
+            const objectIndex = typeObjects[typeKey].indexOf(targetName) + 1;
+            subjTxt = `${subjTxt} ${objectIndex}`;
+        }
+        
         const dynI18nKey = actionKeyDyn ? `digitalTwin.actionVerbs.${actionKeyDyn}` : null;
         const dynActTxt = dynI18nKey && t ? t(dynI18nKey) : null;
         const actTxtFallback = (t && t(actionKey)) || null;
 
-        // Always attach data-i18n so later translation passes can update these cells
+        // Attacher data-i18n pour les traductions
         tdSubj.setAttribute('data-i18n', subjectKey);
-        tdSubj.textContent = (subjTxt) ? subjTxt : typeKey;
+        tdSubj.textContent = subjTxt; // Texte avec numéro si plusieurs objets du même type
 
         // Action column shows dynamic recommendation when available, else subject default
         if (actionKeyDyn) tdAct.setAttribute('data-i18n', dynI18nKey);
@@ -622,7 +695,7 @@ function syncAlertPointsToTable() {
 
         // Queue row with severity weight for sorting
         const weight = severityWeights[severityLower];
-        console.log(`[digital-twin] Adding grouped row for ${typeKey} with weight ${weight}`);
+        console.log(`[digital-twin] Adding grouped row for ${typeKey} with severity weight ${weight}, emoji: ${stateEmoji}`);
         builtRows.push({ tr, weight });
     });
 
