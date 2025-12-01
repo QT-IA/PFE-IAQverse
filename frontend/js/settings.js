@@ -457,7 +457,13 @@ async function addPiece(enseigneId) {
   openEditModalWith('modals.add_room', `
     <div class="form-group"><label data-i18n="settings.fields.nom">Nom de la pièce</label><input name="nom" type="text" required></div>
     <div class="form-group"><label data-i18n="settings.fields.type">Type</label>
-      <select name="type"><option value="salon">Salon</option><option value="cuisine">Cuisine</option><option value="chambre">Chambre</option><option value="bureau">Bureau</option><option value="autre">Autre</option></select>
+      <select name="type" class="styled-select">
+        <option value="salon">Salon</option>
+        <option value="cuisine">Cuisine</option>
+        <option value="chambre">Chambre</option>
+        <option value="bureau">Bureau</option>
+        <option value="autre">Autre</option>
+      </select>
     </div>
     <div class="form-group">
       <label data-i18n="modals.glb_label">Modèle 3D (.glb)</label>
