@@ -323,34 +323,13 @@
      * Met à jour les attributs des alert-points existants au lieu de les recréer
      */
     function renderAlertPoints(enseigneId, pieceId) {
-<<<<<<< HEAD
-=======
         console.log(`[alerts-engine] renderAlertPoints called for ${enseigneId}/${pieceId}`);
 
->>>>>>> origin/dev
         const container = document.getElementById('alert-points-container');
         if (!container) {
             console.error('[alerts-engine] alert-points-container not found in DOM!');
             return;
         }
-<<<<<<< HEAD
-        
-        // Vider le conteneur
-        container.innerHTML = '';
-        
-        // Créer les alert-points pour cette pièce
-        DEFAULT_ALERT_POINTS.forEach(point => {
-            const alertPoint = document.createElement('div');
-            alertPoint.className = 'alert-point';
-            alertPoint.setAttribute('data-i18n-key', point.key);
-            alertPoint.setAttribute('data-target-names', point.targetNames);
-            alertPoint.setAttribute('data-enseigne', enseigneId);
-            alertPoint.setAttribute('data-piece', pieceId);
-            alertPoint.setAttribute('data-active', 'false');
-            alertPoint.setAttribute('style', point.style);
-            container.appendChild(alertPoint);
-        });
-=======
 
         // Au lieu de vider complètement, mettre à jour les attributs des alert-points existants
         const existingPoints = container.querySelectorAll('.alert-point');
@@ -369,7 +348,6 @@
             console.log('[alerts-engine] No existing points found - they will be created by autoGenerateAlertPoints');
             return;
         }
->>>>>>> origin/dev
     }
 
     // Track active enseigne/salle
