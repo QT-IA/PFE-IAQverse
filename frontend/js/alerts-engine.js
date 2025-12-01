@@ -214,6 +214,9 @@
             el.setAttribute("data-active", "true");
             el.setAttribute("data-severity", severity);
             
+            // Préserver data-state s'il existe déjà (géré par three-scene.js)
+            // Ne pas l'écraser avec la severity
+            
             if (actionsMap && actionsMap[key]) {
                 el.setAttribute("data-action-key", actionsMap[key]);
             }
@@ -227,7 +230,10 @@
             if (severity === 'info') {
                 el.style.display = 'none';
             } else {
-                el.style.display = ''; // Afficher les autres sévérités
+                // Seulement afficher si l'objet est dans le champ de vision
+                if (el.getAttribute('data-in-view') !== 'false') {
+                    el.style.display = ''; // Afficher les autres sévérités
+                }
                 activatedCount++;
             }
         });

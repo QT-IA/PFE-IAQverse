@@ -47,8 +47,8 @@ let animationStarted = false; // ensure only one animate loop
 let objectStates = {};
 const objectAnimations = {
   door: {
-    axis: 'y',  // axe Y pour tourner comme une porte
-    openAngle: -Math.PI / 2,  // -90° pour ouvrir dans l'autre sens
+    axis: 'z',  // axe Z pour tourner comme une porte
+    openAngle: Math.PI / 2,  // -90° pour ouvrir dans l'autre sens
     closeAngle: 0,
     duration: 1000
   },
@@ -198,17 +198,13 @@ function updateParticles() {
 }
 
 function animateObject(obj, config, targetState) {
-  console.warn('[three-scene] ANIMATE OBJECT CALLED for', obj.name, 'type:', obj.type, 'has geometry:', !!obj.geometry, 'parent:', obj.parent ? obj.parent.name : 'none', 'targetState:', targetState);
-  
   const targetObj = obj;
-  console.warn('[three-scene] Animating target:', targetObj.name, 'type:', targetObj.type);
   
   if (config.axis) {
     // rotation animation
     const axis = config.axis;
     const startRotation = targetObj.rotation[axis];
     const targetRotation = targetState === 'open' ? config.openAngle : config.closeAngle;
-    console.log('[three-scene] Rotating', targetObj.name, 'from', startRotation, 'to', targetRotation, 'on axis', axis);
     const startTime = Date.now();
     const animate = () => {
       const elapsed = Date.now() - startTime;
@@ -217,21 +213,38 @@ function animateObject(obj, config, targetState) {
       targetObj.rotation[axis] = startRotation + (targetRotation - startRotation) * eased;
       if (progress < 1) {
         requestAnimationFrame(animate);
-      } else {
-        console.log('[three-scene] Animation completed, final rotation:', targetObj.rotation[axis]);
       }
     };
     animate();
   } else if (config.colorOn) {
-    // color animation
-    const startColor = obj.material.color.clone();
+    // color animation - pour les groupes, appliquer à tous les meshes enfants
     const endColor = targetState === 'on' ? new THREE.Color(config.colorOn) : new THREE.Color(config.colorOff);
+    
+    // Collecter tous les meshes qui ont un material
+    const meshes = [];
+    obj.traverse(child => {
+      if (child.isMesh && child.material && child.material.color) {
+        meshes.push({
+          mesh: child,
+          startColor: child.material.color.clone()
+        });
+      }
+    });
+    
+    if (meshes.length === 0) {
+      return;
+    }
+    
     const startTime = Date.now();
     const animate = () => {
       const elapsed = Date.now() - startTime;
       const progress = Math.min(elapsed / config.duration, 1);
       const eased = progress; // linear for simplicity
-      obj.material.color = interpolateColor(startColor, endColor, eased);
+      
+      meshes.forEach(({ mesh, startColor }) => {
+        mesh.material.color = interpolateColor(startColor, endColor, eased);
+      });
+      
       if (progress < 1) {
         requestAnimationFrame(animate);
       } else {
@@ -262,15 +275,10 @@ function frameModel(object3d, offsetFactor = 1.5) {
     }
   });
 
-  console.log('[three-scene] All objects in model:', foundObjects);
-  console.log('[three-scene] Camera object found:', cameraObject ? cameraObject.name : 'none');
-
   if (cameraObject) {
     // Centrer sur l'objet "Camera" trouvé
     const cameraWorldPos = new THREE.Vector3();
     cameraObject.getWorldPosition(cameraWorldPos);
-
-    console.log('[three-scene] Camera object world position:', cameraWorldPos);
 
     // Positionner la caméra pour regarder vers l'objet Camera
     const distance = 1; // Distance encore plus réduite pour zoomer davantage
@@ -282,9 +290,6 @@ function frameModel(object3d, offsetFactor = 1.5) {
 
     // Orienter les contrôles vers l'objet Camera
     controls.target.copy(cameraWorldPos);
-
-    console.log('[three-scene] Centered view on Camera object at:', cameraWorldPos);
-    console.log('[three-scene] Camera position set to:', camera.position);
   } else {
     // Comportement par défaut : centrer sur le modèle entier
     const box = new THREE.Box3().setFromObject(object3d);
@@ -339,8 +344,6 @@ function loadPieceModel(roomId) {
 
     const piece = enseigne.pieces?.find(p => p.id === roomId);
     if (!piece || !piece.glbModel) {
-      console.warn('Modèle GLB non défini pour cette pièce');
-
       // Clear existing model
       if (modelRoot) {
         scene.remove(modelRoot);
@@ -432,24 +435,21 @@ function findTargetObjectByNames(root, names) {
 }
 
 function autoGenerateAlertPoints(modelRoot) {
-  console.log('[three-scene] autoGenerateAlertPoints called with modelRoot:', !!modelRoot);
   if (!modelRoot) return;
   
   // Supprimer les anciens alert-points générés automatiquement
   const existingAutoPoints = document.querySelectorAll('.alert-point[data-auto-generated="true"]');
-  console.log('[three-scene] Removing', existingAutoPoints.length, 'existing auto-generated points');
   existingAutoPoints.forEach(point => point.remove());
   
   const alertPointsContainer = document.getElementById('alert-points-container');
-  console.warn('[three-scene] alertPointsContainer found:', !!alertPointsContainer);
   if (!alertPointsContainer) return;
   
   // Patterns à rechercher dans les noms d'objets (ajustés selon les vrais noms du GLB)
   const patterns = {
-    'window': /Window/i,  // Cherche "Window" n'importe où dans le nom
-    'door': /DoorBoddy/i,     // Cherche "DoorBoddy" pour DoorBoddy_Cube001
-    'ventilation': /Clim/i, // Cherche "Clim" n'importe où dans le nom
-    'radiator': /Radiator/i // Cherche "Radiator" n'importe où dans le nom
+    'window': /^Window[^_]*$/i,  // Cherche "Window" au début, sans underscore (groupe parent)
+    'door': /^Door[^_]*$/i,      // Cherche "Door" au début, sans underscore (groupe parent, pas DoorBoddy_Cube)
+    'ventilation': /Clim/i, // Cherche "Clim" n'importe où dans le nom (plus permissif)
+    'radiator': /^Radiator[^_]*$/i // Cherche "Radiator" au début, sans underscore
   };
   
   // Collecter tous les objets correspondants (stocker les objets Three.js, pas juste les noms)
@@ -460,11 +460,22 @@ function autoGenerateAlertPoints(modelRoot) {
     if (obj.name) {
       Object.entries(patterns).forEach(([type, pattern]) => {
         if (pattern.test(obj.name)) {
-          foundObjects[type].push(obj); // Stocker l'objet Three.js complet
+          // Vérifier que ce n'est pas un enfant d'un objet déjà trouvé
+          let isChild = false;
+          obj.traverseAncestors(ancestor => {
+            if (ancestor !== modelRoot && ancestor.name && pattern.test(ancestor.name)) {
+              isChild = true;
+            }
+          });
           
-          // Définir la couleur par défaut à rouge pour ventilation et radiator
-          if (type === 'ventilation' || type === 'radiator') {
-            setObjectColor(obj, 0xff0000); // rouge
+          // Ne stocker que les objets parents (pas les enfants)
+          if (!isChild) {
+            foundObjects[type].push(obj); // Stocker l'objet Three.js complet
+            
+            // Définir la couleur par défaut à rouge pour ventilation et radiator
+            if (type === 'ventilation' || type === 'radiator') {
+              setObjectColor(obj, 0xff0000); // rouge
+            }
           }
         }
       });
@@ -483,29 +494,40 @@ function autoGenerateAlertPoints(modelRoot) {
     if (objects.length > 0) {
       // Créer un alert-point pour CHAQUE objet trouvé
       objects.forEach((obj, index) => {
-        console.warn('[three-scene] Creating alert point for', type, 'object:', obj.name);
-        
         // Déterminer le nom cible pour l'animation
-        let targetName = type === 'door' ? obj.parent.name : obj.name;
+        let targetName = obj.name;
         
         if (!objectStates[targetName]) {
           let animationObj = obj;
-          if (type === 'door') {
-            console.warn('[three-scene] Creating pivot for door group', obj.parent.name);
-            let doorGroup = obj.parent;
+          if (type === 'door' || type === 'window') {
+            let objectGroup = obj;
             const pivotGroup = new THREE.Group();
-            pivotGroup.name = doorGroup.name + '_pivot';
-            pivotGroup.position.copy(doorGroup.position);
-            // Assumer que la porte fait 1 unité de large, pivoter autour du bord gauche (charnière)
-            pivotGroup.position.x -= 0.5; // déplacer le pivot vers la gauche
-            doorGroup.position.set(0.5, 0, 0); // positionner la porte à droite du pivot
-            let grandParent = doorGroup.parent;
-            if (grandParent) {
-              grandParent.add(pivotGroup);
-              pivotGroup.add(doorGroup);
-              console.warn('[three-scene] Pivoted door group', doorGroup.name, 'under grandParent', grandParent.name);
+            pivotGroup.name = objectGroup.name + '_pivot';
+            pivotGroup.position.copy(objectGroup.position);
+            pivotGroup.rotation.copy(objectGroup.rotation);
+            
+            // Récupérer le parent avant de retirer objectGroup
+            let originalParent = objectGroup.parent;
+            
+            if (originalParent) {
+              // Calculer la boîte englobante pour déterminer la largeur
+              const bbox = new THREE.Box3().setFromObject(objectGroup);
+              const width = bbox.max.x - bbox.min.x;
+              
+              // Retirer objectGroup de son parent
+              originalParent.remove(objectGroup);
+              
+              // Déplacer le pivot vers la gauche (où sera la charnière)
+              pivotGroup.position.x -= width / 2;
+              
+              // Ajouter pivotGroup au parent original
+              originalParent.add(pivotGroup);
+              
+              // Réinitialiser position/rotation de objectGroup et l'ajouter au pivot
+              objectGroup.position.set(width / 2, 0, 0); // décaler vers la droite (charnière à gauche du pivot)
+              objectGroup.rotation.set(0, 0, 0);
+              pivotGroup.add(objectGroup);
             } else {
-              console.warn('[three-scene] No grandParent for door group, cannot create pivot');
             }
             animationObj = pivotGroup;
           }
@@ -529,6 +551,7 @@ function autoGenerateAlertPoints(modelRoot) {
         alertPoint.setAttribute('data-i18n-key', type);
         alertPoint.setAttribute('data-target-names', targetName);
         alertPoint.setAttribute('data-severity', severity);
+        alertPoint.setAttribute('data-state', objectStates[targetName].state);
         alertPoint.setAttribute('data-auto-generated', 'true');
         
         // Déterminer la couleur de fond basé sur l'état actuel
@@ -571,13 +594,13 @@ function autoGenerateAlertPoints(modelRoot) {
           alertPoint.style.transform = 'translate(-50%, -50%) scale(1)';
         });
         
-        // Stocker une référence directe à l'objet Three.js
-        alertPoint._threeObject = animationObj;
+        // Stocker une référence directe à l'objet Three.js pour le positionnement visuel
+        // Pour les portes/fenêtres avec pivot, utiliser l'objet original (obj) pour le positionnement
+        alertPoint._threeObject = obj;
         
         // Ajouter l'événement de clic pour animer l'objet
         alertPoint.addEventListener('click', (event) => {
           event.stopPropagation(); // Empêcher la propagation à OrbitControls
-          console.warn('[three-scene] Alert point clicked, data-i18n-key:', alertPoint.getAttribute('data-i18n-key'));
           const alertType = alertPoint.getAttribute('data-i18n-key');
           const targetName = alertPoint.getAttribute('data-target-names');
           const stateObj = objectStates[targetName];
@@ -585,7 +608,6 @@ function autoGenerateAlertPoints(modelRoot) {
             const config = objectAnimations[alertType];
             const currentState = stateObj.state;
             const newState = currentState === (config.axis ? 'closed' : 'off') ? (config.axis ? 'open' : 'on') : (config.axis ? 'closed' : 'off');
-            console.log('[three-scene] Current state:', currentState, 'New state:', newState);
             stateObj.state = newState;
             animateObject(stateObj.object, config, newState);
             
@@ -598,18 +620,15 @@ function autoGenerateAlertPoints(modelRoot) {
             }
             alertPoint.style.background = newBgColor;
             alertPoint.setAttribute('data-bg-color', newBgColor);
+            alertPoint.setAttribute('data-state', newState);
             
-            // Masquer le point seulement si l'action résout l'alerte (il pourra réapparaître avec les nouvelles données)
-            const resolvesAlert = (alertType === 'door' || alertType === 'window') && newState === 'closed' ||
-                                  (alertType === 'ventilation' || alertType === 'radiator') && newState === 'on';
-            if (resolvesAlert) {
-              alertPoint.style.display = 'none';
-              if (typeof window.updateAlertCountLabel === 'function') {
-                window.updateAlertCountLabel();
-              }
+            // Rafraîchir le tableau pour mettre à jour les emojis
+            if (typeof window.syncAlertPointsToTable === 'function') {
+              window.syncAlertPointsToTable();
             }
-          } else {
-            console.log('[three-scene] No animation config or state found for type:', alertType, 'target:', targetName);
+            
+            // NE PAS masquer le point - laisser alerts-engine.js gérer la visibilité
+            // Simplement mettre à jour l'état pour que le tableau affiche le bon emoji
           }
         });
         
@@ -618,16 +637,8 @@ function autoGenerateAlertPoints(modelRoot) {
     }
   });
   
-  console.log('[three-scene] Auto-generated alert-points:', foundObjects);
-  
-  // Compter le nombre total de points créés
-  const totalPointsCreated = Object.values(foundObjects).reduce((sum, arr) => sum + arr.length, 0);
-  console.log('[three-scene] Total points created:', totalPointsCreated);
-  
   // Mettre à jour le compteur d'alertes après création
-  console.log('[three-scene] Calling updateAlertCountLabel after creating points');
   if (typeof window.updateAlertCountLabel === 'function') {
-    console.log('[three-scene] updateAlertCountLabel function exists, calling it');
     window.updateAlertCountLabel();
   } else {
     console.error('[three-scene] updateAlertCountLabel function not found on window');
@@ -659,37 +670,52 @@ function updateAlertPoints() {
     const worldPos = new THREE.Vector3();
     target.getWorldPosition(worldPos);
 
-    // Ajuster la position verticale pour certains types d'objets
+    // Ajuster la position pour certains types d'objets
     const i18nKey = el.getAttribute('data-i18n-key');
     if (i18nKey === 'door') {
       // Remonter le point de la porte d'environ 1.0 unités dans l'espace 3D
       worldPos.y += 1.0;
+    } else if (i18nKey === 'ventilation' || i18nKey === 'radiator') {
+      // Pour ventilation et radiateur, utiliser le centre de la bounding box
+      const bbox = new THREE.Box3().setFromObject(target);
+      bbox.getCenter(worldPos);
     }
 
+    // Vérifier si l'objet est dans le frustum de la caméra
+    const frustum = new THREE.Frustum();
+    const cameraViewProjectionMatrix = new THREE.Matrix4();
+    cameraViewProjectionMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    frustum.setFromProjectionMatrix(cameraViewProjectionMatrix);
+    
+    const inFrustum = frustum.containsPoint(worldPos);
     const ndc = worldPos.clone().project(camera);
+    
+    if (!inFrustum) {
+      el.style.display = 'none';
+      el.setAttribute('data-in-view', 'false');
+      return;
+    }
+    
+    // Double vérification : si les coordonnées NDC sont hors limites, masquer
+    if (ndc.x < -1 || ndc.x > 1 || ndc.y < -1 || ndc.y > 1 || ndc.z < 0 || ndc.z > 1) {
+      el.style.display = 'none';
+      el.setAttribute('data-in-view', 'false');
+      return;
+    }
+    
+    // L'objet est visible
+    el.setAttribute('data-in-view', 'true');
 
     const rectW = container.clientWidth || 700;
     const rectH = container.clientHeight || 400;
     
-    // Clamp les coordonnées NDC pour garder les points dans le viewport
-    const clampedNdc = {
-      x: Math.max(-1, Math.min(1, ndc.x)),
-      y: Math.max(-1, Math.min(1, ndc.y))
-    };
-    
-    const x = (clampedNdc.x * 0.5 + 0.5) * rectW;
-    const y = (-clampedNdc.y * 0.5 + 0.5) * rectH;
+    const x = (ndc.x * 0.5 + 0.5) * rectW;
+    const y = (-ndc.y * 0.5 + 0.5) * rectH;
 
     el.style.left = x + 'px';
     el.style.top = y + 'px';
     el.style.display = 'block';
-    
-    // Ajouter une classe pour indiquer si le point est clamped (hors viewport original)
-    if (ndc.z > 1 || ndc.z < -1 || ndc.x !== clampedNdc.x || ndc.y !== clampedNdc.y) {
-      el.classList.add('alert-point-clamped');
-    } else {
-      el.classList.remove('alert-point-clamped');
-    }
+    el.classList.remove('alert-point-clamped');
   });
   
   // Mettre à jour le compteur d'alertes après repositionnement
@@ -716,6 +742,22 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(w, h);
 });
+
+// Observer pour détecter les changements de taille du conteneur
+if (container) {
+  const resizeObserver = new ResizeObserver(entries => {
+    for (let entry of entries) {
+      const w = entry.contentRect.width;
+      const h = entry.contentRect.height;
+      if (w > 0 && h > 0) {
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      }
+    }
+  });
+  resizeObserver.observe(container);
+}
 
 // Raccourci clavier pour centrer le modèle (F)
 window.addEventListener('keydown', (e) => {

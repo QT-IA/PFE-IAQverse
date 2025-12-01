@@ -1650,13 +1650,12 @@ a:hover img {
 }
 
 .twin-layout {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch; /* Force tous les panneaux à avoir la même hauteur */
-  min-height: 100%; /* Permet au contenu de dépasser */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: auto;
   gap: 20px;
   padding: 20px;
-  padding-bottom: 80px; /* Espace pour nav-bar */
+  padding-bottom: 80px;
 }
 
 /* Responsive pour Digital Twin */
@@ -1752,28 +1751,33 @@ a:hover img {
 }
 
 .actions-panel {
-  flex: 1 1 300px;
-  min-width: 300px;
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 280px;
+  min-height: 500px;
+  height: auto;
   background-color: var(--bg-secondary);
   color: var(--text-primary);
   padding: 20px;
   border-radius: 10px;
   box-shadow: var(--shadow-md);
-  margin-bottom: 0px;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
 }
 
 .details-panel {
-  flex: 1 1 300px;
+  grid-column: 1 / -1;
+  grid-row: 2;
   min-width: 300px;
   background-color: var(--bg-secondary);
   color: var(--text-primary);
   padding: 20px;
+  padding-bottom: 20px;
+  margin-bottom: 0px;
   border-radius: 10px;
   box-shadow: var(--shadow-md);
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
 }
@@ -1783,15 +1787,16 @@ a:hover img {
 }
 
 .room-panel {
-  flex: 1 1 300px;
-  min-width: 300px;
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 400px;
+  height: 100%;
   background-color: var(--bg-secondary);
   color: var(--text-primary);
   padding: 20px;
   border-radius: 10px;
   box-shadow: var(--shadow-md);
-  margin-bottom: 0px;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
 }
@@ -2058,19 +2063,24 @@ a:hover img {
 
 .room-visual {
   position: relative;
-  flex: 1; /* Prend toute la hauteur disponible */
-  min-height: 400px; /* Hauteur minimale */
+  flex: 1;
+  min-height: 400px;
+  min-width: 0;
   background-color: var(--info-bg);
   border-radius: 8px;
   overflow: hidden;
   transition: background-color 0.3s ease;
+  display: flex;
+  flex-direction: column;
 }
 
 #blender-viewer {
-  width: 100%;
+  width: 100%; /* Prend toute la largeur du parent */
   height: 100%; /* Prend toute la hauteur du parent */
-  min-height: 400px;
-  margin-bottom: 20px;
+  min-height: 0; /* Permet de rétrécir en dessous de 400px si nécessaire */
+  min-width: 0; /* Permet de rétrécir en largeur si nécessaire */
+  flex: 1; /* Prend tout l'espace disponible verticalement */
+  position: relative; /* Pour contenir les éléments absolus */
 }
 
 .alert-point {
@@ -2087,6 +2097,7 @@ a:hover img {
 }
 
 /* Affiche l'alert-point quand actif ET en warning ou danger (pas info sur la 3D) */
+.alert-point[data-active="true"][data-severity="info"],
 .alert-point[data-active="true"][data-severity="warning"],
 .alert-point[data-active="true"][data-severity="danger"] {
   display: block !important;
