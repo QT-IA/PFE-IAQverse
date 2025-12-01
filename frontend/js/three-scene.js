@@ -45,6 +45,9 @@ let isLoading = false; // prevent concurrent loads
 let animationStarted = false; // ensure only one animate loop
 
 let objectStates = {};
+let currentEnseigneId = null;
+let currentPieceId = null;
+
 const objectAnimations = {
   door: {
     axis: 'z',  // axe Z pour tourner comme une porte
@@ -75,6 +78,31 @@ const objectAnimations = {
 };
 
 let activeParticles = {}; // obj.uuid -> {points, positions, colors, velocities, lifetimes, maxCount, emitting}
+
+// Fonctions pour gérer la persistance de l'état des objets
+function saveObjectStates(enseigneId, pieceId) {
+  if (!enseigneId || !pieceId) return;
+  
+  const statesData = {};
+  Object.entries(objectStates).forEach(([name, stateObj]) => {
+    statesData[name] = {
+      type: stateObj.type,
+      state: stateObj.state
+    };
+  });
+  
+  const storageKey = `objectStates_${enseigneId}_${pieceId}`;
+  sessionStorage.setItem(storageKey, JSON.stringify(statesData));
+}
+
+function loadObjectStates(enseigneId, pieceId) {
+  if (!enseigneId || !pieceId) return {};
+  
+  const storageKey = `objectStates_${enseigneId}_${pieceId}`;
+  console.log('[loadObjectStates] Loading from key:', storageKey);
+  const saved = sessionStorage.getItem(storageKey);
+  return saved ? JSON.parse(saved) : {};
+}
 
 function interpolateColor(startColor, endColor, factor) {
   const r = startColor.r + (endColor.r - startColor.r) * factor;
@@ -355,6 +383,12 @@ function loadPieceModel(roomId) {
     }
 
     const glbPath = piece.glbModel;
+    
+    // Stocker les IDs actuels pour la persistance
+    currentEnseigneId = activeEnseigne;
+    currentPieceId = roomId;
+    
+    console.log('[loadPieceModel] Setting IDs - enseigne:', currentEnseigneId, 'piece:', currentPieceId);
 
     // Clear existing model before loading new one
     if (modelRoot) {
@@ -362,6 +396,16 @@ function loadPieceModel(roomId) {
       disposeObject(modelRoot);
       modelRoot = null;
     }
+    
+    // Nettoyer les particules actives
+    Object.values(activeParticles).forEach(system => {
+      if (system.points) {
+        scene.remove(system.points);
+        system.points.geometry.dispose();
+        system.points.material.dispose();
+      }
+    });
+    activeParticles = {};
 
     isLoading = true;
     loader.load(
@@ -437,12 +481,21 @@ function findTargetObjectByNames(root, names) {
 function autoGenerateAlertPoints(modelRoot) {
   if (!modelRoot) return;
   
+  console.log('[autoGenerate] Starting with enseigne:', currentEnseigneId, 'piece:', currentPieceId);
+  
+  // Réinitialiser objectStates pour la nouvelle pièce
+  objectStates = {};
+  
   // Supprimer les anciens alert-points générés automatiquement
   const existingAutoPoints = document.querySelectorAll('.alert-point[data-auto-generated="true"]');
   existingAutoPoints.forEach(point => point.remove());
   
   const alertPointsContainer = document.getElementById('alert-points-container');
   if (!alertPointsContainer) return;
+  
+  // Charger les états sauvegardés pour cette pièce
+  const savedStates = loadObjectStates(currentEnseigneId, currentPieceId);
+  console.log('[autoGenerate] Loaded saved states:', savedStates);
   
   // Patterns à rechercher dans les noms d'objets (ajustés selon les vrais noms du GLB)
   const patterns = {
@@ -533,9 +586,15 @@ function autoGenerateAlertPoints(modelRoot) {
           }
           
           objectStates[targetName] = { object: animationObj, type: type, state: type === 'door' || type === 'window' ? 'closed' : 'off', particles: null };
+          
+          // Charger l'état sauvegardé depuis sessionStorage
+          if (savedStates[targetName]) {
+            objectStates[targetName].state = savedStates[targetName].state;
+          }
         }
         
         let animationObj = objectStates[targetName].object;
+        const currentState = objectStates[targetName].state;
         
         const severity = type === 'radiator' ? 'warning' : 'info';
         const position = typePositions[type] || { top: '50%', left: '50%' };
@@ -552,10 +611,10 @@ function autoGenerateAlertPoints(modelRoot) {
         alertPoint.setAttribute('data-target-names', targetName);
         alertPoint.setAttribute('data-severity', severity);
         alertPoint.setAttribute('data-state', objectStates[targetName].state);
+        alertPoint.setAttribute('data-active', 'true');
         alertPoint.setAttribute('data-auto-generated', 'true');
         
         // Déterminer la couleur de fond basé sur l'état actuel
-        const currentState = objectStates[targetName].state;
         let bgColor = '';
         if (type === 'door' || type === 'window') {
           bgColor = currentState === 'closed' ? 'rgba(220, 20, 60, 0.9)' : 'rgba(34, 139, 34, 0.9)';
@@ -598,6 +657,9 @@ function autoGenerateAlertPoints(modelRoot) {
         // Pour les portes/fenêtres avec pivot, utiliser l'objet original (obj) pour le positionnement
         alertPoint._threeObject = obj;
         
+        // Initialiser data-in-view pour éviter que updateAlertPoints masque le point
+        alertPoint.setAttribute('data-in-view', 'true');
+        
         // Ajouter l'événement de clic pour animer l'objet
         alertPoint.addEventListener('click', (event) => {
           event.stopPropagation(); // Empêcher la propagation à OrbitControls
@@ -622,6 +684,9 @@ function autoGenerateAlertPoints(modelRoot) {
             alertPoint.setAttribute('data-bg-color', newBgColor);
             alertPoint.setAttribute('data-state', newState);
             
+            // Sauvegarder l'état dans sessionStorage
+            saveObjectStates(currentEnseigneId, currentPieceId);
+            
             // Rafraîchir le tableau pour mettre à jour les emojis
             if (typeof window.syncAlertPointsToTable === 'function') {
               window.syncAlertPointsToTable();
@@ -633,16 +698,52 @@ function autoGenerateAlertPoints(modelRoot) {
         });
         
         alertPointsContainer.appendChild(alertPoint);
+        console.log('[autoGenerate] Added alert point:', targetName, 'with data-active:', alertPoint.getAttribute('data-active'), 'severity:', alertPoint.getAttribute('data-severity'));
+        
+        // Appliquer visuellement l'état restauré
+        if (savedStates[targetName]) {
+          const config = objectAnimations[type];
+          if (config) {
+            // Appliquer immédiatement l'état sans animation
+            if (config.axis) {
+              // Pour portes et fenêtres : rotation
+              const targetRotation = currentState === 'open' ? config.openAngle : config.closeAngle;
+              animationObj.rotation[config.axis] = targetRotation;
+            } else if (config.colorOn) {
+              // Pour ventilation et radiateur : couleur et particules
+              const targetColor = currentState === 'on' ? config.colorOn : config.colorOff;
+              setObjectColor(objectStates[targetName].object, targetColor);
+              
+              if (currentState === 'on' && config.particleColor) {
+                createParticles(objectStates[targetName].object, config);
+              }
+            }
+          }
+        }
       });
     }
   });
   
-  // Mettre à jour le compteur d'alertes après création
-  if (typeof window.updateAlertCountLabel === 'function') {
-    window.updateAlertCountLabel();
-  } else {
-    console.error('[three-scene] updateAlertCountLabel function not found on window');
-  }
+  const totalPoints = document.querySelectorAll('.alert-point[data-auto-generated="true"]').length;
+  console.log('[autoGenerate] Total alert points created:', totalPoints);
+  console.log('[autoGenerate] Created alert points, now syncing table');
+  
+  // Synchroniser le tableau avec les nouveaux alert-points (avec délai pour laisser le DOM se mettre à jour)
+  setTimeout(() => {
+    if (typeof window.syncAlertPointsToTable === 'function') {
+      console.log('[autoGenerate] Calling syncAlertPointsToTable');
+      window.syncAlertPointsToTable();
+    } else {
+      console.error('[autoGenerate] syncAlertPointsToTable not found');
+    }
+    
+    // Mettre à jour le compteur d'alertes après création
+    if (typeof window.updateAlertCountLabel === 'function') {
+      window.updateAlertCountLabel();
+    } else {
+      console.error('[three-scene] updateAlertCountLabel function not found on window');
+    }
+  }, 100);
 }
 
 function updateAlertPoints() {

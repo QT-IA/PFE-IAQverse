@@ -146,6 +146,9 @@ function renderRoomTabs(enseigneId) {
  * @param {boolean} keepActiveRoom - Si true, ne pas réinitialiser activeRoom (utilisé lors de la restauration depuis localStorage)
  */
 function switchEnseigne(enseigneId, keepActiveRoom = false) {
+    // Vérifier si on change vraiment d'enseigne
+    const previousEnseigne = activeEnseigne;
+    
     activeEnseigne = enseigneId;
     if (!keepActiveRoom) {
         activeRoom = null; // Réinitialiser la pièce active (sauf si on restaure depuis localStorage)
@@ -164,6 +167,11 @@ function switchEnseigne(enseigneId, keepActiveRoom = false) {
     document.dispatchEvent(new CustomEvent('enseigneChanged', { 
         detail: { enseigneId } 
     }));
+    
+    // Recharger la page si on change d'enseigne (pour réinitialiser l'état)
+    if (previousEnseigne && previousEnseigne !== enseigneId) {
+        window.location.reload();
+    }
 }
 
 /**
@@ -171,6 +179,9 @@ function switchEnseigne(enseigneId, keepActiveRoom = false) {
  * @param {string} roomId - L'ID de la pièce
  */
 function switchRoom(roomId) {
+    // Vérifier si on change vraiment de pièce
+    const previousRoom = activeRoom;
+    
     activeRoom = roomId;
     localStorage.setItem('activeRoom', roomId);
     
@@ -183,6 +194,11 @@ function switchRoom(roomId) {
     document.dispatchEvent(new CustomEvent('roomChanged', { 
         detail: { roomId, enseigneId: activeEnseigne } 
     }));
+    
+    // Recharger la page si on change de pièce (pour réinitialiser l'état)
+    if (previousRoom && previousRoom !== roomId) {
+        window.location.reload();
+    }
 }
 
 /**
