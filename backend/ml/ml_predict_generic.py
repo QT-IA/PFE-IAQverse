@@ -28,18 +28,18 @@ logger = logging.getLogger(__name__)
 # Seuils critiques pour la qualité de l'air
 CRITICAL_THRESHOLDS = {
     "co2": {
-        "warning": 1000,
-        "critical": 1400,
-        "danger": 2000
+        "warning": 600,
+        "critical": 900,
+        "danger": 1200
     },
     "pm25": {
-        "warning": 25,
-        "critical": 50,
-        "danger": 100
+        "warning": 10,
+        "critical": 25,
+        "danger": 50
     },
     "tvoc": {
-        "warning": 300,
-        "critical": 500,
+        "warning": 200,
+        "critical": 600,
         "danger": 1000
     },
     "humidity": {
@@ -410,7 +410,7 @@ class RealtimeGenericPredictor:
                     "level": current_level,
                     "action": RECOMMENDED_ACTIONS[metric][current_level],
                     "priority": "urgent",
-                    "estimated_time_to_critical": "Maintenant - déjà critique et en augmentation"
+                    "estimated_time_to_critical": "Situation critique actuelle en augmentation"
                 }
                 actions_needed.append(action)
             # 2. Si actuellement critique/danger mais en diminution -> HIGH (situation s'améliore)
@@ -423,7 +423,7 @@ class RealtimeGenericPredictor:
                         "level": current_level,
                         "action": RECOMMENDED_ACTIONS[metric][current_level],
                         "priority": "high",
-                        "estimated_time_to_critical": "Actuellement critique, amélioration prévue"
+                        "estimated_time_to_critical": "Situation critique avec amélioration prévue"
                     }
                     actions_needed.append(action)
             # 3. Si prédit critique/danger (mais pas encore) -> HIGH/MEDIUM

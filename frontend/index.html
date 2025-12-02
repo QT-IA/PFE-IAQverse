@@ -17,6 +17,17 @@
 </head>
 <body>
   <header>
+    <nav class="header-nav">
+      <a href="#" onclick="return false;" class="active-page" title="Accueil">
+        <img src="/assets/icons/home.png" alt="Home">
+      </a>
+      <a href="digital-twin.html" title="Digital Twin">
+        <img src="/assets/icons/digital-twin.png" alt="Digital Twin">
+      </a>
+      <a href="settings.html" title="Paramètres">
+        <img src="/assets/icons/settings.png" alt="Settings">
+      </a>
+    </nav>
   <h1 data-i18n="dashboard.title">Dashboard</h1>
     <div class="header-buttons">
       <button class="theme-toggle-btn" onclick="toggleTheme()" title="Changer le thème">
@@ -97,7 +108,7 @@
     <div class="chart-box" id="tvoc-chart"></div>
   </main>
 
-  <footer class="nav-bar">
+  <footer class="nav-bar" style="display: none;">
   <div class="nav-left">
     <a href="#" onclick="return false;" class="active-page">
       <img src="/assets/icons/home.png">

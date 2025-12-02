@@ -327,8 +327,8 @@ def _generate_actions_from_ml_risk_analysis(
             "priority_map": {"warning": "medium", "critical": "high", "danger": "urgent"}
         },
         "pm25": {
-            "device": "air_purifier",
-            "action": "turn_on",
+            "device": "window",
+            "action": "open",
             "parameter": "PM2.5",
             "unit": "µg/m³",
             "priority_map": {"warning": "medium", "critical": "high", "danger": "urgent"}
@@ -414,9 +414,9 @@ def _generate_actions_from_current_data(enseigne: str, salle: Optional[str], sen
             return {"actions": [], "error": "No current data available", "is_fallback": True}
         
         THRESHOLDS = {
-            "co2": {"warning": 800, "danger": 1200},
-            "pm25": {"warning": 15, "danger": 35},
-            "tvoc": {"warning": 300, "danger": 1000},
+            "co2": {"warning": 600, "danger": 900},
+            "pm25": {"warning": 10, "danger": 25},
+            "tvoc": {"warning": 200, "danger": 600},
             "temperature": {"cold": 18, "hot": 24},
             "humidity": {"dry": 30, "humid": 70}
         }
@@ -443,8 +443,8 @@ def _generate_actions_from_current_data(enseigne: str, salle: Optional[str], sen
         if current_pm >= THRESHOLDS["pm25"]["warning"]:
             priority = "high" if current_pm >= THRESHOLDS["pm25"]["danger"] else "medium"
             actions.append({
-                "device": "air_purifier",
-                "action": "turn_on",
+                "device": "window",
+                "action": "open",
                 "parameter": "PM2.5",
                 "current_value": round(current_pm, 1),
                 "threshold": THRESHOLDS["pm25"]["warning"],
@@ -472,7 +472,7 @@ def _generate_actions_from_current_data(enseigne: str, salle: Optional[str], sen
         current_temp = float(current_data.get("temperature", 20))
         if current_temp < THRESHOLDS["temperature"]["cold"]:
             actions.append({
-                "device": "heating",
+                "device": "radiator",
                 "action": "increase",
                 "parameter": "Température",
                 "current_value": round(current_temp, 1),
@@ -483,8 +483,8 @@ def _generate_actions_from_current_data(enseigne: str, salle: Optional[str], sen
             })
         elif current_temp > THRESHOLDS["temperature"]["hot"]:
             actions.append({
-                "device": "cooling",
-                "action": "turn_on",
+                "device": "window",
+                "action": "open",
                 "parameter": "Température",
                 "current_value": round(current_temp, 1),
                 "threshold": THRESHOLDS["temperature"]["hot"],
@@ -497,8 +497,8 @@ def _generate_actions_from_current_data(enseigne: str, salle: Optional[str], sen
         current_hum = float(current_data.get("humidity", 50))
         if current_hum < THRESHOLDS["humidity"]["dry"]:
             actions.append({
-                "device": "humidifier",
-                "action": "turn_on",
+                "device": "window",
+                "action": "close",
                 "parameter": "Humidité",
                 "current_value": round(current_hum, 1),
                 "threshold": THRESHOLDS["humidity"]["dry"],
@@ -508,14 +508,35 @@ def _generate_actions_from_current_data(enseigne: str, salle: Optional[str], sen
             })
         elif current_hum > THRESHOLDS["humidity"]["humid"]:
             actions.append({
-                "device": "dehumidifier",
-                "action": "turn_on",
+                "device": "ventilation",
+                "action": "increase",
                 "parameter": "Humidité",
                 "current_value": round(current_hum, 1),
                 "threshold": THRESHOLDS["humidity"]["humid"],
                 "unit": "%",
-                "priority": "medium",
+                "priority": "low",
                 "reason": f"L'humidité ({current_hum:.1f}%) est trop élevée"
+            })
+        
+        # Vérifier si plusieurs paramètres sont mauvais → Ouvrir la porte pour circulation d'air
+        bad_params_count = 0
+        if current_co2 >= THRESHOLDS["co2"]["warning"]:
+            bad_params_count += 1
+        if current_pm >= THRESHOLDS["pm25"]["warning"]:
+            bad_params_count += 1
+        if current_tvoc >= THRESHOLDS["tvoc"]["warning"]:
+            bad_params_count += 1
+        
+        if bad_params_count >= 2:
+            actions.append({
+                "device": "door",
+                "action": "open",
+                "parameter": "Qualité de l'air",
+                "current_value": bad_params_count,
+                "threshold": 2,
+                "unit": "paramètres",
+                "priority": "high",
+                "reason": f"Plusieurs paramètres de qualité d'air sont dégradés (CO₂, PM2.5, TVOC)"
             })
         
         # Trier par priorité
