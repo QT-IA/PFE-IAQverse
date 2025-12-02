@@ -440,7 +440,6 @@ header h1 {
   background-color: var(--bg-tertiary);
   border-radius: 10px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  margin: 5px;
   transition: background-color 0.3s ease;
 }
 
@@ -591,7 +590,7 @@ a:hover img {
   display: flex;
   flex-wrap: wrap;
   gap: 20px;
-  padding: 20px;
+  padding: 0px 20px 20px 20px;
   flex: 1;
   justify-content: center;
   align-content: stretch;
@@ -612,7 +611,6 @@ a:hover img {
   border-radius: 8px;
   box-shadow: var(--shadow-sm);
   padding: 14px 20px;
-  margin-bottom: 10px;
   display: flex;
   align-items: center;
   justify-content: center; /* center the main score */
@@ -842,7 +840,6 @@ a:hover img {
   flex: 1 1 45%;
   height: 300px;
   transition: background-color 0.3s ease;
-  margin-bottom: 10px;
   position: relative; /* allow absolute child sizing if needed */
   /* allow axis labels / legends to be visible outside the inner plot area */
   overflow: visible;
