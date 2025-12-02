@@ -55,6 +55,28 @@ def get_config():
     return config
 
 
+@router.put("/config")
+async def update_config(updates: dict):
+    """Met à jour la configuration complète de l'application"""
+    logger.info(f"Received config updates: {list(updates.keys())}")
+    config = load_config()
+    if config is None:
+        raise HTTPException(status_code=500, detail="Impossible de charger la configuration")
+    
+    def update_config_recursive(base, updates):
+        for key, value in updates.items():
+            if isinstance(value, dict) and key in base and isinstance(base[key], dict):
+                update_config_recursive(base[key], value)
+            else:
+                base[key] = value
+    
+    update_config_recursive(config, updates)
+    
+    if save_config(config):
+        return {"message": "Configuration mise à jour", "config": config}
+    raise HTTPException(status_code=500, detail="Erreur lors de la sauvegarde")
+
+
 @router.post("/api/saveConfig")
 async def save_config_endpoint(updates: dict):
     """Sauvegarde les modifications de la configuration"""
