@@ -215,7 +215,9 @@ async function fetchAndDisplayPreventiveScore(params) {
     
     try {
         // Récupérer depuis /api/iaq/actions/preventive
-        const response = await fetch(`${API_ENDPOINTS.preventiveActions}?${params}`);
+        const response = await fetch(`${API_ENDPOINTS.preventiveActions}?${params}`, {
+            headers: { 'ngrok-skip-browser-warning': 'true' }
+        });
         const data = await response.json();
         
         // Le score prédit est inclus dans les actions préventives
