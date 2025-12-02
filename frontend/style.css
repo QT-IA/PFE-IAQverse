@@ -2280,31 +2280,6 @@ a:hover img {
   color: white;
   padding: 0px 20px;
   flex-shrink: 0; /* Empêche la sidebar de rétrécir */
-}
-
-.settings-content {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  background-color: var(--bg-secondary);
-  color: var(--text-primary);
-  padding: 20px;
-  box-shadow: var(--shadow-sm);
-  transition: background-color 0.3s ease;
-  overflow-y: auto; /* Permet scroll du contenu */
-}
-
-.settings-layout {
-  display: flex;
-  height: 100vh;
-}
-
-.sidebar {
-  width: 300px;
-  background-color: #2c3e50;
-  color: white;
-  padding: 0px 20px;
-  flex-shrink: 0; /* Empêche la sidebar de rétrécir */
   overflow-y: auto; /* Permet scroll si contenu trop long */
 }
 
@@ -2314,7 +2289,7 @@ a:hover img {
   width: 100%;
   background-color: var(--bg-secondary);
   color: var(--text-primary);
-  padding: 20px;
+  padding: 70px 20px 20px 20px;
   box-shadow: var(--shadow-sm);
   transition: background-color 0.3s ease;
   overflow-y: auto; /* Permet scroll du contenu */
@@ -2327,7 +2302,7 @@ a:hover img {
   }
 
   .settings-content {
-    padding: 15px;
+    padding: 60px 15px 15px 15px; 
   }
 }
 
@@ -2379,32 +2354,11 @@ a:hover img {
   }
 }
 
-.header-home {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 15px 20px;
-  border-bottom: 2px solid #ffffff;
-  color: white;
-}
-
-.header-home h2 {
-  color: white;
-  margin: 0;
-}
-
-.header-home img {
-  width: 24px;
-  height: 24px;
-  object-fit: contain;
-  filter: brightness(0) invert(1);
-  cursor: pointer;
-}
-
 .section-title {
   display: flex;
   align-items: center;
   gap: 10px;
+  margin-top: 90px;
   padding: 15px 20px;
   font-size: 15px;
   filter: brightness(0) invert(1);
@@ -2472,16 +2426,6 @@ a:hover img {
   opacity: 1;
 }
 
-.settings-content {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  background-color: var(--bg-secondary);
-  color: var(--text-primary);
-  padding: 20px;
-  box-shadow: var(--shadow-sm);
-  transition: background-color 0.3s ease;
-}
 
 .settings-content h1 {
   display: flex;
