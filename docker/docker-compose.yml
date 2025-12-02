@@ -89,8 +89,8 @@ services:
     container_name: iaqverse-ngrok
     restart: unless-stopped
     command: "http frontend:80"
-    environment:
-      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    env_file:
+      - ../.env
     ports:
       - "4040:4040"
     depends_on:
