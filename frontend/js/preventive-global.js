@@ -69,7 +69,22 @@ async function fetchAndDisplayGlobalPreventiveActions() {
                     });
                     
                     const actionsResponse = await fetch(`${API_ENDPOINTS.preventiveActions}?${actionsParams}`);
-                    const actionsData = await actionsResponse.json();
+                    // Defensive: some responses may be HTML error pages (502/Bad Gateway from proxy)
+                    // Read as text first and try to parse JSON to avoid Uncaught SyntaxError
+                    let actionsData = null;
+                    const rawText = await actionsResponse.text();
+                    if (!actionsResponse.ok) {
+                        console.error(`[preventive-global] HTTP ${actionsResponse.status} fetching actions for ${enseigne.nom}/${salle.nom}:`, rawText.slice(0, 300));
+                        // create a placeholder error object so downstream code won't crash
+                        actionsData = { error: `HTTP ${actionsResponse.status}` };
+                    } else {
+                        try {
+                            actionsData = JSON.parse(rawText);
+                        } catch (e) {
+                            console.error(`[preventive-global] Invalid JSON response for ${enseigne.nom}/${salle.nom}:`, rawText.slice(0, 500));
+                            actionsData = { error: 'invalid_json' };
+                        }
+                    }
                     
                     // Les actions préventives incluent maintenant le score prédit
                     if (!actionsData.error && actionsData.actions && actionsData.actions.length > 0) {
@@ -144,8 +159,8 @@ function displayGlobalPreventiveActions(allRoomActions) {
     
     const deviceI18nMap = {
         'window': 'window',
+        'door': 'door',
         'ventilation': 'ventilation',
-        'air_conditioning': 'air_conditioning',
         'radiator': 'radiator'
     };
     
@@ -174,9 +189,9 @@ function displayGlobalPreventiveActions(allRoomActions) {
                     </div>
                     <div class="preventive-room-location">${roomData.enseigne}</div>
                     <div class="preventive-room-count">
-                        ${actionsCount === 0 ? (t && t('digitalTwin.actionCount.zero')) || 'No actions' : 
-                          actionsCount === 1 ? (t && t('digitalTwin.actionCount.one')) || '1 action' : 
-                          ((t && t('digitalTwin.actionCount.multiple')) || '{{count}} actions').replace('{{count}}', actionsCount)}
+                            ${actionsCount === 0 ? (t && t('digitalTwin.actionCount.zero')) || 'No actions' : 
+                            actionsCount === 1 ? (t && t('digitalTwin.actionCount.one')) || '1 action' : 
+                            ((t && t('digitalTwin.actionCount.multiple')) || '{{count}} actions').replace('{{count}}', actionsCount)}
                     </div>
                 </div>
                 <div class="preventive-room-actions">
@@ -224,7 +239,6 @@ function displayGlobalPreventiveActions(allRoomActions) {
                             </div>
                             ${action.trend ? `<div class="preventive-value-trend">
                                 <span class="trend-indicator trend-${action.trend}">
-                                    ${action.trend === 'increasing' ? '📈' : action.trend === 'decreasing' ? '📉' : '➡️'}
                                     ${action.trend === 'increasing' ? 'En augmentation' : action.trend === 'decreasing' ? 'En diminution' : 'Stable'}
                                 </span>
                             </div>` : ''}
@@ -232,7 +246,7 @@ function displayGlobalPreventiveActions(allRoomActions) {
                                 <span class="forecast-time">Prévision à ${action.forecast_minutes} minutes</span>
                             </div>` : ''}
                             ${action.is_ml_action ? `<div class="preventive-ml-badge">
-                                <span class="ml-indicator">🤖 Prédiction ML</span>
+                                <span class="ml-indicator">Prédiction ML</span>
                             </div>` : ''}
                         </div>
                     </div>

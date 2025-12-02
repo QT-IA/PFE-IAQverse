@@ -222,6 +222,26 @@
         "subject": "Climatisation",
         "action": "Activer"
       },
+      "air_purifier": {
+        "subject": "Purificateur d'air",
+        "action": "Activer"
+      },
+      "heating": {
+        "subject": "Chauffage",
+        "action": "Régler"
+      },
+      "cooling": {
+        "subject": "Refroidissement",
+        "action": "Régler"
+      },
+      "humidifier": {
+        "subject": "Humidificateur",
+        "action": "Activer"
+      },
+      "dehumidifier": {
+        "subject": "Déshumidificateur",
+        "action": "Activer"
+      },
       "temperature": {
         "subject": "Température",
         "action": "Ajuster"
