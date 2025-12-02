@@ -20,6 +20,7 @@
     try {
       const res = await fetch(`/assets/i18n/${lang}.json`, {
         cache: "no-cache",
+        headers: { 'ngrok-skip-browser-warning': 'true' }
       });
       if (!res.ok) throw new Error("Not found");
       const json = await res.json();
