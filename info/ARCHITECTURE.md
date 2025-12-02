@@ -95,17 +95,16 @@ IAQverse est une plateforme IoT de surveillance et d'analyse de la qualité de l
 │                              │
 │  1. Validation données       │
 │  2. Calcul IAQ Score         │
-│  3. Stockage RAM (iaq_db)    │
-│  4. InfluxDB write           │
-│  5. WebSocket broadcast      │
+│  3. InfluxDB write           │
+│  4. WebSocket broadcast      │
 └──────┬───────────────────────┘
        │
-       ├─────────────────┬──────────────────┐
-       ▼                 ▼                  ▼
-┌─────────────┐   ┌──────────────┐   ┌─────────────┐
-│  InfluxDB   │   │  iaq_database│   │  WebSocket  │
-│  (permanent)│   │  (RAM cache) │   │  (clients)  │
-└─────────────┘   └──────────────┘   └─────────────┘
+       ├────────────────────────────────────┐
+       ▼                                    ▼
+┌─────────────┐                      ┌─────────────┐
+│  InfluxDB   │                      │  WebSocket  │
+│  (permanent)│                      │  (clients)  │
+└─────────────┘                      └─────────────┘
 ```
 
 ### 2. Requête de Données (Frontend ← Backend)
@@ -122,9 +121,8 @@ IAQverse est une plateforme IoT de surveillance et d'analyse de la qualité de l
 │                              │
 │  1. Parser paramètres        │
 │  2. Requête Flux (InfluxDB)  │
-│  3. Fallback RAM si erreur   │
-│  4. Agrégation (5min/daily)  │
-│  5. Calcul global_score      │
+│  3. Agrégation (5min/daily)  │
+│  4. Calcul global_score      │
 └──────┬───────────────────────┘
        │ JSON: [{timestamp, co2, pm25, ...}]
        ▼
@@ -213,13 +211,14 @@ backend/
 │   ├── Posting task (5s)
 │   └── WebSocket handler
 │
+├── requirements.txt             # Dépendances Python
+├── requirements-docker.txt      # Dépendances Docker
+│
 ├── api/                         # Endpoints REST
 │   ├── __init__.py             # Export routers
 │   ├── ingest.py               # POST /api/ingest
-│   │   └── iaq_database []     # RAM cache (global)
 │   ├── query.py                # GET /api/iaq/data
-│   │   ├── InfluxDB queries
-│   │   └── Fallback RAM
+│   │   └── InfluxDB queries
 │   └── config_api.py           # GET/POST /config
 │       └── assets/config.json
 │
@@ -250,7 +249,9 @@ backend/
 │   │   └── analyze_risks()
 │   ├── scheduler_retrain.py    # Cron réentraînement
 │   │   └── schedule.every(12h)
-│   └── preprocess_dataset.py   # Nettoyage CSV
+│   ├── preprocess_dataset.py   # Nettoyage CSV
+│   ├── MODEL_DESIGN_DECISIONS.md # Documentation ML
+│   └── requirements-ml.txt     # Dépendances ML
 │
 ├── iaq_score.py                 # Calcul score IAQ global
 │   └── calculate_iaq_score() → 0-100
@@ -278,6 +279,10 @@ frontend/
     ├── api-retry.js             # Retry logic (NEW)
     │   ├── fetchWithRetry()     # 3 tentatives
     │   └── apiCallWithCache()   # Cache fallback
+    │
+    ├── websocket-manager.js     # Gestion WebSocket
+    │   ├── connect()
+    │   └── onMessage()
     │
     ├── charts.js                # Plotly graphiques
     │   ├── fetchAndUpdate()     # 1h data, 1min step
@@ -339,7 +344,6 @@ frontend/
 | Méthode | Endpoint | Description | Paramètres |
 |---------|----------|-------------|------------|
 | `GET` | `/api/iaq/data` | Récupère données IAQ | `enseigne, salle, sensor_id, hours, start, end, step, raw` |
-| `GET` | `/api/iaq/debug` | Debug iaq_database | - |
 
 ### Prédictions ML
 
@@ -647,8 +651,7 @@ services:
    iaq_score.py → global_score = 45 (mauvais)
    
 3. Stockage
-   ├─> InfluxDB (permanent)
-   └─> iaq_database (RAM)
+   └─> InfluxDB (permanent)
    
 4. Broadcast
    WebSocket → Tous clients connectés
@@ -721,7 +724,7 @@ curl http://localhost:8000/api/predict/preventive-actions?enseigne=Maison&salle=
 
 1. **Backend** : `docker logs iaqverse-backend`
    - Erreurs ML : "Failed to load ML predictor"
-   - InfluxDB : "Erreur requête InfluxDB, fallback mémoire"
+   - InfluxDB : "Erreur requête InfluxDB"
    
 2. **Frontend** : Console navigateur (F12)
    - `[preventive]` : Actions préventives
