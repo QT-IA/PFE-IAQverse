@@ -7,7 +7,9 @@ services:
     ports:
       - "8086:8086"
     volumes:
-      - ./database/influx_data:/var/lib/influxdb2
+      - ../database/influx_data:/var/lib/influxdb2
+    env_file:
+      - ../.env
     environment:
       - DOCKER_INFLUXDB_INIT_MODE=setup
       - DOCKER_INFLUXDB_INIT_USERNAME=admin
@@ -21,16 +23,16 @@ services:
   # Backend API
   backend:
     build:
-      context: .
+      context: ..
       dockerfile: docker/Dockerfile.backend
     container_name: iaqverse-backend
     restart: unless-stopped
     ports:
       - "8000:8000"
     volumes:
-      - ./backend:/app/backend
-      - ./assets:/app/assets
-      - ./database:/app/database
+      - ../backend:/app/backend
+      - ../assets:/app/assets
+      - ../database:/app/database
     environment:
       - INFLUXDB_ENABLED=${INFLUXDB_ENABLED:-true}
       - INFLUXDB_URL=http://influxdb:8086
@@ -51,8 +53,8 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - ./frontend:/usr/share/nginx/html
-      - ./assets:/usr/share/nginx/html/assets
+      - ../frontend:/usr/share/nginx/html
+      - ../assets:/usr/share/nginx/html/assets
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - backend
@@ -62,14 +64,14 @@ services:
   # ML Scheduler - Réentraînement périodique
   ml-scheduler:
     build:
-      context: .
-      dockerfile: Dockerfile.ml-scheduler
+      context: ..
+      dockerfile: docker/Dockerfile.ml-scheduler
     container_name: iaqverse-ml-scheduler
     restart: unless-stopped
     volumes:
-      - ./assets/ml_models:/app/assets/ml_models
-      - ./assets/datasets:/app/assets/datasets
-      - ./backend/ml:/app/backend/ml
+      - ../assets/ml_models:/app/assets/ml_models
+      - ../assets/datasets:/app/assets/datasets
+      - ../backend/ml:/app/backend/ml
     environment:
       - RETRAIN_INTERVAL=${RETRAIN_INTERVAL:-24}
       - INFLUXDB_ENABLED=${INFLUXDB_ENABLED:-true}
