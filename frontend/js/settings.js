@@ -495,8 +495,8 @@ async function addPiece(enseigneId) {
         fd.append('file', glbFile, filename);
         fd.append('filename', filename);
 
-        const upResp = await fetch('/api/rooms/files', {
-          method: 'PUT', body: fd
+        const upResp = await fetch('/api/uploadGlb', {
+          method: 'POST', body: fd
         });
         if (!upResp.ok) throw new Error('Erreur upload');
         const upJson = await upResp.json();
@@ -590,7 +590,7 @@ async function removeEnseigne(enseigneId) {
   }
   try {
     if (pathsToDelete.length > 0) {
-      await fetch('/api/rooms/files', { method: 'DELETE', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(pathsToDelete) });
+      await fetch('/api/deleteFiles', { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(pathsToDelete) });
     }
     } catch (err) {
     console.error('Erreur suppression fichiers GLB:', err);
@@ -615,7 +615,7 @@ async function removePiece(enseigneId, pieceId) {
     if (piece && piece.glbModel) pathsToDelete.push(piece.glbModel);
     try {
       if (pathsToDelete.length > 0) {
-        await fetch('/api/rooms/files', { method: 'DELETE', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(pathsToDelete) });
+        await fetch('/api/deleteFiles', { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(pathsToDelete) });
       }
     } catch (err) {
       console.error('Erreur suppression fichier GLB:', err);

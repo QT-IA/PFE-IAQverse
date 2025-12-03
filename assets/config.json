@@ -64,10 +64,10 @@
                         "glbModel": "/assets/rooms/ens_boutique1_piece_1763414279663.glb"
                     },
                     {
-                        "id": "piece_1763490078400",
+                        "id": "piece_1764757933494",
                         "nom": "Chambre",
                         "type": "chambre",
-                        "glbModel": "/assets/rooms/ens_boutique1_piece_1763490078400.glb"
+                        "glbModel": "/assets/rooms/ens_boutique1_piece_1764757933494.glb"
                     }
                 ]
             }
