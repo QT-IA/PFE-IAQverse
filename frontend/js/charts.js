@@ -203,7 +203,7 @@ function getComfortShapes(maxTemp, maxHum) {
 // Configuration
 const REFRESH_MS = 3000; // 3s (fallback HTTP uniquement)
 /* Fichier des graphiques IAQ - mise à jour dynamique sans rechargement de la page */
-const API_URL_DATA = "http://localhost:8000/api/iaq/data";
+const API_URL_DATA = (window.API_ENDPOINTS && window.API_ENDPOINTS.measurements) ? window.API_ENDPOINTS.measurements : "/api/iaq/data";
 const chartIds = ["co2-chart", "pm25-chart", "comfort-chart", "tvoc-chart"];
 // Evite le conflit avec la variable globale "config" utilisée par index.html
 const plotlyConfig = { responsive: true, displayModeBar: false };
@@ -781,7 +781,7 @@ async function fetchAndUpdate() {
     });
     const url = `${API_URL_DATA}?${params.toString()}`;
     console.debug("IAQ fetch:", url);
-    const res = await window.fetch(url, { cache: "no-store" });
+    const res = await window.fetch(url, { cache: "no-store", headers: { 'ngrok-skip-browser-warning': 'true' } });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (!Array.isArray(data) || data.length === 0) {
@@ -919,10 +919,10 @@ async function fetchAndUpdate() {
 // Helper function to fetch predicted score from API
 async function getPredictedScore(enseigne, salle) {
   try {
-    const url = `http://localhost:8000/api/predict/score?enseigne=${encodeURIComponent(
+    const url = `/api/predict/score?enseigne=${encodeURIComponent(
       enseigne
     )}&salle=${encodeURIComponent(salle)}`;
-    const response = await fetch(url);
+    const response = await fetch(url, { headers: { 'ngrok-skip-browser-warning': 'true' } });
     if (!response.ok) {
       console.warn(`Failed to fetch prediction: ${response.status}`);
       return null;

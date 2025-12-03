@@ -32,9 +32,9 @@
             "push": true
         },
         "types": {
-            "alertes": true,
-            "rappels": true,
-            "newsletters": true
+            "alertes": false,
+            "rappels": false,
+            "newsletters": false
         }
     },
     "lieux": {

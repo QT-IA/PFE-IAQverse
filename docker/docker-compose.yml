@@ -83,6 +83,21 @@ services:
     networks:
       - iaqverse-network
 
+  # Ngrok - Secure Tunneling
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: iaqverse-ngrok
+    restart: unless-stopped
+    command: "http frontend:80"
+    env_file:
+      - ../.env
+    ports:
+      - "4040:4040"
+    depends_on:
+      - frontend
+    networks:
+      - iaqverse-network
+
 networks:
   iaqverse-network:
     driver: bridge

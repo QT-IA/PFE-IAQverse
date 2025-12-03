@@ -1,7 +1,7 @@
 /* Alerts Engine: evaluates IAQ data against thresholds and toggles alert-points visibility/severity */
 (function (window) {
     const REFRESH_MS = 5000; // polling frequency
-    const API_URL_DATA = "http://localhost:8000/api/iaq/data";
+    const API_URL_DATA = (window.API_ENDPOINTS && window.API_ENDPOINTS.measurements) ? window.API_ENDPOINTS.measurements : "/api/iaq/data";
     // Centralise all thresholds here to avoid magic numbers
     const THRESHOLDS = {
         CO2: { WARNING: 800, DANGER: 1200 },
@@ -477,7 +477,7 @@
                 step: "5min",
             });
             const url = `${API_URL_DATA}?${params.toString()}`;
-            const res = await fetch(url, { cache: "no-store" });
+            const res = await fetch(url, { cache: "no-store", headers: { 'ngrok-skip-browser-warning': 'true' } });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
             if (!Array.isArray(data) || data.length === 0) {
