@@ -45,10 +45,10 @@
                 "adresse": "123 rue d'Avron",
                 "pieces": [
                     {
-                        "id": "piece_1763546957299",
+                        "id": "piece_1764767411502",
                         "nom": "Chambre",
                         "type": "chambre",
-                        "glbModel": "/assets/rooms/ens_1762004765975_piece_1763546957299.glb"
+                        "glbModel": "/assets/rooms/ens_1762004765975_piece_1764767411502.glb"
                     }
                 ]
             },
@@ -58,16 +58,10 @@
                 "adresse": "123 Rue des Commerces",
                 "pieces": [
                     {
-                        "id": "piece_1763414279663",
-                        "nom": "Salon",
-                        "type": "salon",
-                        "glbModel": "/assets/rooms/ens_boutique1_piece_1763414279663.glb"
-                    },
-                    {
-                        "id": "piece_1763490078400",
+                        "id": "piece_1764758435656",
                         "nom": "Chambre",
                         "type": "chambre",
-                        "glbModel": "/assets/rooms/ens_boutique1_piece_1763490078400.glb"
+                        "glbModel": "/assets/rooms/ens_boutique1_piece_1764758435656.glb"
                     }
                 ]
             }
@@ -84,6 +78,6 @@
     "adresse": "123 rue d'Avrons",
     "type": "salon",
     "abonnement": {
-        "plan_actuel": "pro"
+        "plan_actuel": "basic"
     }
 }

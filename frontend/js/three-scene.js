@@ -13,9 +13,15 @@ if (container) {
 const width = (container && container.clientWidth) || 700;
 const height = (container && container.clientHeight) || 400;
 
-// Renderer
-const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-renderer.setPixelRatio(window.devicePixelRatio || 1);
+// Renderer with fallback configuration
+const renderer = new THREE.WebGLRenderer({ 
+  alpha: true, 
+  antialias: true,
+  precision: 'mediump', // Use medium precision to avoid shader compilation issues
+  powerPreference: 'high-performance',
+  failIfMajorPerformanceCaveat: false
+});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); // Limit pixel ratio
 renderer.setSize(width, height);
 if (container) container.appendChild(renderer.domElement);
 
@@ -397,6 +403,10 @@ function loadPieceModel(roomId) {
       modelRoot = null;
     }
     
+    // Réinitialiser l'état du modèle
+    modelLoaded = false;
+    modelLoadTime = 0;
+    
     // Nettoyer les particules actives
     Object.values(activeParticles).forEach(system => {
       if (system.points) {
@@ -413,8 +423,202 @@ function loadPieceModel(roomId) {
       function (gltf) {
         isLoading = false;
         modelRoot = gltf.scene;
+        
+        // Aggressively fix ALL shader issues by replacing materials and validating geometry
+        modelRoot.traverse((child) => {
+          if (child.isMesh) {
+            // Step 1: Fix geometry issues - keep ALL UV maps for complex textures
+            if (child.geometry) {
+              try {
+                // Remove only problematic attributes that cause shader issues
+                const attributes = child.geometry.attributes;
+                const keysToRemove = [];
+
+                // Keep ALL UV maps (uv, uv2, uv3, uv4, etc.) for complex materials
+                // Only remove truly problematic attributes
+                for (const key in attributes) {
+                  // Keep essential attributes including all UV maps
+                  if (!['position', 'normal', 'uv', 'uv2', 'uv3', 'uv4', 'uv5', 'uv6', 'uv7', 'uv8', 'color', 'tangent', 'bitangent'].includes(key)) {
+                    // Check if it's a custom attribute that might cause issues
+                    if (key.startsWith('uv') && key.length > 3) {
+                      // Keep high-number UV maps too (uv9, uv10, etc.)
+                      continue;
+                    }
+                    keysToRemove.push(key);
+                  }
+                }
+
+                keysToRemove.forEach(key => {
+                  delete child.geometry.attributes[key];
+                });
+
+                // Ensure we have at least basic UV map to prevent shader errors
+                if (!child.geometry.attributes.uv) {
+                  // If no uv, check if we have uv2, uv3, etc. and use the first available
+                  let foundUV = false;
+                  for (let i = 2; i <= 10; i++) {
+                    const uvKey = `uv${i}`;
+                    if (child.geometry.attributes[uvKey]) {
+                      child.geometry.setAttribute('uv', child.geometry.attributes[uvKey]);
+                      foundUV = true;
+                      break;
+                    }
+                  }
+
+                  // If no UV maps at all, create dummy UVs
+                  if (!foundUV) {
+                    const positionCount = child.geometry.attributes.position.count;
+                    const uvArray = new Float32Array(positionCount * 2);
+                    child.geometry.setAttribute('uv', new THREE.BufferAttribute(uvArray, 2));
+                  }
+                }
+
+                // Recompute normals if missing
+                if (!child.geometry.attributes.normal) {
+                  child.geometry.computeVertexNormals();
+                }
+
+              } catch (e) {
+                console.warn('[three-scene] Geometry fix failed for', child.name, e);
+              }
+            }
+            
+            // Step 2: Fix materials but preserve textures when possible
+            try {
+              const originalMaterials = Array.isArray(child.material) ? child.material : [child.material];
+              const newMaterials = [];
+
+              originalMaterials.forEach(mat => {
+                try {
+                  // Try to preserve the original material if it's not causing issues
+                  if (mat && mat.isMaterial) {
+                    // Check if material has complex features that might cause shader issues
+                    const hasProblematicFeatures = (
+                      mat.isShaderMaterial ||
+                      mat.isRawShaderMaterial ||
+                      (mat.map && mat.map.isCompressedTexture) ||
+                      (mat.normalMap && mat.normalMap.isCompressedTexture) ||
+                      (mat.roughnessMap && mat.roughnessMap.isCompressedTexture) ||
+                      (mat.metalnessMap && mat.metalnessMap.isCompressedTexture)
+                    );
+
+                    if (!hasProblematicFeatures) {
+                      // Material seems safe, try to use it with some fixes
+                      const safeMat = mat.clone();
+
+                      // Ensure basic properties are set
+                      if (!safeMat.color) {
+                        safeMat.color = new THREE.Color(0xcccccc);
+                      }
+                      if (safeMat.transparent === undefined) {
+                        safeMat.transparent = false;
+                      }
+                      if (safeMat.side === undefined) {
+                        safeMat.side = THREE.FrontSide;
+                      }
+
+                      newMaterials.push(safeMat);
+                      return;
+                    }
+                  }
+
+                  // Fallback: create a basic material that preserves textures
+                  let color = 0xcccccc;
+                  let map = null;
+                  let normalMap = null;
+                  let roughnessMap = null;
+                  let metalnessMap = null;
+                  let aoMap = null;
+                  let emissiveMap = null;
+
+                  if (mat) {
+                    // Extract color safely
+                    try {
+                      if (mat.color && typeof mat.color.getHex === 'function') {
+                        color = mat.color.getHex();
+                      } else if (mat.color && typeof mat.color === 'number') {
+                        color = mat.color;
+                      }
+                    } catch (e) {
+                      // Use default color
+                    }
+
+                    // Preserve texture maps if they exist and are not compressed
+                    if (mat.map && !mat.map.isCompressedTexture) {
+                      map = mat.map;
+                    }
+                    if (mat.normalMap && !mat.normalMap.isCompressedTexture) {
+                      normalMap = mat.normalMap;
+                    }
+                    if (mat.roughnessMap && !mat.roughnessMap.isCompressedTexture) {
+                      roughnessMap = mat.roughnessMap;
+                    }
+                    if (mat.metalnessMap && !mat.metalnessMap.isCompressedTexture) {
+                      metalnessMap = mat.metalnessMap;
+                    }
+                    if (mat.aoMap && !mat.aoMap.isCompressedTexture) {
+                      aoMap = mat.aoMap;
+                    }
+                    if (mat.emissiveMap && !mat.emissiveMap.isCompressedTexture) {
+                      emissiveMap = mat.emissiveMap;
+                    }
+
+                    // Dispose old material
+                    if (typeof mat.dispose === 'function') {
+                      try {
+                        mat.dispose();
+                      } catch (e) {
+                        // Ignore
+                      }
+                    }
+                  }
+
+                  // Create material with preserved textures
+                  const newMat = new THREE.MeshStandardMaterial({
+                    color: color,
+                    map: map,
+                    normalMap: normalMap,
+                    roughnessMap: roughnessMap,
+                    metalnessMap: metalnessMap,
+                    aoMap: aoMap,
+                    emissiveMap: emissiveMap,
+                    roughness: map ? 0.8 : 0.7, // Slightly rougher if no texture
+                    metalness: 0.0,
+                    side: THREE.DoubleSide
+                  });
+
+                  newMaterials.push(newMat);
+
+                } catch (e) {
+                  console.warn('[three-scene] Material processing failed for', child.name, e);
+                  // Ultimate fallback
+                  newMaterials.push(new THREE.MeshStandardMaterial({
+                    color: 0xcccccc,
+                    side: THREE.DoubleSide
+                  }));
+                }
+              });
+
+              // Apply materials
+              child.material = newMaterials.length === 1 ? newMaterials[0] : newMaterials;
+
+            } catch (e) {
+              console.error('[three-scene] Complete material replacement failed for', child.name, e);
+              // Ultimate fallback
+              child.material = new THREE.MeshStandardMaterial({
+                color: 0xcccccc,
+                side: THREE.DoubleSide
+              });
+            }
+          }
+        });
+        
         scene.add(modelRoot);
         frameModel(modelRoot, 1.1);
+        
+        // Marquer que le modèle est chargé
+        modelLoaded = true;
+        modelLoadTime = Date.now();
         
         // Générer automatiquement les alert-points pour les objets numérotés
         autoGenerateAlertPoints(modelRoot);
@@ -505,6 +709,17 @@ function autoGenerateAlertPoints(modelRoot) {
     'radiator': /^Radiator[^_]*$/i // Cherche "Radiator" au début, sans underscore
   };
   
+  // Collecter tous les noms d'objets pour debug
+  const allObjectNames = [];
+  modelRoot.traverse(obj => {
+    if (obj.name) {
+      allObjectNames.push(obj.name);
+    }
+  });
+  console.log('[autoGenerate] === TOUS LES OBJETS DU MODÈLE ===');
+  console.log('[autoGenerate] Nombre total d\'objets:', allObjectNames.length);
+  console.log('[autoGenerate] Noms:', allObjectNames.join(', '));
+  
   // Collecter tous les objets correspondants (stocker les objets Three.js, pas juste les noms)
   const foundObjects = {};
   Object.keys(patterns).forEach(key => foundObjects[key] = []);
@@ -523,16 +738,24 @@ function autoGenerateAlertPoints(modelRoot) {
           
           // Ne stocker que les objets parents (pas les enfants)
           if (!isChild) {
+            console.log(`[autoGenerate] ✓ Objet trouvé - Type: ${type}, Nom: "${obj.name}", isChild: ${isChild}`);
             foundObjects[type].push(obj); // Stocker l'objet Three.js complet
             
             // Définir la couleur par défaut à rouge pour ventilation et radiator
             if (type === 'ventilation' || type === 'radiator') {
               setObjectColor(obj, 0xff0000); // rouge
             }
+          } else {
+            console.log(`[autoGenerate] ✗ Objet ignoré (enfant) - Type: ${type}, Nom: "${obj.name}"`);
           }
         }
       });
     }
+  });
+  
+  console.log('[autoGenerate] === RÉSUMÉ DES OBJETS TROUVÉS ===');
+  Object.entries(foundObjects).forEach(([type, objects]) => {
+    console.log(`[autoGenerate] ${type}: ${objects.length} objet(s) trouvé(s)`, objects.map(o => o.name));
   });
   
   // Créer les alert-points pour chaque type trouvé
@@ -613,6 +836,10 @@ function autoGenerateAlertPoints(modelRoot) {
         alertPoint.setAttribute('data-state', objectStates[targetName].state);
         alertPoint.setAttribute('data-active', 'true');
         alertPoint.setAttribute('data-auto-generated', 'true');
+        
+        // Ajouter les attributs d'enseigne et pièce pour la synchronisation avec le tableau
+        alertPoint.setAttribute('data-enseigne', currentEnseigneId);
+        alertPoint.setAttribute('data-piece', currentPieceId);
         
         // Déterminer la couleur de fond basé sur l'état actuel
         let bgColor = '';
@@ -698,7 +925,7 @@ function autoGenerateAlertPoints(modelRoot) {
         });
         
         alertPointsContainer.appendChild(alertPoint);
-        console.log('[autoGenerate] Added alert point:', targetName, 'with data-active:', alertPoint.getAttribute('data-active'), 'severity:', alertPoint.getAttribute('data-severity'));
+        console.log('[autoGenerate] Added alert point:', targetName, 'with data-active:', alertPoint.getAttribute('data-active'), 'severity:', alertPoint.getAttribute('data-severity'), 'enseigne:', alertPoint.getAttribute('data-enseigne'), 'piece:', alertPoint.getAttribute('data-piece'), 'display:', alertPoint.style.display, 'z-index:', alertPoint.style.zIndex);
         
         // Appliquer visuellement l'état restauré
         if (savedStates[targetName]) {
@@ -743,12 +970,27 @@ function autoGenerateAlertPoints(modelRoot) {
     } else {
       console.error('[three-scene] updateAlertCountLabel function not found on window');
     }
+    
+    // Notifier alerts-engine.js que les points sont prêts
+    console.log('[autoGenerate] Emitting alertPointsReady event');
+    document.dispatchEvent(new CustomEvent('alertPointsReady', {
+      detail: { enseigneId: currentEnseigneId, pieceId: currentPieceId }
+    }));
   }, 100);
 }
 
 function updateAlertPoints() {
   const points = document.querySelectorAll('.alert-point');
   if (!modelRoot || points.length === 0 || !container) return;
+
+  // Attendre au moins 2 secondes après le chargement du modèle avant de masquer les points
+  const timeSinceLoad = Date.now() - modelLoadTime;
+  if (!modelLoaded || timeSinceLoad < 2000) {
+    console.log(`[updateAlertPoints] Waiting for model to stabilize (${timeSinceLoad}ms elapsed)`);
+    return;
+  }
+
+  console.log('[updateAlertPoints] Mise à jour de', points.length, 'points');
 
   points.forEach(el => {
     el.style.position = 'absolute';
@@ -764,6 +1006,7 @@ function updateAlertPoints() {
     }
     
     if (!target) {
+      console.log('[updateAlertPoints] Objet non trouvé pour', el.getAttribute('data-target-names'));
       el.style.display = 'none';
       return;
     }
@@ -791,7 +1034,15 @@ function updateAlertPoints() {
     const inFrustum = frustum.containsPoint(worldPos);
     const ndc = worldPos.clone().project(camera);
     
+    console.log(`[updateAlertPoints] ${el.getAttribute('data-i18n-key')} (${target.name}):`, {
+      worldPos: { x: worldPos.x.toFixed(2), y: worldPos.y.toFixed(2), z: worldPos.z.toFixed(2) },
+      ndc: { x: ndc.x.toFixed(2), y: ndc.y.toFixed(2), z: ndc.z.toFixed(2) },
+      inFrustum,
+      cameraPos: { x: camera.position.x.toFixed(2), y: camera.position.y.toFixed(2), z: camera.position.z.toFixed(2) }
+    });
+    
     if (!inFrustum) {
+      console.log(`[updateAlertPoints] ${target.name} hors frustum, masqué`);
       el.style.display = 'none';
       el.setAttribute('data-in-view', 'false');
       return;
@@ -799,6 +1050,7 @@ function updateAlertPoints() {
     
     // Double vérification : si les coordonnées NDC sont hors limites, masquer
     if (ndc.x < -1 || ndc.x > 1 || ndc.y < -1 || ndc.y > 1 || ndc.z < 0 || ndc.z > 1) {
+      console.log(`[updateAlertPoints] ${target.name} NDC hors limites, masqué`);
       el.style.display = 'none';
       el.setAttribute('data-in-view', 'false');
       return;
@@ -812,6 +1064,8 @@ function updateAlertPoints() {
     
     const x = (ndc.x * 0.5 + 0.5) * rectW;
     const y = (-ndc.y * 0.5 + 0.5) * rectH;
+
+    console.log(`[updateAlertPoints] ${target.name} visible à (${x.toFixed(0)}, ${y.toFixed(0)})`);
 
     el.style.left = x + 'px';
     el.style.top = y + 'px';
@@ -834,6 +1088,10 @@ function animate() {
   updateParticles();
   renderer.render(scene, camera);
 }
+
+// Variable pour éviter de masquer les points trop tôt
+let modelLoaded = false;
+let modelLoadTime = 0;
 
 // Resize
 window.addEventListener('resize', () => {

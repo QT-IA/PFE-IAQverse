@@ -2217,6 +2217,21 @@ a:hover img {
   position: relative; /* Pour contenir les éléments absolus */
 }
 
+#alert-points-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* Permet de cliquer à travers le conteneur */
+  z-index: 2000; /* Au-dessus du canvas Three.js */
+}
+
+/* Assurer que le canvas Three.js reste derrière les alert-points */
+#blender-viewer canvas {
+  z-index: 1 !important;
+}
+
 .alert-point {
   position: absolute;
   width: 30px;
@@ -2226,15 +2241,19 @@ a:hover img {
   border: 2px solid #e74c3c;
   box-shadow: 0 0 6px rgba(231, 76, 60, 0.5);
   cursor: pointer;
+  pointer-events: auto; /* Réactive les clics sur les points eux-mêmes */
+  z-index: 2500; /* Au-dessus de tout */
   /* Masquer par défaut, affiché seulement pour warning/danger sur la 3D */
   display: none !important;
 }
 
 /* Affiche l'alert-point quand actif ET en warning ou danger (pas info sur la 3D) */
-.alert-point[data-active="true"][data-severity="info"],
+/* Exception: les points auto-générés sont toujours affichés */
+.alert-point[data-auto-generated="true"],
 .alert-point[data-active="true"][data-severity="warning"],
 .alert-point[data-active="true"][data-severity="danger"] {
   display: block !important;
+  z-index: 2500 !important; /* Force le z-index */
 }
 
 /* Couleur verte pour info (utilisé dans le tableau seulement) */
