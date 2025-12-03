@@ -590,7 +590,12 @@ async function removeEnseigne(enseigneId) {
   }
   try {
     if (pathsToDelete.length > 0) {
-      await fetch('/api/deleteFiles', { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(pathsToDelete) });
+      const delResp = await fetch('/api/deleteFiles', { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(pathsToDelete) });
+      if (!delResp.ok) console.error('Delete files failed:', delResp.status, delResp.statusText);
+      else {
+        const delResult = await delResp.json();
+        console.log('Delete files result:', delResult);
+      }
     }
     } catch (err) {
     console.error('Erreur suppression fichiers GLB:', err);
@@ -615,7 +620,12 @@ async function removePiece(enseigneId, pieceId) {
     if (piece && piece.glbModel) pathsToDelete.push(piece.glbModel);
     try {
       if (pathsToDelete.length > 0) {
-        await fetch('/api/deleteFiles', { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(pathsToDelete) });
+        const delResp = await fetch('/api/deleteFiles', { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(pathsToDelete) });
+        if (!delResp.ok) console.error('Delete files failed:', delResp.status, delResp.statusText);
+        else {
+          const delResult = await delResp.json();
+          console.log('Delete files result:', delResult);
+        }
       }
     } catch (err) {
       console.error('Erreur suppression fichier GLB:', err);

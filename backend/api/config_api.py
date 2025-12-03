@@ -168,6 +168,8 @@ async def delete_files(paths: List[str]):
     not_found = []
     errors = {}
     
+    logger.info(f"Request to delete files: {paths}")
+
     for p in paths:
         try:
             name = str(p or '')
@@ -178,22 +180,30 @@ async def delete_files(paths: List[str]):
             name = Path(name).name
             target = rooms_dir / name
             
+            logger.info(f"Processing deletion for: {p} -> Target: {target}")
+
             try:
                 resolved = target.resolve()
+                logger.info(f"Resolved path: {resolved}")
             except Exception as e:
                 errors[p] = f"Invalid path: {e}"
+                logger.error(f"Invalid path {p}: {e}")
                 continue
             
             if resolved.parent != rooms_dir.resolve():
                 errors[p] = 'Path outside allowed directory'
+                logger.warning(f"Path outside allowed directory: {resolved} vs {rooms_dir.resolve()}")
                 continue
             
             if target.exists():
                 target.unlink()
                 deleted.append(f"/assets/rooms/{name}")
+                logger.info(f"Deleted file: {target}")
             else:
                 not_found.append(p)
+                logger.warning(f"File not found: {target}")
         except Exception as e:
             errors[p] = str(e)
+            logger.error(f"Error deleting {p}: {e}")
     
     return {"deleted": deleted, "not_found": not_found, "errors": errors}
