@@ -32,7 +32,7 @@
             "push": true
         },
         "types": {
-            "alertes": false,
+            "alertes": true,
             "rappels": false,
             "newsletters": false
         }

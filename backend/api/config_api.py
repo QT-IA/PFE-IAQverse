@@ -7,7 +7,7 @@ from typing import List, Dict
 import logging
 
 from ..utils import load_config, save_config, extract_sensors_from_config
-
+from ..core import get_websocket_manager
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +73,13 @@ async def update_config(updates: dict):
     update_config_recursive(config, updates)
     
     if save_config(config):
+        # Broadcast config update via WebSocket
+        try:
+            manager = get_websocket_manager()
+            await manager.broadcast({"type": "config_updated", "config": config}, topic="all")
+        except Exception as e:
+            logger.error(f"Failed to broadcast config update: {e}")
+            
         return {"message": "Configuration mise à jour", "config": config}
     raise HTTPException(status_code=500, detail="Erreur lors de la sauvegarde")
 
@@ -95,6 +102,13 @@ async def save_config_endpoint(updates: dict):
     update_config(config, updates)
     
     if save_config(config):
+        # Broadcast config update via WebSocket
+        try:
+            manager = get_websocket_manager()
+            await manager.broadcast({"type": "config_updated", "config": config}, topic="all")
+        except Exception as e:
+            logger.error(f"Failed to broadcast config update: {e}")
+
         return {"message": "Configuration mise à jour", "config": config}
     raise HTTPException(status_code=500, detail="Erreur lors de la sauvegarde")
 
