@@ -8,6 +8,9 @@ let activeRoom = null;
 // Store room scores for alert highlighting: key = "enseigneId:roomId", value = score
 const roomScores = new Map();
 
+// Global threshold for alerting tabs (rooms & enseignes). Change this to tune sensitivity.
+const ALERT_THRESHOLD = 81;
+
 /**
  * Initialise le gestionnaire de tabs
  */
@@ -22,6 +25,12 @@ async function initTabsManager() {
         }
 
         renderLocationTabs();
+        // Setup WebSocket listeners so tab alerts update instantly on new measurements
+        try {
+            setupWsListeners();
+        } catch (e) {
+            console.warn('[tabs-manager] setupWsListeners failed:', e);
+        }
         
         // Restaurer l'enseigne et la pièce sauvegardées AVANT de rendre les tabs
         const savedEnseigne = localStorage.getItem('activeEnseigne');
@@ -74,7 +83,7 @@ function renderLocationTabs() {
     config.lieux.enseignes.forEach(ens => {
         let enseigneHasAlert = false;
         for (const [storedKey, storedScore] of roomScores.entries()) {
-            if (storedKey.startsWith(ens.id + ':') && storedScore < 70) {
+            if (storedKey.startsWith(ens.id + ':') && storedScore < ALERT_THRESHOLD) {
                 enseigneHasAlert = true;
                 break;
             }
@@ -123,7 +132,7 @@ function renderRoomTabs(enseigneId) {
         if (pieceScore !== undefined) {
             const roomTab = document.querySelector(`.room-tab[data-room-id="${piece.id}"]`);
             if (roomTab) {
-                if (pieceScore < 70) {
+                if (pieceScore < ALERT_THRESHOLD) {
                     roomTab.classList.add('has-alert');
                 } else {
                     roomTab.classList.remove('has-alert');
@@ -205,6 +214,48 @@ function getActiveEnseigne() {
  */
 function getActiveRoom() {
     return activeRoom;
+}
+
+/**
+ * Enregistre un listener WebSocket pour les nouveaux messages 'measurement'
+ * et met à jour immédiatement les alertes d'onglets en utilisant le score
+ */
+function setupWsListeners() {
+    if (typeof window === 'undefined' || !window.wsManager || typeof window.wsManager.on !== 'function') return;
+
+    // Prevent double registration: try to add only once
+    if (window.__tabsManagerWsRegistered) return;
+    window.__tabsManagerWsRegistered = true;
+
+    window.wsManager.on('measurements', (msg) => {
+        try {
+            // msg should contain enseigne, salle and global_score (added server-side)
+            const enseigneName = msg.enseigne || msg.enseigneName || msg.building;
+            const salleName = msg.salle || msg.room || msg.salleName;
+            const score = (typeof msg.global_score === 'number') ? msg.global_score : null;
+
+            if (!enseigneName || !salleName || score === null) return;
+
+            const config = getConfig();
+            if (!config || !config.lieux || !Array.isArray(config.lieux.enseignes)) return;
+
+            const enseigne = config.lieux.enseignes.find(e => e.nom === enseigneName || e.id === enseigneName || (e.nom && e.nom.toLowerCase() === String(enseigneName).toLowerCase()));
+            if (!enseigne) return;
+
+            let piece = (enseigne.pieces || []).find(p => p.nom === salleName || p.id === salleName);
+            if (!piece) {
+                piece = (enseigne.pieces || []).find(p => p.nom && p.nom.toLowerCase() === String(salleName).toLowerCase());
+            }
+            if (!piece) return;
+
+            const key = `${enseigne.id}:${piece.id}`;
+            roomScores.set(key, score);
+            // Refresh UI immediately
+            if (typeof refreshAllTabAlerts === 'function') refreshAllTabAlerts();
+        } catch (err) {
+            console.error('[tabs-manager] Error handling WS measurement:', err);
+        }
+    });
 }
 
 // Initialiser au chargement de la page
@@ -305,7 +356,7 @@ function refreshAllTabAlerts() {
         }
         
         if (roomScore !== null && roomScore !== undefined) {
-            if (roomScore < 70) {
+            if (roomScore < ALERT_THRESHOLD) {
                 roomTab.classList.add('has-alert');
             } else {
                 roomTab.classList.remove('has-alert');
@@ -317,7 +368,7 @@ function refreshAllTabAlerts() {
     config.lieux.enseignes.forEach(ens => {
         let enseigneHasAlert = false;
         for (const [storedKey, storedScore] of roomScores.entries()) {
-            if (storedKey.startsWith(ens.id + ':') && storedScore < 70) {
+            if (storedKey.startsWith(ens.id + ':') && storedScore < ALERT_THRESHOLD) {
                 enseigneHasAlert = true;
                 break;
             }

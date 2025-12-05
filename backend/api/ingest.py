@@ -8,6 +8,7 @@ from datetime import datetime
 import logging
 
 from ..core import get_influx_client, get_websocket_manager, settings
+from ..iaq_score import calculate_iaq_score
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +78,26 @@ async def ingest_measurement(measurement: IAQMeasurement):
         if influx and influx.available:
             influx.write_measurement(data)
         
-        # Diffusion WebSocket
+        # Calculer le score IAQ simple et l'ajouter au payload
+        try:
+            # Normaliser les clefs pour le calcul
+            vals = data.get('values', {}) or {}
+            score_input = {
+                'co2': vals.get('CO2') if vals.get('CO2') is not None else vals.get('co2'),
+                'pm25': vals.get('PM25') if vals.get('PM25') is not None else vals.get('pm25'),
+                'tvoc': vals.get('TVOC') if vals.get('TVOC') is not None else vals.get('tvoc'),
+                'temperature': vals.get('Temperature') if vals.get('Temperature') is not None else vals.get('temperature'),
+                'humidity': vals.get('Humidity') if vals.get('Humidity') is not None else vals.get('humidity')
+            }
+            score_res = calculate_iaq_score(score_input)
+            data['global_score'] = score_res.get('global_score')
+            data['global_level'] = score_res.get('global_level')
+        except Exception:
+            # Si le calcul échoue, on continue sans blocage
+            data['global_score'] = None
+            data['global_level'] = None
+
+        # Diffusion WebSocket (inclut maintenant le score calculé)
         if settings.WEBSOCKET_ENABLED:
             ws_manager = get_websocket_manager()
             await ws_manager.broadcast_measurement(data)
