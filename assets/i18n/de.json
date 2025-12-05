@@ -143,7 +143,6 @@
         "aboutTitle": "Über diese Seite",
         "aboutParagraph": "Diese Digital Twin-Schnittstelle ermöglicht es Ihnen, Warnungen zur Innenraumluftqualität in Echtzeit zu visualisieren, Räume in 3D zu erkunden und empfohlene Präventivmaßnahmen zu überprüfen.",
         "actions": "Aktionen",
-        "details": "Details",
         "preventive": {
             "title": "Präventive Maßnahmen",
             "subtitle": "Basierend auf Vorhersagen (30 Min.)",

@@ -21,11 +21,7 @@
         "adresse": "20 boulevard du Syndicat"
     },
     "affichage": {
-<<<<<<< HEAD
         "mode": "Sombre",
-=======
-        "mode": "Clair",
->>>>>>> 873e845edcc4d599feab2984ea86889e63cc604e
         "langue": "fr",
         "localisation": "Europe, Paris"
     },
@@ -49,7 +45,6 @@
                 "adresse": "123 rue d'Avron",
                 "pieces": [
                     {
-<<<<<<< HEAD
                         "id": "piece_1763546957299",
                         "nom": "Chambre",
                         "type": "chambre",
@@ -73,25 +68,6 @@
                         "nom": "Chambre",
                         "type": "chambre",
                         "glbModel": "/assets/rooms/ens_boutique1_piece_1764757933494.glb"
-=======
-                        "id": "piece_1764771152962",
-                        "nom": "Chambre",
-                        "type": "chambre",
-                        "glbModel": "/assets/rooms/ens_1762004765975_piece_1764771152962.glb"
-                    }
-                ]
-            },
-            {
-                "id": "boutique1",
-                "nom": "Boutique",
-                "adresse": "123 Rue des Commerces",
-                "pieces": [
-                    {
-                        "id": "piece_1764758435656",
-                        "nom": "Chambre",
-                        "type": "chambre",
-                        "glbModel": "/assets/rooms/ens_boutique1_piece_1764758435656.glb"
->>>>>>> 873e845edcc4d599feab2984ea86889e63cc604e
                     }
                 ]
             }
@@ -108,10 +84,6 @@
     "adresse": "123 rue d'Avrons",
     "type": "salon",
     "abonnement": {
-<<<<<<< HEAD
         "plan_actuel": "pro"
-=======
-        "plan_actuel": "basic"
->>>>>>> 873e845edcc4d599feab2984ea86889e63cc604e
     }
 }

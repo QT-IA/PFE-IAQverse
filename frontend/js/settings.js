@@ -6,6 +6,39 @@
 
 let settingsConfig = null; // configuration courante (local à cette page)
 let currentSection = '';
+let wsManager = null;
+
+// Initialize WebSocket connection
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof WebSocketManager !== 'undefined') {
+    wsManager = new WebSocketManager();
+    wsManager.connect();
+    
+    // Listen for config updates
+    wsManager.listeners.set('config_updated', (data) => {
+      console.log('🔄 Config updated remotely:', data);
+      if (data && data.config) {
+        settingsConfig = data.config;
+        
+        // Refresh UI based on current section
+        // We re-render everything to be safe
+        loadConfigToUI(); 
+        renderEnseignes();
+        
+        showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.config_synced') || 'Configuration synchronisée' : 'Configuration synchronisée');
+      }
+    });
+    
+    // Also listen for generic 'all' topic if needed, but 'config_updated' is specific enough
+    wsManager.listeners.set('all', (data) => {
+        if (data.type === 'config_updated' && data.config) {
+             settingsConfig = data.config;
+             loadConfigToUI();
+             renderEnseignes();
+        }
+    });
+  }
+});
 
 // Navigation des sections
 function showSection(id) {

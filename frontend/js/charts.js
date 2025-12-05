@@ -994,7 +994,7 @@ function updatePredictedScoreUI(data) {
   const predictedScore = Math.round(data.predicted_score);
   valueEl.textContent = predictedScore;
 
-  // Styliser selon le niveau prédit (A = vert, B = orange, C = rouge)
+  // Styliser selon le niveau prédit (A-E)
   if (predictedContainer) {
     predictedContainer.classList.remove(
       "predicted-excellent",

@@ -7,7 +7,7 @@ from typing import List, Dict
 import logging
 
 from ..utils import load_config, save_config, extract_sensors_from_config
-
+from ..core import get_websocket_manager
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +73,13 @@ async def update_config(updates: dict):
     update_config_recursive(config, updates)
     
     if save_config(config):
+        # Broadcast config update via WebSocket
+        try:
+            manager = get_websocket_manager()
+            await manager.broadcast({"type": "config_updated", "config": config}, topic="all")
+        except Exception as e:
+            logger.error(f"Failed to broadcast config update: {e}")
+            
         return {"message": "Configuration mise à jour", "config": config}
     raise HTTPException(status_code=500, detail="Erreur lors de la sauvegarde")
 
@@ -95,6 +102,13 @@ async def save_config_endpoint(updates: dict):
     update_config(config, updates)
     
     if save_config(config):
+        # Broadcast config update via WebSocket
+        try:
+            manager = get_websocket_manager()
+            await manager.broadcast({"type": "config_updated", "config": config}, topic="all")
+        except Exception as e:
+            logger.error(f"Failed to broadcast config update: {e}")
+
         return {"message": "Configuration mise à jour", "config": config}
     raise HTTPException(status_code=500, detail="Erreur lors de la sauvegarde")
 
@@ -154,8 +168,6 @@ async def upload_glb(file: UploadFile = File(...), filename: str = Form(...)):
         raise HTTPException(status_code=500, detail="Erreur lors de l'upload du fichier")
 
 
-<<<<<<< HEAD
-=======
 @router.put("/api/rooms/files")
 async def upload_room_file(file: UploadFile = File(...), filename: str = Form(...)):
     """
@@ -232,7 +244,6 @@ async def delete_room_files(paths: List[str]):
     return {"deleted": deleted, "not_found": not_found, "errors": errors}
 
 
->>>>>>> 873e845edcc4d599feab2984ea86889e63cc604e
 @router.post("/api/deleteFiles")
 async def delete_files(paths: List[str]):
     """
@@ -247,11 +258,8 @@ async def delete_files(paths: List[str]):
     not_found = []
     errors = {}
     
-<<<<<<< HEAD
     logger.info(f"Request to delete files: {paths}")
 
-=======
->>>>>>> 873e845edcc4d599feab2984ea86889e63cc604e
     for p in paths:
         try:
             name = str(p or '')
@@ -262,7 +270,6 @@ async def delete_files(paths: List[str]):
             name = Path(name).name
             target = rooms_dir / name
             
-<<<<<<< HEAD
             logger.info(f"Processing deletion for: {p} -> Target: {target}")
 
             try:
@@ -271,26 +278,16 @@ async def delete_files(paths: List[str]):
             except Exception as e:
                 errors[p] = f"Invalid path: {e}"
                 logger.error(f"Invalid path {p}: {e}")
-=======
-            try:
-                resolved = target.resolve()
-            except Exception as e:
-                errors[p] = f"Invalid path: {e}"
->>>>>>> 873e845edcc4d599feab2984ea86889e63cc604e
                 continue
             
             if resolved.parent != rooms_dir.resolve():
                 errors[p] = 'Path outside allowed directory'
-<<<<<<< HEAD
                 logger.warning(f"Path outside allowed directory: {resolved} vs {rooms_dir.resolve()}")
-=======
->>>>>>> 873e845edcc4d599feab2984ea86889e63cc604e
                 continue
             
             if target.exists():
                 target.unlink()
                 deleted.append(f"/assets/rooms/{name}")
-<<<<<<< HEAD
                 logger.info(f"Deleted file: {target}")
             else:
                 not_found.append(p)
@@ -298,11 +295,5 @@ async def delete_files(paths: List[str]):
         except Exception as e:
             errors[p] = str(e)
             logger.error(f"Error deleting {p}: {e}")
-=======
-            else:
-                not_found.append(p)
-        except Exception as e:
-            errors[p] = str(e)
->>>>>>> 873e845edcc4d599feab2984ea86889e63cc604e
     
     return {"deleted": deleted, "not_found": not_found, "errors": errors}

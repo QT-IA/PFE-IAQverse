@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-i18n="digitalTwin.title">Digital Twin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="digitalTwin.title">Digital Twin</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="media.css">
     <script src="js/theme.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/i18n.js"></script>
@@ -29,13 +32,13 @@
 <body>
     <header>
     <nav class="header-nav">
-      <a href="index.html">
+      <a href="index.html" title="Accueil">
         <img src="/assets/icons/home.png" alt="Home">
       </a>
-      <a href="#" onclick="return false;" class="active-page">
+      <a href="#" onclick="return false;" class="active-page" title="Digital Twin">
         <img src="/assets/icons/digital-twin.png" alt="Digital Twin">
       </a>
-      <a href="settings.html">
+      <a href="settings.html" title="Paramètres">
         <img src="/assets/icons/settings.png" alt="Settings">
       </a>
     </nav>
@@ -54,7 +57,12 @@
         <span class="close" onclick="closeModal()">&times;</span>
     <h2 data-i18n="digitalTwin.aboutTitle">À propos de cette page</h2>
     <p data-i18n="digitalTwin.aboutParagraph">Cette interface Digital Twin vous permet de visualiser les alertes de qualité de l'air intérieur en temps réel.</p>
+    <h2 data-i18n="digitalTwin.aboutTitle">À propos de cette page</h2>
+    <p data-i18n="digitalTwin.aboutParagraph">Cette interface Digital Twin vous permet de visualiser les alertes de qualité de l'air intérieur en temps réel.</p>
         <ul>
+            <li data-i18n="digitalTwin.tip.table">Le tableau à gauche montre les actions recommandées.</li>
+            <li data-i18n="digitalTwin.tip.visual">La visualisation indique les zones concernées dans la pièce.</li>
+            <li data-i18n="digitalTwin.tip.details">Les détails au centre expliquent les causes des alertes.</li>
             <li data-i18n="digitalTwin.tip.table">Le tableau à gauche montre les actions recommandées.</li>
             <li data-i18n="digitalTwin.tip.visual">La visualisation indique les zones concernées dans la pièce.</li>
             <li data-i18n="digitalTwin.tip.details">Les détails au centre expliquent les causes des alertes.</li>

@@ -143,7 +143,6 @@
         "aboutTitle": "Acerca de esta página",
         "aboutParagraph": "Esta interfaz Digital Twin le permite visualizar las alertas de calidad del aire interior en tiempo real, explorar habitaciones en 3D y revisar las acciones preventivas recomendadas.",
         "actions": "Acciones",
-        "details": "Detalles",
         "preventive": {
             "title": "Acciones Preventivas",
             "subtitle": "Basadas en predicciones (30 min)",
