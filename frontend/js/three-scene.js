@@ -1298,11 +1298,43 @@ function updateMovement() {
   }
 }
 
+function preventCameraClipping() {
+  if (!modelRoot) return;
+
+  // Raycast depuis la cible (target) vers la caméra
+  const dir = new THREE.Vector3().subVectors(camera.position, controls.target);
+  const dist = dir.length();
+  
+  if (dist < 0.1) return; // Trop proche pour vérifier
+  
+  dir.normalize();
+
+  const raycaster = new THREE.Raycaster();
+  raycaster.set(controls.target, dir);
+  raycaster.far = dist; // Vérifier seulement jusqu'à la caméra
+
+  const intersects = raycaster.intersectObject(modelRoot, true);
+  
+  // Trouver le premier obstacle visible (mur, meuble...)
+  const hit = intersects.find(h => h.object.isMesh && h.object.visible);
+
+  if (hit) {
+      // Si on rencontre un obstacle, on place la caméra juste devant
+      const buffer = 0.2; // 20cm de marge
+      
+      // On ne rapproche pas la caméra si l'obstacle est très très proche de la cible
+      if (hit.distance > buffer) {
+          camera.position.copy(controls.target).addScaledVector(dir, hit.distance - buffer);
+      }
+  }
+}
+
 // Animation loop
 function animate() {
   requestAnimationFrame(animate);
   updateMovement(); // Appliquer les mouvements fluides
   controls.update();
+  preventCameraClipping(); // Empêcher la caméra de traverser les murs en reculant/zoomant
   updateAlertPoints();
   updateParticles();
   renderer.render(scene, camera);
