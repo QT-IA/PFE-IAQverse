@@ -1842,6 +1842,7 @@ a:hover img {
   grid-auto-rows: auto;
   gap: 20px;
   padding: 0 20px 0 20px;
+  margin-bottom: 20px;
 }
 
 /* Responsive pour Digital Twin */
@@ -3344,7 +3345,7 @@ select.form-control::after {
   color: var(--accent-color) !important;
 }
 
-/* Loader pour le mod�le 3D */
+/* Loader pour le modele 3D */
 .model-loader {
   position: absolute;
   top: 0;
@@ -3378,11 +3379,6 @@ select.form-control::after {
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 15px;
-}
-
-[data-theme='sombre'] .spinner {
-  border-color: var(--border-color);
-  border-top-color: var(--success-color);
 }
 
 .loading-text {
