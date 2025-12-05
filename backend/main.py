@@ -710,22 +710,57 @@ async def post_rows_periodically(interval: int = INTERVAL_SECONDS, loop_forever:
             return
 
         rows = list(DATA_DF.to_dict(orient="records"))
-        while True:
-            for row in rows:
-                payload = {}
-                for k, v in row.items():
-                    # IMPORTANT: Utiliser le timestamp actuel pour InfluxDB (pas 2024)
-                    if k == "timestamp":
-                        payload["timestamp"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-                    else:
-                        if isinstance(v, (np.generic,)):
-                            try:
-                                v = v.item()
-                            except Exception:
-                                pass
-                        payload[k] = None if pd.isna(v) else v
+        
+        # Division du dataset en deux moitiés
+        mid_point = len(rows) // 2
+        rows_maison = rows[:mid_point]
+        rows_boutique = rows[mid_point:]
+        
+        # Pré-traitement de la deuxième moitié pour la Boutique
+        for row in rows_boutique:
+            row['enseigne'] = "Boutique"
+            row['salle'] = "Chambre Arthur"
+            row['capteur_id'] = "Arthur1"
+            
+        logger.info(f"Dataset split: {len(rows_maison)} rows for Maison, {len(rows_boutique)} rows for Boutique")
 
-                await add_iaq_record(payload)
+        while True:
+            # On itère sur la plus grande longueur
+            max_len = max(len(rows_maison), len(rows_boutique))
+            
+            for i in range(max_len):
+                # Envoi Maison (si disponible)
+                if i < len(rows_maison):
+                    row = rows_maison[i]
+                    payload = {}
+                    for k, v in row.items():
+                        if k == "timestamp":
+                            payload["timestamp"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+                        else:
+                            if isinstance(v, (np.generic,)):
+                                try:
+                                    v = v.item()
+                                except Exception:
+                                    pass
+                            payload[k] = None if pd.isna(v) else v
+                    await add_iaq_record(payload)
+
+                # Envoi Boutique (si disponible)
+                if i < len(rows_boutique):
+                    row = rows_boutique[i]
+                    payload = {}
+                    for k, v in row.items():
+                        if k == "timestamp":
+                            payload["timestamp"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+                        else:
+                            if isinstance(v, (np.generic,)):
+                                try:
+                                    v = v.item()
+                                except Exception:
+                                    pass
+                            payload[k] = None if pd.isna(v) else v
+                    await add_iaq_record(payload)
+
                 try:
                     await asyncio.sleep(interval)
                 except asyncio.CancelledError:

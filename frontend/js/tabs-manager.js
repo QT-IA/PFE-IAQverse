@@ -167,11 +167,6 @@ function switchEnseigne(enseigneId, keepActiveRoom = false) {
     document.dispatchEvent(new CustomEvent('enseigneChanged', { 
         detail: { enseigneId } 
     }));
-    
-    // Recharger la page si on change d'enseigne (pour réinitialiser l'état)
-    if (previousEnseigne && previousEnseigne !== enseigneId) {
-        window.location.reload();
-    }
 }
 
 /**
@@ -194,11 +189,6 @@ function switchRoom(roomId) {
     document.dispatchEvent(new CustomEvent('roomChanged', { 
         detail: { roomId, enseigneId: activeEnseigne } 
     }));
-    
-    // Recharger la page si on change de pièce (pour réinitialiser l'état)
-    if (previousRoom && previousRoom !== roomId) {
-        window.location.reload();
-    }
 }
 
 /**
