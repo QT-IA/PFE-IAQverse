@@ -418,10 +418,29 @@ function loadPieceModel(roomId) {
     activeParticles = {};
 
     isLoading = true;
+    
+    // Afficher le loader
+    const loaderElement = document.getElementById('model-loader');
+    if (loaderElement) {
+      loaderElement.classList.remove('hidden');
+      loaderElement.style.display = 'flex'; // S'assurer qu'il est visible
+    }
+
     loader.load(
       glbPath,
       function (gltf) {
         isLoading = false;
+        
+        // Masquer le loader
+        if (loaderElement) {
+          loaderElement.classList.add('hidden');
+          setTimeout(() => {
+              if (loaderElement.classList.contains('hidden')) {
+                loaderElement.style.display = 'none';
+              }
+          }, 300); // Attendre la fin de la transition CSS
+        }
+
         modelRoot = gltf.scene;
         
         // Aggressively fix ALL shader issues by replacing materials and validating geometry
@@ -634,11 +653,21 @@ function loadPieceModel(roomId) {
       },
       function (error) {
         isLoading = false;
+        const loaderElement = document.getElementById('model-loader');
+        if (loaderElement) {
+          loaderElement.classList.add('hidden');
+          loaderElement.style.display = 'none';
+        }
         console.error('Erreur de chargement du modèle:', error);
       }
     );
   } catch (e) {
     isLoading = false;
+    const loaderElement = document.getElementById('model-loader');
+    if (loaderElement) {
+      loaderElement.classList.add('hidden');
+      loaderElement.style.display = 'none';
+    }
     console.error('loadPieceModel error:', e);
   }
 }
@@ -703,10 +732,12 @@ function autoGenerateAlertPoints(modelRoot) {
   
   // Patterns à rechercher dans les noms d'objets (ajustés selon les vrais noms du GLB)
   const patterns = {
-    'window': /^Window[^_]*$/i,  // Cherche "Window" au début, sans underscore (groupe parent)
-    'door': /^Door[^_]*$/i,      // Cherche "Door" au début, sans underscore (groupe parent, pas DoorBoddy_Cube)
-    'ventilation': /Clim/i, // Cherche "Clim" n'importe où dans le nom (plus permissif)
-    'radiator': /^Radiator[^_]*$/i // Cherche "Radiator" au début, sans underscore
+    // Regex plus souples qui excluent explicitement les sous-parties (poignées, cadres)
+    // Cela permet des noms comme "Door_Cuisine_Inv", "Door.001", etc.
+    'window': /^Window(?!.*(?:Handle|Frame|Vitre|Glass|Poignee|Cadre)).*$/i,
+    'door': /^Door(?!.*(?:Handle|Frame|Cadre|Poignee)).*$/i,
+    'ventilation': /Clim/i, // Cherche "Clim" n'importe où dans le nom
+    'radiator': /^Radiator(?!.*(?:Valve|Tuyau)).*$/i
   };
   
   // Collecter tous les noms d'objets pour debug
@@ -775,40 +806,98 @@ function autoGenerateAlertPoints(modelRoot) {
         
         if (!objectStates[targetName]) {
           let animationObj = obj;
+          
+          // Créer une configuration spécifique pour cet objet
+          // Cela permet d'adapter l'animation (direction, axe) par objet
+          const config = { ...objectAnimations[type] };
+          
+          // Adaptabilité : inverser la direction de rotation si le nom contient "Inv", "Rev", "Invert" ou "Opposite"
+          // Utile pour les portes qui s'ouvrent dans l'autre sens
+          const isInverted = targetName.match(/Inv|Rev|Invert|Opposite/i);
+          
+          if (isInverted) {
+             console.log(`[autoGenerate] Inverting rotation for ${targetName}`);
+             if (config.openAngle) config.openAngle *= -1;
+          } else {
+             console.log(`[autoGenerate] Standard rotation for ${targetName}`);
+          }
+          
           if (type === 'door' || type === 'window') {
             let objectGroup = obj;
             const pivotGroup = new THREE.Group();
             pivotGroup.name = objectGroup.name + '_pivot';
+            
+            // Copier les transformations initiales
             pivotGroup.position.copy(objectGroup.position);
             pivotGroup.rotation.copy(objectGroup.rotation);
+            pivotGroup.scale.copy(objectGroup.scale);
             
-            // Récupérer le parent avant de retirer objectGroup
             let originalParent = objectGroup.parent;
             
             if (originalParent) {
-              // Calculer la boîte englobante pour déterminer la largeur
-              const bbox = new THREE.Box3().setFromObject(objectGroup);
-              const width = bbox.max.x - bbox.min.x;
+              // Calculer les bornes locales pour trouver la charnière
+              let minX = Infinity;
+              let maxX = -Infinity;
               
-              // Retirer objectGroup de son parent
-              originalParent.remove(objectGroup);
+              objectGroup.traverse(child => {
+                if (child.isMesh && child.geometry) {
+                  if (!child.geometry.boundingBox) child.geometry.computeBoundingBox();
+                  const bb = child.geometry.boundingBox;
+                  if (bb) {
+                    // Si l'enfant a une position locale simple (direct child), on l'ajoute
+                    // C'est une approximation qui couvre la plupart des cas simples
+                    const offset = (child !== objectGroup && child.parent === objectGroup) ? child.position.x : 0;
+                    minX = Math.min(minX, bb.min.x + offset);
+                    maxX = Math.max(maxX, bb.max.x + offset);
+                  }
+                }
+              });
               
-              // Déplacer le pivot vers la gauche (où sera la charnière)
-              pivotGroup.position.x -= width / 2;
+              if (minX === Infinity) minX = -0.5; // Valeur par défaut
+              if (maxX === -Infinity) maxX = 0.5;
               
-              // Ajouter pivotGroup au parent original
+              // Choisir le point de pivot : minX (gauche) par défaut, maxX (droite) si inversé
+              // Note: Pour une porte inversée, on veut souvent que la charnière soit de l'autre côté
+              const pivotX = isInverted ? maxX : minX;
+              
+              // Ajouter le pivot au parent
               originalParent.add(pivotGroup);
               
-              // Réinitialiser position/rotation de objectGroup et l'ajouter au pivot
-              objectGroup.position.set(width / 2, 0, 0); // décaler vers la droite (charnière à gauche du pivot)
-              objectGroup.rotation.set(0, 0, 0);
+              // Déplacer le pivot à la position de la charnière
+              // translateX bouge le pivot le long de son axe X local (qui est aligné avec celui de l'objet)
+              pivotGroup.translateX(pivotX * objectGroup.scale.x);
+              
+              // Déplacer l'objet dans le pivot
+              originalParent.remove(objectGroup);
               pivotGroup.add(objectGroup);
-            } else {
+              
+              // Compenser le déplacement du pivot pour que l'objet reste visuellement en place
+              objectGroup.position.set(-pivotX, 0, 0);
+              objectGroup.rotation.set(0, 0, 0);
+              objectGroup.scale.set(1, 1, 1);
             }
             animationObj = pivotGroup;
+
+            // Ajuster les angles d'animation par rapport à la rotation initiale
+            // C'est CRUCIAL pour que la porte ne "saute" pas à une rotation absolue 0 lors du clic
+            if (config.axis) {
+              const initialRotation = pivotGroup.rotation[config.axis];
+              const delta = config.openAngle; // La valeur actuelle est le delta (PI/2 ou -PI/2)
+              
+              config.closeAngle = initialRotation;
+              config.openAngle = initialRotation + delta;
+              
+              console.log(`[autoGenerate] Adjusted animation for ${targetName}: start=${initialRotation.toFixed(2)}, end=${config.openAngle.toFixed(2)}`);
+            }
           }
           
-          objectStates[targetName] = { object: animationObj, type: type, state: type === 'door' || type === 'window' ? 'closed' : 'off', particles: null };
+          objectStates[targetName] = { 
+            object: animationObj, 
+            type: type, 
+            state: type === 'door' || type === 'window' ? 'closed' : 'off', 
+            particles: null,
+            config: config
+          };
           
           // Charger l'état sauvegardé depuis sessionStorage
           if (savedStates[targetName]) {
@@ -893,8 +982,10 @@ function autoGenerateAlertPoints(modelRoot) {
           const alertType = alertPoint.getAttribute('data-i18n-key');
           const targetName = alertPoint.getAttribute('data-target-names');
           const stateObj = objectStates[targetName];
-          if (stateObj && objectAnimations[alertType]) {
-            const config = objectAnimations[alertType];
+          if (stateObj) {
+            const config = stateObj.config || objectAnimations[alertType];
+            if (!config) return;
+            
             const currentState = stateObj.state;
             const newState = currentState === (config.axis ? 'closed' : 'off') ? (config.axis ? 'open' : 'on') : (config.axis ? 'closed' : 'off');
             stateObj.state = newState;
@@ -929,7 +1020,7 @@ function autoGenerateAlertPoints(modelRoot) {
         
         // Appliquer visuellement l'état restauré
         if (savedStates[targetName]) {
-          const config = objectAnimations[type];
+          const config = objectStates[targetName].config || objectAnimations[type];
           if (config) {
             // Appliquer immédiatement l'état sans animation
             if (config.axis) {

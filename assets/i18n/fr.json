@@ -136,6 +136,7 @@
   "digitalTwin": {
     "title": "Jumeaux numériques",
     "visualisation": "Visualisation",
+    "loading": "Chargement du modèle...",
     "aboutTitle": "À propos de cette page",
     "aboutParagraph": "Cette interface Digital Twin vous permet de visualiser les alertes de qualité de l'air intérieur en temps réel, d'explorer les pièces en 3D et de consulter les actions préventives recommandées.",
     "actions": "Actions",

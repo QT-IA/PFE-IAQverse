@@ -136,6 +136,7 @@
   "digitalTwin": {
     "title": "Digital Twin",
     "visualisation": "Visualization",
+    "loading": "Loading model...",
     "aboutTitle": "About this page",
     "aboutParagraph": "This Digital Twin interface lets you visualize indoor air quality alerts in real time, explore rooms in 3D, and review recommended preventive actions.",
     "actions": "Actions",
