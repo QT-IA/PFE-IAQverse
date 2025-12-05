@@ -636,19 +636,19 @@ a:hover img {
 .score-panel .legend-item {
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 10px;
+  gap: 8px;
+  font-size: 11px;
 }
 
 .score-panel .legend-badge {
-  width: 18px;
-  height: 18px;
-  border-radius: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .score-panel .badge-a {
@@ -657,11 +657,21 @@ a:hover img {
 }
 
 .score-panel .badge-b {
-  background: #f39c12;
+  background: #cddc39;
   color: white;
 }
 
 .score-panel .badge-c {
+  background: #f1c40f;
+  color: white;
+}
+
+.score-panel .badge-d {
+  background: #e67e22;
+  color: white;
+}
+
+.score-panel .badge-e {
   background: #e74c3c;
   color: white;
 }
@@ -673,8 +683,16 @@ a:hover img {
 
 .score-panel .score-center {
   display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  min-height: 130px;
+}
+
+.score-main-display {
+  display: flex;
   flex-direction: column;
-  align-items: center; /* center the value and label */
+  align-items: center;
   text-align: center;
 }
 
@@ -704,7 +722,7 @@ a:hover img {
 /* Keep the meta (trend/note) visible on the right without affecting centering */
 .score-right {
   position: absolute;
-  right: 20px;
+  right: 180px;
   top: 50%;
   transform: translateY(-50%);
   display: flex;
@@ -732,7 +750,7 @@ a:hover img {
 /* Predicted score section */
 .score-predicted {
   position: absolute;
-  right: 180px;
+  right: 20px;
   top: 50%;
   transform: translateY(-50%);
   display: flex;
@@ -744,6 +762,41 @@ a:hover img {
   border: 1px solid var(--border-color);
   transition: all 0.3s ease;
 }
+
+.score-predicted.predicted-a {
+  background: rgba(46, 204, 113, 0.1);
+  border-color: #2ecc71;
+  box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.1);
+}
+.score-predicted.predicted-a .predicted-value { color: #2ecc71; }
+
+.score-predicted.predicted-b {
+  background: rgba(205, 220, 57, 0.1);
+  border-color: #cddc39;
+  box-shadow: 0 0 0 2px rgba(205, 220, 57, 0.1);
+}
+.score-predicted.predicted-b .predicted-value { color: #cddc39; }
+
+.score-predicted.predicted-c {
+  background: rgba(241, 196, 15, 0.1);
+  border-color: #f1c40f;
+  box-shadow: 0 0 0 2px rgba(241, 196, 15, 0.1);
+}
+.score-predicted.predicted-c .predicted-value { color: #f1c40f; }
+
+.score-predicted.predicted-d {
+  background: rgba(230, 126, 34, 0.1);
+  border-color: #e67e22;
+  box-shadow: 0 0 0 2px rgba(230, 126, 34, 0.1);
+}
+.score-predicted.predicted-d .predicted-value { color: #e67e22; }
+
+.score-predicted.predicted-e {
+  background: rgba(231, 76, 60, 0.1);
+  border-color: #e74c3c;
+  box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.1);
+}
+.score-predicted.predicted-e .predicted-value { color: #e74c3c; }
 
 .score-predicted.predicted-excellent {
   background: rgba(46, 204, 113, 0.1);

@@ -69,22 +69,32 @@
       <div class="score-legend">
         <div class="legend-item">
           <span class="legend-badge badge-a">A</span>
-          <span class="legend-range">90-100</span>
+          <span class="legend-range">81-100</span>
         </div>
         <div class="legend-item">
           <span class="legend-badge badge-b">B</span>
-          <span class="legend-range">70-89</span>
+          <span class="legend-range">61-80</span>
         </div>
         <div class="legend-item">
           <span class="legend-badge badge-c">C</span>
-          <span class="legend-range">&lt;70</span>
+          <span class="legend-range">41-60</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-badge badge-d">D</span>
+          <span class="legend-range">21-40</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-badge badge-e">E</span>
+          <span class="legend-range">0-20</span>
         </div>
       </div>
       <div class="score-center">
-        <div class="score-value">
-          <span id="room-score-value">—</span><span class="score-max">/100</span>
+        <div class="score-main-display">
+          <div class="score-value">
+            <span id="room-score-value">—</span><span class="score-max">/100</span>
+          </div>
+          <div class="score-label" data-i18n="dashboard.score.roomLabel">Score actuel</div>
         </div>
-        <div class="score-label" data-i18n="dashboard.score.roomLabel">Score actuel</div>
       </div>
       <div class="score-right" id="room-score-meta">
         <div class="score-trend" id="room-score-trend">&nbsp;</div>
@@ -139,16 +149,44 @@
     window.setRoomScore = function(score, options={}){
       // score: number 0-100 or null
       const v = (typeof score === 'number') ? Math.round(score) : null;
-      if (valueEl()) valueEl().textContent = (v===null) ? '—' : String(v);
+      const valEl = valueEl();
+      
+      if (valEl) {
+        valEl.textContent = (v===null) ? '—' : String(v);
+        // Reset classes
+        valEl.classList.remove('text-a', 'text-b', 'text-c', 'text-d', 'text-e');
+      }
 
-      // Trend / color
-      const trend = (options.trend || 'neutral'); // 'good' | 'ok' | 'bad' | 'neutral'
+      // Determine label
+      let label = options.trendLabel;
+      if (!label && v !== null) {
+           if (v >= 81) label = 'A';
+           else if (v >= 61) label = 'B';
+           else if (v >= 41) label = 'C';
+           else if (v >= 21) label = 'D';
+           else label = 'E';
+      }
+
+      // Apply color to score value
+      if (valEl && label) {
+        const cls = 'text-' + label.toLowerCase();
+        valEl.classList.add(cls);
+      }
+
+      // Trend / color (Right side badge)
+      const trend = (options.trend || 'neutral'); 
       if (trendEl()){
         trendEl().className = 'score-trend';
-        if (trend === 'good') trendEl().classList.add('trend-good');
-        else if (trend === 'ok') trendEl().classList.add('trend-ok');
-        else if (trend === 'bad') trendEl().classList.add('trend-bad');
-        trendEl().textContent = options.trendLabel || (v!==null ? (v >= 90 ? 'A' : (v >= 70 ? 'B' : 'C')) : '');
+        
+        // Apply color class to the trend badge (A-E)
+        if (label) {
+            trendEl().classList.add('badge-' + label.toLowerCase());
+        } else {
+            if (trend === 'good') trendEl().classList.add('trend-good');
+            else if (trend === 'ok') trendEl().classList.add('trend-ok');
+            else if (trend === 'bad') trendEl().classList.add('trend-bad');
+        }
+        trendEl().textContent = label || '';
       }
 
       if (noteEl()) noteEl().textContent = options.note || '';
