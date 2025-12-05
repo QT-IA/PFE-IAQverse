@@ -5,16 +5,93 @@ from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from pathlib import Path
 from typing import List, Dict
 import logging
+import shutil
+import os
 
 from ..utils import load_config, save_config, extract_sensors_from_config
-from ..core import get_websocket_manager
+from ..core import get_websocket_manager, settings
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["config"])
 
 
-@router.get("/api/locations")
+@router.post("/api/uploadAvatar")
+async def upload_avatar(file: UploadFile = File(...)):
+    """
+    Upload d'un avatar utilisateur.
+    Sauvegarde dans assets/icons/user_avatar.png (ou extension d'origine).
+    """
+    try:
+        # Définir le dossier de destination
+        # On suppose que le dossier assets est à la racine du projet, accessible via settings.BASE_DIR ou relatif
+        # settings.ROOMS_DIR pointe vers assets/rooms, donc on peut remonter
+        
+        # Fallback si settings.ASSETS_DIR n'existe pas
+        assets_dir = Path("assets")
+        if hasattr(settings, "ASSETS_DIR"):
+            assets_dir = settings.ASSETS_DIR
+        
+        icons_dir = assets_dir / "icons"
+        icons_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Nettoyer le nom de fichier ou utiliser un nom fixe pour l'utilisateur principal
+        # Pour simplifier, on utilise un nom fixe avec l'extension d'origine
+        ext = Path(file.filename).suffix
+        if not ext:
+            ext = ".png"
+            
+        filename = f"user_avatar{ext}"
+        target_path = icons_dir / filename
+        
+        with target_path.open("wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        # Retourner le chemin relatif pour le frontend
+        relative_path = f"/assets/icons/{filename}"
+        
+        logger.info(f"Avatar uploaded to {target_path}")
+        return {"path": relative_path}
+        
+    except Exception as e:
+        logger.error(f"Error uploading avatar: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur upload avatar: {str(e)}")
+
+
+@router.post("/api/uploadGlb")
+async def upload_glb(file: UploadFile = File(...), filename: str = Form(...)):
+    """
+    Upload d'un fichier GLB (modèle 3D) pour une pièce.
+    Sauvegarde dans assets/rooms/{filename}.glb
+    """
+    try:
+        # Utiliser settings.ROOMS_DIR
+        rooms_dir = Path("assets/rooms")
+        if hasattr(settings, "ROOMS_DIR"):
+            rooms_dir = settings.ROOMS_DIR
+            
+        rooms_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Nettoyer le nom de fichier
+        safe_filename = Path(filename).stem
+        # S'assurer que c'est bien un .glb
+        target_filename = f"{safe_filename}.glb"
+        target_path = rooms_dir / target_filename
+        
+        with target_path.open("wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        # Retourner le chemin relatif
+        relative_path = f"/assets/rooms/{target_filename}"
+        
+        logger.info(f"GLB uploaded to {target_path}")
+        return {"path": relative_path}
+        
+    except Exception as e:
+        logger.error(f"Error uploading GLB: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur upload GLB: {str(e)}")
+
+
 def get_locations():
     """
     Retourne les emplacements disponibles (enseignes et salles) à partir des données

@@ -129,243 +129,249 @@
       <main class="settings-content">
         <!-- Section du compte -->
         <div id="compte" class="active section">
-          <details id="compte-list-vous" class="settings-section">
-            <summary>
-              <span data-i18n="settings.summary.you">Vous</span>
-              <button class="edit-btn" onclick="editSection('vous')">
-                <img src="/assets/icons/edit.png" alt="Modifier" />
-              </button>
-            </summary>
-            <div class="details-content">
-              <p>
-                <span data-i18n="settings.fields.nom">Nom</span> :
-                <span data-path="vous.nom">—</span>
-              </p>
-              <p>
-                <span data-i18n="settings.fields.prenom">Prénom</span> :
-                <span data-path="vous.prenom">—</span>
-              </p>
-              <p>
-                <span data-i18n="settings.fields.date_naissance"
-                  >Date de naissance</span
-                >
-                : <span data-path="vous.date_naissance">—</span>
-              </p>
-              <p>
-                <span data-i18n="settings.fields.email">Email</span> :
-                <span data-path="vous.email">—</span>
-              </p>
-              <p>
-                <span data-i18n="settings.fields.telephone">Téléphone</span> :
-                <span data-path="vous.telephone">—</span>
-              </p>
-              <p>
-                <span data-i18n="settings.fields.adresse">Adresse postale</span>
-                : <span data-path="vous.adresse">—</span>
-              </p>
-              <p>
-                <span data-i18n="settings.fields.avatar">Photo de profil</span>
-                : <span data-path="vous.avatar">—</span>
-              </p>
+          <div style="margin-top: 50px;"></div>
+          <div class="settings-card" id="card-vous">
+            <div class="card-header">
+              <h3 data-i18n="settings.summary.you">Vous</h3>
             </div>
-          </details>
+            <div class="card-body">
+              <div class="form-row">
+                <div class="form-col">
+                  <div class="form-group">
+                    <label data-i18n="settings.fields.nom">Nom</label>
+                    <input type="text" class="form-control" data-path="vous.nom">
+                  </div>
+                  <div class="form-group">
+                    <label data-i18n="settings.fields.prenom">Prénom</label>
+                    <input type="text" class="form-control" data-path="vous.prenom">
+                  </div>
+                  <div class="form-group">
+                    <label data-i18n="settings.fields.date_naissance">Date de naissance</label>
+                    <input type="date" class="form-control" data-path="vous.date_naissance">
+                  </div>
+                  <div class="form-group">
+                    <label data-i18n="settings.fields.email">Email</label>
+                    <input type="email" class="form-control" data-path="vous.email">
+                  </div>
+                  <div class="form-group">
+                    <label data-i18n="settings.fields.telephone">Téléphone</label>
+                    <input type="tel" class="form-control" data-path="vous.telephone">
+                  </div>
+                  <div class="form-group">
+                    <label data-i18n="settings.fields.adresse">Adresse postale</label>
+                    <input type="text" class="form-control" data-path="vous.adresse">
+                  </div>
+                </div>
+                <div class="avatar-col">
+                    <div class="avatar-preview">
+                      <img src="" data-path="vous.avatar" id="avatar-img">
+                    </div>
+                    <button class="btn-primary btn-sm" onclick="document.getElementById('avatar-upload').click()">Importer</button>
+                    <input type="file" id="avatar-upload" style="display:none">
+                </div>
+              </div>
+              <div class="card-actions">
+                <button class="btn-primary" onclick="saveCard('vous')" data-i18n="actions.save">Save changes</button>
+              </div>
+            </div>
+          </div>
 
-          <details id="compte-list-assurance" class="settings-section">
-            <summary>
-              <span data-i18n="settings.summary.insurance"
-                >Votre assurance</span
-              >
-              <button class="edit-btn" onclick="editSection('assurance')">
-                <img src="/assets/icons/edit.png" alt="Modifier" />
-              </button>
-            </summary>
-            <div class="details-content">
-              <p>
-                <span data-i18n="settings.fields.nom">Nom</span> :
-                <span data-path="assurance.nom">—</span>
-              </p>
-              <p>
-                <span data-i18n="settings.fields.email">Email</span> :
-                <span data-path="assurance.email">—</span>
-              </p>
-              <p>
-                <span data-i18n="settings.fields.telephone">Téléphone</span> :
-                <span data-path="assurance.telephone">—</span>
-              </p>
-              <p>
-                <span data-i18n="settings.fields.adresse">Adresse postale</span>
-                : <span data-path="assurance.adresse">—</span>
-              </p>
+          <div class="settings-card" id="card-assurance">
+            <div class="card-header">
+              <h3 data-i18n="settings.summary.insurance">Votre assurance</h3>
             </div>
-          </details>
+            <div class="card-body">
+              <div class="form-group">
+                <label data-i18n="settings.fields.nom">Nom</label>
+                <input type="text" class="form-control" data-path="assurance.nom">
+              </div>
+              <div class="form-group">
+                <label data-i18n="settings.fields.email">Email</label>
+                <input type="email" class="form-control" data-path="assurance.email">
+              </div>
+              <div class="form-group">
+                <label data-i18n="settings.fields.telephone">Téléphone</label>
+                <input type="tel" class="form-control" data-path="assurance.telephone">
+              </div>
+              <div class="form-group">
+                <label data-i18n="settings.fields.adresse">Adresse postale</label>
+                <input type="text" class="form-control" data-path="assurance.adresse">
+              </div>
+              <div class="card-actions">
+                <button class="btn-primary" onclick="saveCard('assurance')" data-i18n="actions.save">Save changes</button>
+              </div>
+            </div>
+          </div>
 
-          <details id="compte-list-syndicat" class="settings-section">
-            <summary>
-              <span data-i18n="settings.summary.union">Votre syndicat</span>
-              <button class="edit-btn" onclick="editSection('syndicat')">
-                <img src="/assets/icons/edit.png" alt="Modifier" />
-              </button>
-            </summary>
-            <div class="details-content">
-              <p>
-                <span data-i18n="settings.fields.nom">Nom</span> :
-                <span data-path="syndicat.nom">—</span>
-              </p>
-              <p>
-                <span data-i18n="settings.fields.email">Email</span> :
-                <span data-path="syndicat.email">—</span>
-              </p>
-              <p>
-                <span data-i18n="settings.fields.telephone">Téléphone</span> :
-                <span data-path="syndicat.telephone">—</span>
-              </p>
-              <p>
-                <span data-i18n="settings.fields.adresse">Adresse postale</span>
-                : <span data-path="syndicat.adresse">—</span>
-              </p>
+          <div class="settings-card" id="card-syndicat">
+            <div class="card-header">
+              <h3 data-i18n="settings.summary.union">Votre syndicat</h3>
             </div>
-          </details>
+            <div class="card-body">
+              <div class="form-group">
+                <label data-i18n="settings.fields.nom">Nom</label>
+                <input type="text" class="form-control" data-path="syndicat.nom">
+              </div>
+              <div class="form-group">
+                <label data-i18n="settings.fields.email">Email</label>
+                <input type="email" class="form-control" data-path="syndicat.email">
+              </div>
+              <div class="form-group">
+                <label data-i18n="settings.fields.telephone">Téléphone</label>
+                <input type="tel" class="form-control" data-path="syndicat.telephone">
+              </div>
+              <div class="form-group">
+                <label data-i18n="settings.fields.adresse">Adresse postale</label>
+                <input type="text" class="form-control" data-path="syndicat.adresse">
+              </div>
+              <div class="card-actions">
+                <button class="btn-primary" onclick="saveCard('syndicat')" data-i18n="actions.save">Save changes</button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Section de l'affichage -->
         <div id="affichage" class="section">
-          <details id="affichage-list-mode" class="settings-section">
-            <summary>
-              <span data-i18n="settings.summary.mode">Mode</span>
-            </summary>
-            <div class="details-content">
-              <p>
-                <span data-i18n="settings.fields.mode_affichage">Mode</span> :
-                <span data-path="affichage.mode">—</span>
-              </p>
+          <div style="margin-top: 50px;"></div>
+          <div class="settings-card" id="card-affichage-mode">
+            <div class="card-header">
+              <h3 data-i18n="settings.summary.mode">Mode</h3>
             </div>
-          </details>
+            <div class="card-body">
+              <div class="form-group">
+                <label data-i18n="settings.fields.mode_affichage">Mode</label>
+                <select class="form-control" data-path="affichage.mode">
+                    <option value="Clair" data-i18n="modes.light">Clair</option>
+                    <option value="Sombre" data-i18n="modes.dark">Sombre</option>
+                </select>
+              </div>
+              <div class="card-actions">
+                <button class="btn-primary" onclick="saveCard('affichage-mode')" data-i18n="actions.save">Save changes</button>
+              </div>
+            </div>
+          </div>
 
-          <details
-            id="affichage-list-langue-localisation"
-            class="settings-section"
-          >
-            <summary>
-              <span data-i18n="settings.summary.langloc"
-                >Langue & Localisation</span
-              >
-              <button
-                class="edit-btn"
-                onclick="editSection('langue & localisation')"
-              >
-                <img src="/assets/icons/edit.png" alt="Modifier" />
-              </button>
-            </summary>
-            <div class="details-content">
-              <p>
-                <span data-i18n="settings.fields.langue">Langue</span> :
-                <span data-path="affichage.langue">—</span>
-              </p>
-              <p>
-                <span data-i18n="settings.fields.localisation"
-                  >Localisation</span
-                >
-                : <span data-path="affichage.localisation">—</span>
-              </p>
+          <div class="settings-card" id="card-affichage-langue">
+            <div class="card-header">
+              <h3 data-i18n="settings.summary.langloc">Langue & Localisation</h3>
             </div>
-          </details>
+            <div class="card-body">
+                <div class="form-group">
+                    <label data-i18n="settings.fields.langue">Langue</label>
+                    <select class="form-control" data-path="affichage.langue">
+                        <option value="fr">Français</option>
+                        <option value="en">English</option>
+                        <option value="es">Español</option>
+                        <option value="de">Deutsch</option>
+                        <option value="it">Italiano</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label data-i18n="settings.fields.localisation">Localisation</label>
+                    <input type="text" class="form-control" data-path="affichage.localisation">
+                </div>
+                <div class="card-actions">
+                    <button class="btn-primary" onclick="saveCard('affichage-langue')" data-i18n="actions.save">Save changes</button>
+                </div>
+            </div>
+          </div>
         </div>
 
         <!-- Section des notifications -->
         <div id="notifications" class="section">
-          <details
-            id="notifications-list-technologies"
-            class="settings-section"
-          >
-            <summary>
-              <span data-i18n="settings.summary.technologies"
-                >Technologies</span
-              >
-              <button class="edit-btn" onclick="editSection('technologies')">
-                <img src="/assets/icons/edit.png" alt="Modifier" />
-              </button>
-            </summary>
-            <div class="details-content">
-              <p>
-                <span data-i18n="settings.fields.email">Email</span> :
-                <span data-path="notifications.technologies.email">—</span>
-              </p>
-              <p>
-                <span data-i18n="settings.fields.sms">SMS</span> :
-                <span data-path="notifications.technologies.sms">—</span>
-              </p>
-              <p>
-                <span data-i18n="settings.fields.push">Push</span> :
-                <span data-path="notifications.technologies.push">—</span>
-              </p>
+          <div style="margin-top: 50px;"></div>
+          <div class="settings-card" id="card-notifications-tech">
+            <div class="card-header">
+              <h3 data-i18n="settings.summary.technologies">Technologies</h3>
             </div>
-          </details>
+            <div class="card-body">
+              <div class="form-group checkbox-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" data-path="notifications.technologies.email">
+                    <span data-i18n="settings.fields.email">Email</span>
+                </label>
+              </div>
+              <div class="form-group checkbox-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" data-path="notifications.technologies.sms">
+                    <span data-i18n="settings.fields.sms">SMS</span>
+                </label>
+              </div>
+              <div class="form-group checkbox-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" data-path="notifications.technologies.push">
+                    <span data-i18n="settings.fields.push">Push</span>
+                </label>
+              </div>
+              <div class="card-actions">
+                <button class="btn-primary" onclick="saveCard('notifications-tech')" data-i18n="actions.save">Save changes</button>
+              </div>
+            </div>
+          </div>
 
-          <details id="notifications-list-type" class="settings-section">
-            <summary>
-              <span data-i18n="settings.summary.type">Type</span>
-              <button class="edit-btn" onclick="editSection('type')">
-                <img src="/assets/icons/edit.png" alt="Modifier" />
-              </button>
-            </summary>
-            <div class="details-content">
-              <p>
-                <span data-i18n="settings.fields.alertes">Alertes</span> :
-                <span data-path="notifications.types.alertes">—</span>
-              </p>
-              <p>
-                <span data-i18n="settings.fields.rappels">Rappels</span> :
-                <span data-path="notifications.types.rappels">—</span>
-              </p>
-              <p>
-                <span data-i18n="settings.fields.newsletters">Newsletters</span>
-                : <span data-path="notifications.types.newsletters">—</span>
-              </p>
+          <div class="settings-card" id="card-notifications-type">
+            <div class="card-header">
+              <h3 data-i18n="settings.summary.type">Type</h3>
             </div>
-          </details>
+            <div class="card-body">
+                <div class="form-group checkbox-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" data-path="notifications.types.alertes">
+                    <span data-i18n="settings.fields.alertes">Alertes</span>
+                </label>
+              </div>
+              <div class="form-group checkbox-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" data-path="notifications.types.rappels">
+                    <span data-i18n="settings.fields.rappels">Rappels</span>
+                </label>
+              </div>
+              <div class="form-group checkbox-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" data-path="notifications.types.newsletters">
+                    <span data-i18n="settings.fields.newsletters">Newsletters</span>
+                </label>
+              </div>
+              <div class="card-actions">
+                <button class="btn-primary" onclick="saveCard('notifications-type')" data-i18n="actions.save">Save changes</button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Section des lieux (gestion des enseignes & pièces) -->
         <div id="lieux" class="section">
-          <details id="lieux-list" class="settings-section">
-            <summary>
-              <span data-i18n="settings.summary.manage_brands"
-                >Gestion des enseignes</span
-              >
-              <button
-                class="add-btn"
-                type="button"
-                onclick="addEnseigne()"
-                data-i18n-title="actions.add_brand"
-                title="Ajouter une enseigne"
-              >
-                <img src="/assets/icons/add.png" alt="Ajouter" />
+          <div style="margin-top: 50px;"></div>
+          <div class="settings-card" id="card-lieux">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+              <h3 data-i18n="settings.summary.manage_brands">Gestion des enseignes</h3>
+              <button class="btn-primary btn-sm" onclick="addEnseigne()" data-i18n-title="actions.add_brand" title="Ajouter une enseigne" style="padding: 5px 10px; display: flex; align-items: center; justify-content: center;">
+                <img src="/assets/icons/add.png" alt="Ajouter" style="filter: brightness(0) invert(1); width: 16px; height: 16px;">
               </button>
-            </summary>
-            <div class="details-content">
+            </div>
+            <div class="card-body">
               <div id="enseignes-list" class="locations-grid">
                 <!-- Cartes des enseignes générées dynamiquement -->
               </div>
             </div>
-          </details>
+          </div>
         </div>
 
         <!-- Section de l'abonnement -->
         <div id="abonnement" class="section">
-          <details id="abonnement-list" class="settings-section">
-            <summary>
-              <span data-i18n="settings.summary.subscription"
-                >Votre abonnement</span
-              >
-            </summary>
-            <div class="details-content">
-              <p>
-                <span data-i18n="settings.fields.current_plan"
-                  >Plan actuel</span
-                >
-                : <span data-path="abonnement.plan_actuel">—</span>
-              </p>
-              <div class="plans-container">
+          <div style="margin-top: 50px;"></div>
+          <div class="settings-card" id="card-abonnement">
+            <div class="card-header">
+              <h3 data-i18n="settings.summary.subscription">Votre abonnement</h3>
+            </div>
+            <div class="card-body">
+              <div class="form-group">
+                  <label data-i18n="settings.fields.current_plan">Plan actuel</label>
+                  <div class="form-control-static" data-path="abonnement.plan_actuel" style="font-weight: bold; font-size: 1.1em; padding: 8px 0;">—</div>
+              </div>
+              
+              <div class="plans-container" style="margin-top: 20px;">
                 <div class="plan-card" data-plan="basic">
                   <h3 data-i18n="settings.plans.basic.title">Basic</h3>
                   <div class="plan-price">49 €</div>
@@ -456,35 +462,31 @@
                 </div>
               </div>
             </div>
-          </details>
+          </div>
         </div>
 
         <!-- Section des contacts -->
         <div id="contact" class="section">
-          <details id="contact-list" class="settings-section">
-            <summary>
-              <span data-i18n="settings.summary.contact">Nous contacter</span>
-            </summary>
-            <div class="details-content">
-              <p>
-                <span data-i18n="settings.fields.email">Email</span> :
-                <span data-path="contact.email" data-readonly="true">—</span>
-              </p>
-              <p>
-                <span data-i18n="settings.fields.telephone">Téléphone</span> :
-                <span data-path="contact.telephone" data-readonly="true"
-                  >—</span
-                >
-              </p>
-              <p>
-                <span data-i18n="settings.fields.adresse">Adresse postale</span>
-                :
-                <span data-path="contact.adresse_postale" data-readonly="true"
-                  >—</span
-                >
-              </p>
+          <div style="margin-top: 50px;"></div>
+          <div class="settings-card" id="card-contact">
+            <div class="card-header">
+              <h3 data-i18n="settings.summary.contact">Nous contacter</h3>
             </div>
-          </details>
+            <div class="card-body">
+              <div class="form-group">
+                <label data-i18n="settings.fields.email">Email</label>
+                <input type="text" class="form-control" data-path="contact.email" readonly>
+              </div>
+              <div class="form-group">
+                <label data-i18n="settings.fields.telephone">Téléphone</label>
+                <input type="text" class="form-control" data-path="contact.telephone" readonly>
+              </div>
+              <div class="form-group">
+                <label data-i18n="settings.fields.adresse">Adresse postale</label>
+                <input type="text" class="form-control" data-path="contact.adresse_postale" readonly>
+              </div>
+            </div>
+          </div>
         </div>
       </main>
     </div>

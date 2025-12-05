@@ -3283,3 +3283,264 @@ select.form-control::after {
     color: var(--text-secondary);
 }
 
+
+/* New Settings Card Layout */
+.settings-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.card-header {
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.card-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.card-body {
+  padding: 20px;
+}
+
+.form-row {
+  display: flex;
+  gap: 30px;
+}
+
+.form-col {
+  flex: 1;
+}
+
+.avatar-col {
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar-preview {
+  width: 128px;
+  height: 128px;
+  margin-top: 120px;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.form-control {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  transition: border-color 0.2s;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(44, 62, 80, 0.1);
+}
+
+.card-actions {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-start;
+}
+
+.help-text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .form-row {
+    flex-direction: column-reverse;
+  }
+  .avatar-col {
+    width: 100%;
+    margin-bottom: 20px;
+  }
+}
+
+
+/* Checkbox styling */
+.checkbox-group {
+  display: flex;
+  align-items: center;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.checkbox-label input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+/* Static form control (read-only text looking like a field or just text) */
+.form-control-static {
+  padding: 8px 0;
+  color: var(--text-primary);
+}
+
+/* Adjustments for select */
+select.form-control {
+  appearance: none;
+  background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23007CB2%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
+  background-repeat: no-repeat;
+  background-position: right .7em top 50%;
+  background-size: .65em auto;
+  padding-right: 1.5em;
+}
+
+
+/* Update location card to stand out inside settings card */
+.settings-card .location-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: none;
+}
+
+
+/* New Footer Layout for Location Cards */
+.location-card .card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 15px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-color);
+}
+
+.location-card .card-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* Reset absolute positioning for actions in location card */
+.location-card .actions {
+  position: static;
+  display: none; /* Hide old actions div if it still exists in cached DOM */
+}
+
+/* Style for the new card-actions buttons */
+.location-card .card-actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.location-card .card-actions button:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.location-card .card-actions img {
+  width: 20px;
+  height: 20px;
+  opacity: 0.7;
+}
+
+.location-card .card-actions button:hover img {
+  opacity: 1;
+}
+
+/* Adjust btn-room margin since it's now in flex container */
+.location-card .btn-room {
+  margin-top: 0;
+}
+
+
+/* Revert Location Card Actions to Top Right */
+.location-card .actions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 8px;
+}
+
+.location-card .actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  transition: transform 0.2s;
+}
+
+.location-card .actions button:hover {
+  transform: scale(1.1);
+}
+
+.location-card .actions img {
+  width: 18px;
+  height: 18px;
+  opacity: 0.7;
+}
+
+.location-card .actions button:hover img {
+  opacity: 1;
+}
+
+/* Remove footer styles if they interfere */
+.location-card .card-footer {
+  display: none;
+}
+
+
+/* Mail icon styling for dark mode support */
+[data-theme='sombre'] .mail-icon {
+  filter: brightness(0) invert(1);
+  opacity: 0.8;
+}
+
+[data-theme='sombre'] .mail-action-btn:hover .mail-icon {
+  opacity: 1;
+}
+
