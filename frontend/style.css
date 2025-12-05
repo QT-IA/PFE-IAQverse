@@ -2075,10 +2075,10 @@ a:hover img {
 }
 
 .alert-green td {
-  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-  color: #059669;
+  background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+  color: #475569;
   font-weight: 500;
-  border-left: 4px solid #059669;
+  border-left: 4px solid #94a3b8;
 }
 
 .details-panel ul {
@@ -2145,15 +2145,15 @@ a:hover img {
 }
 
 .issue-info {
-  background: #e6f4ea; /* vert pâle */
-  border-left: 4px solid #27ae60;
-  color: #1b5e20;
+  background: #f8fafc; /* gris pâle */
+  border-left: 4px solid #94a3b8;
+  color: #475569;
 }
 
 [data-theme="sombre"] .issue-info {
-  background: rgba(39, 174, 96, 0.12);
-  border-left-color: #49d483;
-  color: #b8f0c0;
+  background: rgba(148, 163, 184, 0.12);
+  border-left-color: #94a3b8;
+  color: #cbd5e1;
 }
 
 .issue-action {
@@ -2248,11 +2248,11 @@ a:hover img {
   z-index: 2500 !important; /* Force le z-index */
 }
 
-/* Couleur verte pour info (utilisé dans le tableau seulement) */
+/* Couleur grise pour info (utilisé dans le tableau seulement) */
 .alert-point[data-severity="info"] {
-  background-color: rgba(40, 167, 69, 0.8);
-  border-color: #28a745;
-  box-shadow: 0 0 8px rgba(40, 167, 69, 0.6);
+  background-color: rgba(108, 117, 125, 0.8);
+  border-color: #6c757d;
+  box-shadow: 0 0 8px rgba(108, 117, 125, 0.6);
 }
 
 /* Couleur jaune/orange pour warning */
@@ -3266,7 +3266,7 @@ select.form-control::after {
   color: var(--accent-color) !important;
 }
 
-/* Loader pour le mod�le 3D */
+/* Loader pour le mod�le 3D */
 .model-loader {
   position: absolute;
   top: 0;
@@ -3315,5 +3315,20 @@ select.form-control::after {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+
+/* Nouvelle classe pour les actions satisfaites (vert) */
+.alert-success td {
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+  color: #059669;
+  font-weight: 500;
+  border-left: 4px solid #059669;
+}
+
+[data-theme='sombre'] .alert-success td {
+  background: linear-gradient(135deg, rgba(5, 150, 105, 0.2), rgba(5, 150, 105, 0.1));
+  color: #34d399;
+  border-left-color: #34d399;
 }
 

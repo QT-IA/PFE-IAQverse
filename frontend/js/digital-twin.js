@@ -647,6 +647,41 @@ window.syncAlertPointsToTable = function syncAlertPointsToTable() {
 
         // Utiliser le premier point pour les clés i18n et actions
         const firstPoint = typePoints[0];
+        let actionKeyToCompare = firstPoint.getAttribute('data-action-key');
+        
+        // Fallback aux actions par défaut si pas d'action dynamique (pour les lignes grises)
+        if (!actionKeyToCompare) {
+            const defaultActions = {
+                'window': 'close',
+                'door': 'close',
+                'ventilation': 'turn_on',
+                'radiator': 'decrease',
+                'air_conditioning': 'turn_on',
+                'air_purifier': 'turn_on'
+            };
+            actionKeyToCompare = defaultActions[typeKey];
+        }
+        
+        // Vérifier si l'état actuel correspond à l'action demandée (Action satisfaite)
+        // Si oui, on passe la ligne en vert (alert-success)
+        if (actionKeyToCompare) {
+            // Déterminer l'état sémantique actuel
+            const currentState = hasClosedOrOff ? (typeKey === 'door' || typeKey === 'window' ? 'closed' : 'off') 
+                                                : (typeKey === 'door' || typeKey === 'window' ? 'open' : 'on');
+            
+            let isSatisfied = false;
+            // Mapping des actions aux états satisfaisants
+            if (currentState === 'open' && actionKeyToCompare === 'open') isSatisfied = true;
+            else if (currentState === 'closed' && actionKeyToCompare === 'close') isSatisfied = true;
+            else if (currentState === 'on' && (actionKeyToCompare === 'turn_on' || actionKeyToCompare === 'activate' || actionKeyToCompare === 'increase')) isSatisfied = true;
+            else if (currentState === 'off' && (actionKeyToCompare === 'turn_off' || actionKeyToCompare === 'deactivate' || actionKeyToCompare === 'decrease')) isSatisfied = true;
+            
+            if (isSatisfied) {
+                tr.className = `dynamic-alert alert-success`;
+            }
+        }
+        
+        // Pour l'affichage, on garde la logique originale pour actionKeyDyn
         const actionKeyDyn = firstPoint.getAttribute('data-action-key');
         
         const subjectKey = `digitalTwin.sample.${typeKey}.subject`;
@@ -696,7 +731,13 @@ window.syncAlertPointsToTable = function syncAlertPointsToTable() {
         tr.appendChild(tdAct);
 
         // Queue row with severity weight for sorting
-        const weight = severityWeights[severityLower];
+        let weight = severityWeights[severityLower];
+        
+        // Si la ligne est verte (succès), on la met tout en bas (poids plus élevé)
+        if (tr.classList.contains('alert-success')) {
+            weight = 10; // Poids élevé pour être à la fin
+        }
+
         console.log(`[digital-twin] Adding grouped row for ${typeKey} with severity weight ${weight}, emoji: ${stateEmoji}`);
         builtRows.push({ tr, weight });
     });
