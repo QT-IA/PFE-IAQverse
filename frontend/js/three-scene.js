@@ -1222,9 +1222,86 @@ function updateAlertPoints() {
   }
 }
 
+// Gestion des déplacements fluides
+const keysPressed = {
+  ArrowUp: false,
+  ArrowDown: false,
+  ArrowLeft: false,
+  ArrowRight: false
+};
+
+let bobbingPhase = 0;
+const WALK_SPEED = 0.08; // Vitesse de marche plus réaliste
+const BOBBING_SPEED = 0.25; // Fréquence des pas
+const BOBBING_AMOUNT = 0.025; // Amplitude du mouvement de tête
+
+function updateMovement() {
+  // Si aucune touche n'est pressée, on ne fait rien
+  if (!keysPressed.ArrowUp && !keysPressed.ArrowDown && !keysPressed.ArrowLeft && !keysPressed.ArrowRight) {
+    return;
+  }
+
+  // Obtenir la direction de la caméra
+  const forward = new THREE.Vector3();
+  camera.getWorldDirection(forward);
+  forward.y = 0; // On reste sur le plan horizontal
+  forward.normalize();
+  
+  const right = new THREE.Vector3();
+  right.crossVectors(forward, camera.up).normalize();
+  
+  const moveVector = new THREE.Vector3(0, 0, 0);
+  
+  if (keysPressed.ArrowUp) moveVector.add(forward);
+  if (keysPressed.ArrowDown) moveVector.sub(forward);
+  if (keysPressed.ArrowRight) moveVector.add(right);
+  if (keysPressed.ArrowLeft) moveVector.sub(right);
+  
+  // Normaliser pour éviter d'aller plus vite en diagonale
+  if (moveVector.lengthSq() > 0) {
+      // Direction pour le raycast
+      const direction = moveVector.clone().normalize();
+      
+      // Appliquer la vitesse
+      moveVector.normalize().multiplyScalar(WALK_SPEED);
+      
+      // Détection de collision
+      let blocked = false;
+      if (modelRoot) {
+          const raycaster = new THREE.Raycaster();
+          // Rayon horizontal depuis la position de la caméra
+          raycaster.set(camera.position, direction);
+          raycaster.far = 0.8; // Distance de collision (80cm)
+          
+          const intersects = raycaster.intersectObject(modelRoot, true);
+          // On vérifie si on touche un Mesh visible
+          if (intersects.some(hit => hit.object.isMesh && hit.object.visible)) {
+              blocked = true;
+              // console.log("Collision détectée !");
+          }
+      }
+      
+      if (!blocked) {
+          camera.position.add(moveVector);
+          controls.target.add(moveVector);
+          
+          // Effet de marche (Head Bobbing)
+          // On calcule la différence de hauteur à appliquer pour cette frame
+          const oldBob = Math.sin(bobbingPhase) * BOBBING_AMOUNT;
+          bobbingPhase += BOBBING_SPEED;
+          const newBob = Math.sin(bobbingPhase) * BOBBING_AMOUNT;
+          const bobDelta = newBob - oldBob;
+          
+          camera.position.y += bobDelta;
+          controls.target.y += bobDelta;
+      }
+  }
+}
+
 // Animation loop
 function animate() {
   requestAnimationFrame(animate);
+  updateMovement(); // Appliquer les mouvements fluides
   controls.update();
   updateAlertPoints();
   updateParticles();
@@ -1260,10 +1337,21 @@ if (container) {
   resizeObserver.observe(container);
 }
 
-// Raccourci clavier pour centrer le modèle (F)
+// Raccourci clavier pour centrer le modèle (F) et gestion des touches
 window.addEventListener('keydown', (e) => {
   if (e.key === 'f' && modelRoot) {
     frameModel(modelRoot, 1.1);
+  }
+
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+      e.preventDefault(); // Empêcher le scroll de la page
+      keysPressed[e.key] = true;
+  }
+});
+
+window.addEventListener('keyup', (e) => {
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+      keysPressed[e.key] = false;
   }
 });
 
