@@ -3534,13 +3534,4 @@ select.form-control {
 }
 
 
-/* Mail icon styling for dark mode support */
-[data-theme='sombre'] .mail-icon {
-  filter: brightness(0) invert(1);
-  opacity: 0.8;
-}
-
-[data-theme='sombre'] .mail-action-btn:hover .mail-icon {
-  opacity: 1;
-}
 

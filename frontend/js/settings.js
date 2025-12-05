@@ -839,7 +839,6 @@ function updateDataPathsDisplay() {
         if (path.endsWith('.email')) {
             if (el.hasAttribute('readonly')) {
                 el.style.cursor = 'pointer';
-                el.title = "Envoyer un email";
                 el.onclick = () => { if (el.value) window.location.href = `mailto:${el.value}`; };
             } else {
                 // For editable fields, add a mail icon button
@@ -861,6 +860,7 @@ function updateDataPathsDisplay() {
                         // Assuming the icon is black/dark by default.
                         // Let's add a class to the img to control it via CSS if needed.
                         iconImg.className = 'mail-icon';
+                        iconImg.style.filter = (document.body.classList.contains('dark-mode') || window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'invert(1)' : 'none';
                         
                         mailBtn.appendChild(iconImg);
 
@@ -868,12 +868,94 @@ function updateDataPathsDisplay() {
                         mailBtn.style.right = '10px';
                         mailBtn.style.bottom = '8px'; // Adjusted for image alignment
                         mailBtn.style.textDecoration = 'none';
-                        mailBtn.title = "Envoyer un email";
                         parent.appendChild(mailBtn);
                         el.style.paddingRight = '35px';
                     }
                     mailBtn.href = value ? `mailto:${value}` : '#';
                     mailBtn.style.display = value ? 'block' : 'none';
+                }
+            }
+        }
+
+        // Handle phone fields to make them clickable (tel)
+        if (path.endsWith('.telephone')) {
+            if (el.hasAttribute('readonly')) {
+                el.style.cursor = 'pointer';
+                el.onclick = () => { if (el.value) window.location.href = `tel:${el.value}`; };
+            } else {
+                // For editable fields, add a phone icon button
+                const parent = el.parentElement;
+                if (parent && parent.classList.contains('form-group')) {
+                    parent.style.position = 'relative';
+                    let phoneBtn = parent.querySelector('.phone-action-btn');
+                    if (!phoneBtn) {
+                        phoneBtn = document.createElement('a');
+                        phoneBtn.className = 'phone-action-btn';
+                        
+                        const iconImg = document.createElement('img');
+                        // SVG Phone Icon
+                        iconImg.src = '../assets/icons/phone.png';
+                        iconImg.alt = 'Téléphone';
+                        iconImg.style.width = '20px';
+                        iconImg.style.height = '20px';
+                        iconImg.style.verticalAlign = 'middle';
+                        iconImg.className = 'phone-icon';
+                        iconImg.style.filter = (document.body.classList.contains('dark-mode') || window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'invert(1)' : 'none';
+                        
+                        phoneBtn.appendChild(iconImg);
+
+                        phoneBtn.style.position = 'absolute';
+                        phoneBtn.style.right = '10px';
+                        phoneBtn.style.bottom = '8px';
+                        phoneBtn.style.textDecoration = 'none';
+                        parent.appendChild(phoneBtn);
+                        el.style.paddingRight = '35px';
+                    }
+                    phoneBtn.href = value ? `tel:${value}` : '#';
+                    phoneBtn.style.display = value ? 'block' : 'none';
+                }
+            }
+        }
+
+        // Handle address fields to make them clickable (Google Maps)
+        if (path.endsWith('.adresse') || path.endsWith('.adresse_postale')) {
+            if (el.hasAttribute('readonly')) {
+                el.style.cursor = 'pointer';
+                el.onclick = () => { 
+                    if (el.value) window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(el.value)}`, '_blank'); 
+                };
+            } else {
+                // For editable fields, add a map icon button
+                const parent = el.parentElement;
+                if (parent && parent.classList.contains('form-group')) {
+                    parent.style.position = 'relative';
+                    let mapBtn = parent.querySelector('.map-action-btn');
+                    if (!mapBtn) {
+                        mapBtn = document.createElement('a');
+                        mapBtn.className = 'map-action-btn';
+                        
+                        const iconImg = document.createElement('img');
+                        // SVG Map Pin Icon
+                        iconImg.src = '../assets/icons/maps.png';
+                        iconImg.alt = 'Carte';
+                        iconImg.style.width = '20px';
+                        iconImg.style.height = '20px';
+                        iconImg.style.verticalAlign = 'middle';
+                        iconImg.className = 'map-icon';
+                        iconImg.style.filter = (document.body.classList.contains('dark-mode') || window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'invert(1)' : 'none';
+                        
+                        mapBtn.appendChild(iconImg);
+
+                        mapBtn.style.position = 'absolute';
+                        mapBtn.style.right = '10px';
+                        mapBtn.style.bottom = '8px';
+                        mapBtn.style.textDecoration = 'none';
+                        mapBtn.target = "_blank";
+                        parent.appendChild(mapBtn);
+                        el.style.paddingRight = '35px';
+                    }
+                    mapBtn.href = value ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(value)}` : '#';
+                    mapBtn.style.display = value ? 'block' : 'none';
                 }
             }
         }
