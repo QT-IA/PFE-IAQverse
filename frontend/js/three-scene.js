@@ -4,6 +4,15 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 // Initialisation du conteneur
 const container = document.getElementById('blender-viewer');
+// Hide loader on init to prevent infinite loading if script crashes later
+const initLoader = document.getElementById('model-loader');
+if (initLoader) {
+    // Only hide if we are not about to load (but we are not loading yet)
+    // Actually, let's leave it visible if we want to show loading immediately, 
+    // but if the script runs, we know we are alive.
+    console.log('[three-scene] Script initialized');
+}
+
 if (container) {
   if (!container.style.position) container.style.position = 'relative';
   if (!container.style.width) container.style.width = '700px';
@@ -423,7 +432,7 @@ function loadPieceModel(roomId) {
     const loaderElement = document.getElementById('model-loader');
     if (loaderElement) {
       loaderElement.classList.remove('hidden');
-      loaderElement.style.display = 'flex'; // S'assurer qu'il est visible
+      loaderElement.style.display = 'flex';
     }
 
     loader.load(
@@ -941,6 +950,48 @@ function autoGenerateAlertPoints(modelRoot) {
         }
         
         alertPoint.textContent = '';
+        
+        // Créer le tooltip
+        const tooltip = document.createElement('div');
+        tooltip.className = 'alert-tooltip';
+        
+        // Pour la ventilation (souvent au plafond), afficher le tooltip en dessous
+        if (type === 'ventilation') {
+            tooltip.classList.add('tooltip-bottom');
+        }
+        
+        // Récupérer le nom traduit
+        const t = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t : (k => k);
+        const nameKey = `digitalTwin.sample.${type}.subject`;
+        // Fallback manuel si i18n n'est pas prêt ou clé manquante
+        let translatedName = type;
+        if (window.i18n && window.i18n.t) {
+            const val = window.i18n.t(nameKey);
+            if (val && val !== nameKey) translatedName = val;
+            else {
+                // Fallback simple
+                const map = { 'window': 'Fenêtre', 'door': 'Porte', 'ventilation': 'Ventilation', 'radiator': 'Radiateur' };
+                translatedName = map[type] || type;
+            }
+        }
+        
+        // Définir les composants affectés
+        const affectedComponents = {
+          'window': ['CO₂', 'PM2.5', 'Temp', 'Hum'],
+          'door': ['CO₂'],
+          'ventilation': ['CO₂', 'PM2.5', 'TVOC', 'Hum'],
+          'radiator': ['Temp', 'Hum']
+        };
+        
+        const components = affectedComponents[type] || [];
+        const componentsText = components.join(', ');
+        
+        tooltip.innerHTML = `
+          <span class="alert-tooltip-title">${translatedName}</span>
+          <span class="alert-tooltip-info">${componentsText}</span>
+        `;
+        
+        alertPoint.appendChild(tooltip);
         
         alertPoint.style.cssText = `
           position: absolute;

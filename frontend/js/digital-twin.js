@@ -828,3 +828,33 @@ document.addEventListener('roomChanged', () => {
 document.addEventListener('enseigneChanged', () => { 
     try { fetchAndDisplayPreventiveActions(); } catch(e){} 
 });
+
+// Listen for IAQ data updates to update the overlay
+document.addEventListener('iaqDataUpdated', (event) => {
+    const data = event.detail;
+    if (!data) return;
+
+    const updateElement = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) {
+            // Format numbers: 0 decimals for CO2, 1 for others
+            let formatted = '--';
+            if (value !== undefined && value !== null && !isNaN(value)) {
+                const num = Number(value);
+                if (id === 'overlay-co2') {
+                    formatted = num.toFixed(0);
+                } else {
+                    formatted = num.toFixed(1);
+                }
+            }
+            el.textContent = formatted;
+        }
+    };
+
+    updateElement('overlay-co2', data.co2);
+    updateElement('overlay-pm25', data.pm25);
+    updateElement('overlay-tvoc', data.tvoc);
+    updateElement('overlay-temp', data.temperature);
+    updateElement('overlay-hum', data.humidity);
+});
+
