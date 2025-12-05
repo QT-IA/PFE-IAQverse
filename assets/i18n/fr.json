@@ -136,6 +136,7 @@
   "digitalTwin": {
     "title": "Jumeaux numériques",
     "visualisation": "Visualisation",
+    "loading": "Chargement du modèle...",
     "aboutTitle": "À propos de cette page",
     "aboutParagraph": "Cette interface Digital Twin vous permet de visualiser les alertes de qualité de l'air intérieur en temps réel, d'explorer les pièces en 3D et de consulter les actions préventives recommandées.",
     "actions": "Actions",
@@ -175,6 +176,17 @@
       "noDetails": "Aucun détail disponible",
       "allGood": "Tous les paramètres sont dans les normes",
       "recommendedAction": "Action recommandée"
+    },
+    "legend": {
+      "title": "Légende des Actions",
+      "urgent": "Urgent",
+      "urgentDesc": "Action critique requise immédiatement.",
+      "warning": "Avertissement",
+      "warningDesc": "Action recommandée pour éviter une dégradation.",
+      "success": "Satisfaisant",
+      "successDesc": "Aucune action requise, paramètres optimaux.",
+      "info": "Information",
+      "infoDesc": "État neutre ou données non disponibles."
     },
     "details": {
       "title": "Détails",

@@ -154,6 +154,85 @@ async def upload_glb(file: UploadFile = File(...), filename: str = Form(...)):
         raise HTTPException(status_code=500, detail="Erreur lors de l'upload du fichier")
 
 
+<<<<<<< HEAD
+=======
+@router.put("/api/rooms/files")
+async def upload_room_file(file: UploadFile = File(...), filename: str = Form(...)):
+    """
+    Upload d'un fichier .glb pour une pièce via PUT.
+    Le fichier est enregistré dans assets/rooms/.
+    """
+    try:
+        if not filename.lower().endswith('.glb'):
+            raise HTTPException(status_code=400, detail="Le nom de fichier doit se terminer par .glb")
+
+        from ..core import settings
+        rooms_dir = settings.ROOMS_DIR
+        rooms_dir.mkdir(parents=True, exist_ok=True)
+
+        safe_name = Path(filename).name
+        target = rooms_dir / safe_name
+
+        contents = await file.read()
+        with open(target, 'wb') as f:
+            f.write(contents)
+
+        rel = f"/assets/rooms/{safe_name}"
+        logger.info(f"Uploaded room GLB to {target}")
+        return {"path": rel}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Erreur lors de l'upload du fichier de pièce: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors de l'upload du fichier")
+
+
+@router.delete("/api/rooms/files")
+async def delete_room_files(paths: List[str]):
+    """
+    Supprime des fichiers de pièces dans le dossier assets/rooms.
+    Validation de sécurité pour éviter suppression arbitraire.
+    """
+    from ..core import settings
+    rooms_dir = settings.ROOMS_DIR
+    rooms_dir.mkdir(parents=True, exist_ok=True)
+    
+    deleted = []
+    not_found = []
+    errors = {}
+    
+    for p in paths:
+        try:
+            name = str(p or '')
+            if name.startswith('/'):
+                name = name.lstrip('/')
+            if name.startswith('assets/rooms/'):
+                name = name[len('assets/rooms/'):]
+            name = Path(name).name
+            target = rooms_dir / name
+            
+            try:
+                resolved = target.resolve()
+            except Exception as e:
+                errors[p] = f"Invalid path: {e}"
+                continue
+            
+            if resolved.parent != rooms_dir.resolve():
+                errors[p] = 'Path outside allowed directory'
+                continue
+            
+            if target.exists():
+                target.unlink()
+                deleted.append(f"/assets/rooms/{name}")
+            else:
+                not_found.append(p)
+        except Exception as e:
+            errors[p] = str(e)
+    
+    return {"deleted": deleted, "not_found": not_found, "errors": errors}
+
+
+>>>>>>> 873e845edcc4d599feab2984ea86889e63cc604e
 @router.post("/api/deleteFiles")
 async def delete_files(paths: List[str]):
     """
@@ -168,8 +247,11 @@ async def delete_files(paths: List[str]):
     not_found = []
     errors = {}
     
+<<<<<<< HEAD
     logger.info(f"Request to delete files: {paths}")
 
+=======
+>>>>>>> 873e845edcc4d599feab2984ea86889e63cc604e
     for p in paths:
         try:
             name = str(p or '')
@@ -180,6 +262,7 @@ async def delete_files(paths: List[str]):
             name = Path(name).name
             target = rooms_dir / name
             
+<<<<<<< HEAD
             logger.info(f"Processing deletion for: {p} -> Target: {target}")
 
             try:
@@ -188,16 +271,26 @@ async def delete_files(paths: List[str]):
             except Exception as e:
                 errors[p] = f"Invalid path: {e}"
                 logger.error(f"Invalid path {p}: {e}")
+=======
+            try:
+                resolved = target.resolve()
+            except Exception as e:
+                errors[p] = f"Invalid path: {e}"
+>>>>>>> 873e845edcc4d599feab2984ea86889e63cc604e
                 continue
             
             if resolved.parent != rooms_dir.resolve():
                 errors[p] = 'Path outside allowed directory'
+<<<<<<< HEAD
                 logger.warning(f"Path outside allowed directory: {resolved} vs {rooms_dir.resolve()}")
+=======
+>>>>>>> 873e845edcc4d599feab2984ea86889e63cc604e
                 continue
             
             if target.exists():
                 target.unlink()
                 deleted.append(f"/assets/rooms/{name}")
+<<<<<<< HEAD
                 logger.info(f"Deleted file: {target}")
             else:
                 not_found.append(p)
@@ -205,5 +298,11 @@ async def delete_files(paths: List[str]):
         except Exception as e:
             errors[p] = str(e)
             logger.error(f"Error deleting {p}: {e}")
+=======
+            else:
+                not_found.append(p)
+        except Exception as e:
+            errors[p] = str(e)
+>>>>>>> 873e845edcc4d599feab2984ea86889e63cc604e
     
     return {"deleted": deleted, "not_found": not_found, "errors": errors}
