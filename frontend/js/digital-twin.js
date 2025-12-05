@@ -858,3 +858,24 @@ document.addEventListener('iaqDataUpdated', (event) => {
     updateElement('overlay-hum', data.humidity);
 });
 
+// Legend Modal Functions
+function openLegendModal() {
+    const modal = document.getElementById('legendModal');
+    if (modal) {
+        modal.style.display = 'block';
+        // Close when clicking outside
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                closeLegendModal();
+            }
+        }
+    }
+}
+
+function closeLegendModal() {
+    const modal = document.getElementById('legendModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+

@@ -177,6 +177,17 @@
       "allGood": "All parameters are within normal range",
       "recommendedAction": "Recommended action"
     },
+    "legend": {
+      "title": "Actions Legend",
+      "urgent": "Urgent",
+      "urgentDesc": "Critical action required immediately.",
+      "warning": "Warning",
+      "warningDesc": "Action recommended to avoid degradation.",
+      "success": "Satisfactory",
+      "successDesc": "No action required, optimal parameters.",
+      "info": "Information",
+      "infoDesc": "Neutral state or data not available."
+    },
     "details": {
       "title": "Details",
       "low": "too low",

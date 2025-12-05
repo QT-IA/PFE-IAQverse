@@ -29,19 +29,19 @@
 <body>
     <header>
     <nav class="header-nav">
-      <a href="index.html" title="Accueil">
+      <a href="index.html">
         <img src="/assets/icons/home.png" alt="Home">
       </a>
-      <a href="#" onclick="return false;" class="active-page" title="Digital Twin">
+      <a href="#" onclick="return false;" class="active-page">
         <img src="/assets/icons/digital-twin.png" alt="Digital Twin">
       </a>
-      <a href="settings.html" title="Paramètres">
+      <a href="settings.html">
         <img src="/assets/icons/settings.png" alt="Settings">
       </a>
     </nav>
     <h1 data-i18n="digitalTwin.title">Digital Twin</h1>
     <div class="header-buttons">
-        <button class="theme-toggle-btn" onclick="toggleTheme()" title="Changer le thème">
+        <button class="theme-toggle-btn" onclick="toggleTheme()">
         <img src="/assets/icons/theme.png" alt="Thème">
         </button>
         <button class="info-btn" onclick="openModal()">
@@ -61,7 +61,59 @@
         </ul>
     </div>
     </div>
+
+    <!-- Modal Légende Actions -->
+    <div id="legendModal" class="modal">
+        <div class="modal-content legend-modal-content">
+            <span class="close" onclick="closeLegendModal()">&times;</span>
+            <h2 data-i18n="digitalTwin.legend.title">Légende des Actions</h2>
+            <div class="legend-list">
+                <div class="legend-row">
+                    <div class="legend-color color-red"></div>
+                    <div class="legend-desc">
+                        <strong data-i18n="digitalTwin.legend.urgent">Urgent</strong>
+                        <p data-i18n="digitalTwin.legend.urgentDesc">Action critique requise immédiatement.</p>
+                    </div>
+                </div>
+                <div class="legend-row">
+                    <div class="legend-color color-yellow"></div>
+                    <div class="legend-desc">
+                        <strong data-i18n="digitalTwin.legend.warning">Avertissement</strong>
+                        <p data-i18n="digitalTwin.legend.warningDesc">Action recommandée pour éviter une dégradation.</p>
+                    </div>
+                </div>
+                <div class="legend-row">
+                    <div class="legend-color color-gray"></div>
+                    <div class="legend-desc">
+                        <strong data-i18n="digitalTwin.legend.info">Neutre</strong>
+                        <p data-i18n="digitalTwin.legend.infoDesc">Action optionnelle ou données non disponibles.</p>
+                    </div>
+                </div>
+                <div class="legend-row">
+                    <div class="legend-color color-green"></div>
+                    <div class="legend-desc">
+                        <strong data-i18n="digitalTwin.legend.success">Satisfaisant</strong>
+                        <p data-i18n="digitalTwin.legend.successDesc">Aucune action requise, paramètres optimaux.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     </header>
+
+    <!-- Panneau Actions Préventives Global -->
+    <section class="preventive-panel-global">
+        <div class="preventive-global-header">
+            <h2><span data-i18n="digitalTwin.preventive.title">Actions Préventives</span></h2>
+            <span class="preventive-global-subtitle" data-i18n="digitalTwin.preventive.subtitle">Basées sur les prédictions (30 min)</span>
+        </div>
+        <div id="preventive-global-container" class="preventive-global-content">
+            <div class="preventive-loading">
+                <span data-i18n="digitalTwin.preventive.loading">Analyse des prédictions en cours...</span>
+            </div>
+        </div>
+    </section>
+
     <div class="tabs-container">
     <div class="location-tabs" id="location-tabs">
         <!-- Les onglets des enseignes seront générés dynamiquement ici -->
@@ -125,7 +177,12 @@
 
     <!-- Tableau d'actions en second (bas sur mobile) -->
     <section class="actions-panel">
-    <h2 data-i18n="digitalTwin.actions">Actions</h2>
+        <div class="panel-header">
+            <h2 data-i18n="digitalTwin.actions">Actions</h2>
+            <button class="panel-info-btn" onclick="openLegendModal()">
+                <img src="/assets/icons/info.png">
+            </button>
+        </div>
         <table class="actions-table">
             <thead>
                 <tr>
@@ -145,19 +202,6 @@
         </div>
     </section>
     </main>
-
-    <!-- Panneau Actions Préventives Global -->
-    <section class="preventive-panel-global">
-        <div class="preventive-global-header">
-            <h2><span data-i18n="digitalTwin.preventive.title">Actions Préventives</span></h2>
-            <span class="preventive-global-subtitle" data-i18n="digitalTwin.preventive.subtitle">Basées sur les prédictions (30 min)</span>
-        </div>
-        <div id="preventive-global-container" class="preventive-global-content">
-            <div class="preventive-loading">
-                <span data-i18n="digitalTwin.preventive.loading">Analyse des prédictions en cours...</span>
-            </div>
-        </div>
-    </section>
 
     <footer class="nav-bar" style="display: none;">
     <div class="nav-left">

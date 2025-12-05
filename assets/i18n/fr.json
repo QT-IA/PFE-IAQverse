@@ -177,6 +177,17 @@
       "allGood": "Tous les paramètres sont dans les normes",
       "recommendedAction": "Action recommandée"
     },
+    "legend": {
+      "title": "Légende des Actions",
+      "urgent": "Urgent",
+      "urgentDesc": "Action critique requise immédiatement.",
+      "warning": "Avertissement",
+      "warningDesc": "Action recommandée pour éviter une dégradation.",
+      "success": "Satisfaisant",
+      "successDesc": "Aucune action requise, paramètres optimaux.",
+      "info": "Information",
+      "infoDesc": "État neutre ou données non disponibles."
+    },
     "details": {
       "title": "Détails",
       "low": "trop bas",
