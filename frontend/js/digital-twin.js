@@ -647,6 +647,44 @@ window.syncAlertPointsToTable = function syncAlertPointsToTable() {
 
         // Utiliser le premier point pour les clés i18n et actions
         const firstPoint = typePoints[0];
+<<<<<<< HEAD
+=======
+        let actionKeyToCompare = firstPoint.getAttribute('data-action-key');
+        
+        // Fallback aux actions par défaut si pas d'action dynamique (pour les lignes grises)
+        if (!actionKeyToCompare) {
+            const defaultActions = {
+                'window': 'close',
+                'door': 'close',
+                'ventilation': 'turn_on',
+                'radiator': 'decrease',
+                'air_conditioning': 'turn_on',
+                'air_purifier': 'turn_on'
+            };
+            actionKeyToCompare = defaultActions[typeKey];
+        }
+        
+        // Vérifier si l'état actuel correspond à l'action demandée (Action satisfaite)
+        // Si oui, on passe la ligne en vert (alert-success)
+        if (actionKeyToCompare) {
+            // Déterminer l'état sémantique actuel
+            const currentState = hasClosedOrOff ? (typeKey === 'door' || typeKey === 'window' ? 'closed' : 'off') 
+                                                : (typeKey === 'door' || typeKey === 'window' ? 'open' : 'on');
+            
+            let isSatisfied = false;
+            // Mapping des actions aux états satisfaisants
+            if (currentState === 'open' && actionKeyToCompare === 'open') isSatisfied = true;
+            else if (currentState === 'closed' && actionKeyToCompare === 'close') isSatisfied = true;
+            else if (currentState === 'on' && (actionKeyToCompare === 'turn_on' || actionKeyToCompare === 'activate' || actionKeyToCompare === 'increase')) isSatisfied = true;
+            else if (currentState === 'off' && (actionKeyToCompare === 'turn_off' || actionKeyToCompare === 'deactivate' || actionKeyToCompare === 'decrease')) isSatisfied = true;
+            
+            if (isSatisfied) {
+                tr.className = `dynamic-alert alert-success`;
+            }
+        }
+        
+        // Pour l'affichage, on garde la logique originale pour actionKeyDyn
+>>>>>>> origin/dev
         const actionKeyDyn = firstPoint.getAttribute('data-action-key');
         
         const subjectKey = `digitalTwin.sample.${typeKey}.subject`;
@@ -696,7 +734,17 @@ window.syncAlertPointsToTable = function syncAlertPointsToTable() {
         tr.appendChild(tdAct);
 
         // Queue row with severity weight for sorting
+<<<<<<< HEAD
         const weight = severityWeights[severityLower];
+=======
+        let weight = severityWeights[severityLower];
+        
+        // Si la ligne est verte (succès), on la met tout en bas (poids plus élevé)
+        if (tr.classList.contains('alert-success')) {
+            weight = 10; // Poids élevé pour être à la fin
+        }
+
+>>>>>>> origin/dev
         console.log(`[digital-twin] Adding grouped row for ${typeKey} with severity weight ${weight}, emoji: ${stateEmoji}`);
         builtRows.push({ tr, weight });
     });
@@ -787,3 +835,57 @@ document.addEventListener('roomChanged', () => {
 document.addEventListener('enseigneChanged', () => { 
     try { fetchAndDisplayPreventiveActions(); } catch(e){} 
 });
+<<<<<<< HEAD
+=======
+
+// Listen for IAQ data updates to update the overlay
+document.addEventListener('iaqDataUpdated', (event) => {
+    const data = event.detail;
+    if (!data) return;
+
+    const updateElement = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) {
+            // Format numbers: 0 decimals for CO2, 1 for others
+            let formatted = '--';
+            if (value !== undefined && value !== null && !isNaN(value)) {
+                const num = Number(value);
+                if (id === 'overlay-co2') {
+                    formatted = num.toFixed(0);
+                } else {
+                    formatted = num.toFixed(1);
+                }
+            }
+            el.textContent = formatted;
+        }
+    };
+
+    updateElement('overlay-co2', data.co2);
+    updateElement('overlay-pm25', data.pm25);
+    updateElement('overlay-tvoc', data.tvoc);
+    updateElement('overlay-temp', data.temperature);
+    updateElement('overlay-hum', data.humidity);
+});
+
+// Legend Modal Functions
+function openLegendModal() {
+    const modal = document.getElementById('legendModal');
+    if (modal) {
+        modal.style.display = 'block';
+        // Close when clicking outside
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                closeLegendModal();
+            }
+        }
+    }
+}
+
+function closeLegendModal() {
+    const modal = document.getElementById('legendModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+>>>>>>> origin/dev

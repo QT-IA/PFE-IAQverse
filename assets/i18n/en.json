@@ -136,6 +136,7 @@
   "digitalTwin": {
     "title": "Digital Twin",
     "visualisation": "Visualization",
+    "loading": "Loading model...",
     "aboutTitle": "About this page",
     "aboutParagraph": "This Digital Twin interface lets you visualize indoor air quality alerts in real time, explore rooms in 3D, and review recommended preventive actions.",
     "actions": "Actions",
@@ -175,6 +176,17 @@
       "noDetails": "No details available",
       "allGood": "All parameters are within normal range",
       "recommendedAction": "Recommended action"
+    },
+    "legend": {
+      "title": "Actions Legend",
+      "urgent": "Urgent",
+      "urgentDesc": "Critical action required immediately.",
+      "warning": "Warning",
+      "warningDesc": "Action recommended to avoid degradation.",
+      "success": "Satisfactory",
+      "successDesc": "No action required, optimal parameters.",
+      "info": "Information",
+      "infoDesc": "Neutral state or data not available."
     },
     "details": {
       "title": "Details",

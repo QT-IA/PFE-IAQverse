@@ -748,10 +748,33 @@ function updateChartsWithData(data) {
     const globalScore =
       typeof last.global_score === "number" ? last.global_score : null;
     if (globalScore !== null && window.setRoomScore) {
+<<<<<<< HEAD
       const trend =
         globalScore >= 90 ? "good" : globalScore >= 70 ? "ok" : "bad";
       const trendLabel =
         globalScore >= 90 ? "A" : globalScore >= 70 ? "B" : "C";
+=======
+      let trend = "bad";
+      let trendLabel = "E";
+      
+      if (globalScore >= 81) {
+        trend = "good";
+        trendLabel = "A";
+      } else if (globalScore >= 61) {
+        trend = "good";
+        trendLabel = "B";
+      } else if (globalScore >= 41) {
+        trend = "ok";
+        trendLabel = "C";
+      } else if (globalScore >= 21) {
+        trend = "bad";
+        trendLabel = "D";
+      } else {
+        trend = "bad";
+        trendLabel = "E";
+      }
+      
+>>>>>>> origin/dev
       window.setRoomScore(globalScore, { trend, trendLabel, note: "" });
 
       // Ajouter le score à l'historique avec timestamp
@@ -978,11 +1001,16 @@ function updatePredictedScoreUI(data) {
   const predictedScore = Math.round(data.predicted_score);
   valueEl.textContent = predictedScore;
 
+<<<<<<< HEAD
   // Styliser selon le niveau prédit (A = vert, B = orange, C = rouge)
+=======
+  // Styliser selon le niveau prédit (A-E)
+>>>>>>> origin/dev
   if (predictedContainer) {
     predictedContainer.classList.remove(
       "predicted-excellent",
       "predicted-warning",
+<<<<<<< HEAD
       "predicted-danger"
     );
     if (predictedScore >= 90) {
@@ -991,6 +1019,25 @@ function updatePredictedScoreUI(data) {
       predictedContainer.classList.add("predicted-warning");
     } else {
       predictedContainer.classList.add("predicted-danger");
+=======
+      "predicted-danger",
+      "predicted-a",
+      "predicted-b",
+      "predicted-c",
+      "predicted-d",
+      "predicted-e"
+    );
+    if (predictedScore >= 81) {
+      predictedContainer.classList.add("predicted-a");
+    } else if (predictedScore >= 61) {
+      predictedContainer.classList.add("predicted-b");
+    } else if (predictedScore >= 41) {
+      predictedContainer.classList.add("predicted-c");
+    } else if (predictedScore >= 21) {
+      predictedContainer.classList.add("predicted-d");
+    } else {
+      predictedContainer.classList.add("predicted-e");
+>>>>>>> origin/dev
     }
   }
 
@@ -1284,6 +1331,7 @@ function updateChartSeverities(measurement) {
     // Mettre à jour le score global si disponible
     if (typeof measurement.global_score === "number" && window.setRoomScore) {
       const trend =
+<<<<<<< HEAD
         measurement.global_score >= 90
           ? "good"
           : measurement.global_score >= 70
@@ -1295,6 +1343,23 @@ function updateChartSeverities(measurement) {
           : measurement.global_score >= 70
           ? "B"
           : "C";
+=======
+        measurement.global_score >= 81
+          ? "good"
+          : measurement.global_score >= 61
+          ? "ok"
+          : "bad";
+      const trendLabel =
+        measurement.global_score >= 81
+          ? "A"
+          : measurement.global_score >= 61
+          ? "B"
+          : measurement.global_score >= 41
+          ? "C"
+          : measurement.global_score >= 21
+          ? "D"
+          : "E";
+>>>>>>> origin/dev
       window.setRoomScore(measurement.global_score, {
         trend,
         trendLabel,

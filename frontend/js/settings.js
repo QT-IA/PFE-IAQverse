@@ -6,6 +6,7 @@
 
 let settingsConfig = null; // configuration courante (local à cette page)
 let currentSection = '';
+<<<<<<< HEAD
 let wsManager = null;
 
 // Initialize WebSocket connection
@@ -39,6 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+=======
+>>>>>>> origin/dev
 
 // Navigation des sections
 function showSection(id) {
@@ -528,8 +531,13 @@ async function addPiece(enseigneId) {
         fd.append('file', glbFile, filename);
         fd.append('filename', filename);
 
+<<<<<<< HEAD
         const upResp = await fetch('/api/uploadGlb', {
           method: 'POST', body: fd
+=======
+        const upResp = await fetch('/api/rooms/files', {
+          method: 'PUT', body: fd
+>>>>>>> origin/dev
         });
         if (!upResp.ok) throw new Error('Erreur upload');
         const upJson = await upResp.json();
@@ -623,12 +631,16 @@ async function removeEnseigne(enseigneId) {
   }
   try {
     if (pathsToDelete.length > 0) {
+<<<<<<< HEAD
       const delResp = await fetch('/api/deleteFiles', { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(pathsToDelete) });
       if (!delResp.ok) console.error('Delete files failed:', delResp.status, delResp.statusText);
       else {
         const delResult = await delResp.json();
         console.log('Delete files result:', delResult);
       }
+=======
+      await fetch('/api/rooms/files', { method: 'DELETE', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(pathsToDelete) });
+>>>>>>> origin/dev
     }
     } catch (err) {
     console.error('Erreur suppression fichiers GLB:', err);
@@ -653,12 +665,16 @@ async function removePiece(enseigneId, pieceId) {
     if (piece && piece.glbModel) pathsToDelete.push(piece.glbModel);
     try {
       if (pathsToDelete.length > 0) {
+<<<<<<< HEAD
         const delResp = await fetch('/api/deleteFiles', { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(pathsToDelete) });
         if (!delResp.ok) console.error('Delete files failed:', delResp.status, delResp.statusText);
         else {
           const delResult = await delResp.json();
           console.log('Delete files result:', delResult);
         }
+=======
+        await fetch('/api/rooms/files', { method: 'DELETE', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(pathsToDelete) });
+>>>>>>> origin/dev
       }
     } catch (err) {
       console.error('Erreur suppression fichier GLB:', err);

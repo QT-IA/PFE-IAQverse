@@ -466,6 +466,14 @@
             const last = data[data.length - 1];
             latestSample = last;
             try { window.latestIAQLastSample = last; } catch(e){}
+<<<<<<< HEAD
+=======
+
+            // Dispatch event for overlay update
+            const event = new CustomEvent('iaqDataUpdated', { detail: last });
+            document.dispatchEvent(event);
+
+>>>>>>> origin/dev
             const map = deriveAlertPointSeverities(last || {});
             // Build recommended actions per alert-point key
             const suggestActionFor = (key, sev, last) => {
@@ -585,4 +593,8 @@
     if (typeof window !== "undefined") {
         document.addEventListener("DOMContentLoaded", start);
     }
+<<<<<<< HEAD
 })(window);
+=======
+})(window);
+>>>>>>> origin/dev
