@@ -264,7 +264,8 @@
         const allPoints = document.querySelectorAll('.alert-point');
         const visiblePoints = Array.from(allPoints).filter(point => {
             const style = window.getComputedStyle(point);
-            return style.display !== 'none' && point.offsetWidth > 0 && point.offsetHeight > 0;
+            const severity = point.getAttribute('data-severity');
+            return style.display !== 'none' && point.offsetWidth > 0 && point.offsetHeight > 0 && severity !== 'info';
         });
         
         // Grouper par position pour éviter de compter les points superposés

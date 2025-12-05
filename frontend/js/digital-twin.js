@@ -121,7 +121,7 @@ function showDetails(sujet, detail, forceRefresh = false) {
         // Pas de problème détecté - tout va bien
         const li = document.createElement('li');
         li.className = 'issue-info';
-        li.innerHTML = `<span class="param-value">${t('digitalTwin.allGood') || 'Tous les paramètres sont dans les normes'}</span>`;
+        li.innerHTML = `<span class="param-value">${t('digitalTwin.tip.allGood') || 'Tous les paramètres sont dans les normes'}</span>`;
         list.appendChild(li);
     }
 }

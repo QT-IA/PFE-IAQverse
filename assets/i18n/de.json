@@ -57,6 +57,7 @@
         "aboutTitle": "Über diese Seite",
         "aboutParagraph": "Verwenden Sie dieses Einstellungsfeld, um Ihre Präferenzen anzupassen.",
         "languageLabel": "Sprache",
+        "importButton": "Importieren",
         "summary": {
             "you": "Sie",
             "insurance": "Ihre Versicherung",
@@ -161,12 +162,20 @@
                 "humidity_increase": "Luftfeuchtigkeit wird von {current}% auf {predicted}% ansteigen"
             },
             "priorities": {
+                "urgent": "Dringend",
                 "high": "Dringend",
                 "medium": "Empfohlen",
                 "low": "Optional"
             },
-            "arrow": "→"
+            "arrow": "→",
+            "mlPrediction": "ML-Vorhersage",
+            "forecast": "Vorhersage in {minutes} Minuten"
         },
+            "trend": {
+                "increasing": "Zunehmend",
+                "decreasing": "Abnehmend",
+                "stable": "Stabil"
+            },
         "table": {
             "state": "Zustand",
             "subject": "Betreff",
@@ -179,6 +188,17 @@
             "noDetails": "Keine Details verfügbar",
             "allGood": "Alle Parameter liegen im Normbereich",
             "recommendedAction": "Empfohlene Maßnahme"
+        },
+        "legend": {
+            "title": "Legende der Aktionen",
+            "urgent": "Dringend",
+            "urgentDesc": "Sofortiges Handeln erforderlich.",
+            "warning": "Warnung",
+            "warningDesc": "Empfohlene Aktion, um Verschlechterung zu vermeiden.",
+            "success": "Zufriedenstellend",
+            "successDesc": "Keine Aktion erforderlich, optimale Parameter.",
+            "info": "Information",
+            "infoDesc": "Neutraler Zustand oder keine Daten verfügbar."
         },
         "details": {
       "title": "Details",
@@ -198,7 +218,9 @@
         "alertCount": {
             "zero": "Keine Warnungen",
             "one": "1 Warnung",
-            "multiple": "{{count}} Warnungen"
+            "multiple": "{{count}} Warnungen",
+            "singular": "1 Warnung",
+            "plural": "{{count}} Warnungen"
         },
         "actionCount": {
             "zero": "Keine Aktionen",
@@ -237,7 +259,19 @@
             "increase": "Erhöhen",
             "decrease": "Verringern",
             "turn_on": "Einschalten",
-            "turn_off": "Ausschalten"
+            "turn_off": "Ausschalten",
+
+            "Augmenter la ventilation": "Belüftung erhöhen",
+            "Ouvrir les fenêtres immédiatement": "Fenster sofort öffnen",
+            "Évacuer la pièce et aérer complètement": "Raum evakuieren und vollständig lüften",
+            "Activer le purificateur d'air": "Luftreiniger einschalten",
+            "Purificateur à puissance maximale + ventilation": "Luftreiniger auf maximale Leistung + Lüftung",
+            "Éviter la pièce, purification intensive requise": "Raum meiden, intensive Reinigung erforderlich",
+            "Aérer la pièce pendant 15 minutes": "Raum 15 Minuten lüften",
+            "Ventilation intensive + identifier la source": "Intensive Lüftung + Quelle identifizieren",
+            "Évacuer et ventiler complètement la zone": "Evakuieren und Bereich vollständig lüften",
+            "Situation critique actuelle en augmentation": "Aktuelle kritische Situation nimmt zu",
+            "Situation critique avec amélioration prévue": "Kritische Situation mit erwarteter Verbesserung"
         }
     },
     "buttons": {

@@ -18,7 +18,20 @@ function buildReasonText(action, t) {
     }
     
     // Fallback vers l'ancien format si reason_key n'existe pas
-    return action.reason || '';
+    // Try to translate the raw reason text (backend may return a literal French sentence)
+    const raw = action.reason || '';
+    if (!raw) return '';
+    // First try actionVerbs mapping (we populate literal backend phrases there), then preventive.reasons
+    let translated = (t && t(`digitalTwin.actionVerbs.${raw}`)) || (t && t(`digitalTwin.preventive.reasons.${raw}`)) || raw;
+    // Replace params if present
+    if (action.reason_params) {
+        Object.keys(action.reason_params).forEach(key => {
+            const placeholder = `{${key}}`;
+            const value = action.reason_params[key];
+            translated = translated.replace(new RegExp(placeholder, 'g'), value);
+        });
+    }
+    return translated;
 }
 
 /**
@@ -241,14 +254,14 @@ function displayGlobalPreventiveActions(allRoomActions) {
                             </div>
                             ${action.trend ? `<div class="preventive-value-trend">
                                 <span class="trend-indicator trend-${action.trend}">
-                                    ${action.trend === 'increasing' ? 'En augmentation' : action.trend === 'decreasing' ? 'En diminution' : 'Stable'}
+                                    ${action.trend === 'increasing' ? (t && t('digitalTwin.trend.increasing')) || 'En augmentation' : action.trend === 'decreasing' ? (t && t('digitalTwin.trend.decreasing')) || 'En diminution' : (t && t('digitalTwin.trend.stable')) || 'Stable'}
                                 </span>
                             </div>` : ''}
                             ${action.forecast_minutes ? `<div class="preventive-value-forecast">
-                                <span class="forecast-time">Prévision à ${action.forecast_minutes} minutes</span>
+                                <span class="forecast-time">${((t && t('digitalTwin.preventive.forecast')) || 'Prévision à {minutes} minutes').replace('{minutes}', action.forecast_minutes)}</span>
                             </div>` : ''}
                             ${action.is_ml_action ? `<div class="preventive-ml-badge">
-                                <span class="ml-indicator">Prédiction ML</span>
+                                <span class="ml-indicator">${(t && t('digitalTwin.preventive.mlPrediction')) || 'Prédiction ML'}</span>
                             </div>` : ''}
                         </div>
                     </div>

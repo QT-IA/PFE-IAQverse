@@ -80,9 +80,9 @@
     if (sel) sel.value = lang;
   }
 
-  async function setLanguage(lang, broadcast = true) {
+  async function setLanguage(lang, broadcast = true, save = true) {
     if (!lang) return;
-    console.info("i18n: setLanguage()", lang);
+    console.info("i18n: setLanguage()", lang, "save:", save);
     // Load English base then overlay the requested language so missing keys fall back to English
     const base = (await load("en")) || {};
     const requested = lang === "en" ? {} : await load(lang);
@@ -99,9 +99,11 @@
     );
     applyTranslations(document);
     setUISelect(lang);
-    try {
-      localStorage.setItem(STORAGE_KEY, lang);
-    } catch (e) {}
+    if (save) {
+      try {
+        localStorage.setItem(STORAGE_KEY, lang);
+      } catch (e) {}
+    }
     if (broadcast && window.BroadcastChannel) {
       try {
         new BroadcastChannel(CHANNEL_NAME).postMessage({ lang });
@@ -127,7 +129,7 @@
     if (!msg || !msg.lang) return;
     const lang = msg.lang;
     if (lang === current) return;
-    setLanguage(lang, false);
+    setLanguage(lang, false, false);
   }
 
   function setupSync() {
@@ -179,10 +181,35 @@
     setupSync();
     attachSelectHandler();
     setupMutationObserver();
-    // Default language preference: prefer stored value, otherwise default to French
-    // (do NOT fall back to navigator.language so the app defaults to French)
-    const preferred = localStorage.getItem(STORAGE_KEY) || "fr";
-    await setLanguage(preferred, false);
+
+    let configLang = null;
+    if (window.loadConfig) {
+      try {
+        const cfg = await window.loadConfig();
+        if (cfg && cfg.affichage && cfg.affichage.langue) {
+          configLang = cfg.affichage.langue;
+        }
+      } catch (e) {
+        console.warn("i18n: failed to load config for default language", e);
+      }
+    }
+
+    // Priority: Config > Storage > Default
+    const stored = localStorage.getItem(STORAGE_KEY);
+    let preferred = "fr";
+
+    if (configLang) {
+      console.info("i18n: using language from config:", configLang);
+      preferred = configLang;
+    } else if (stored) {
+      console.info("i18n: using stored language preference:", stored);
+      preferred = stored;
+    } else {
+      console.info("i18n: using default fallback:", preferred);
+    }
+
+    // Do not save to localStorage if we are just applying the default/stored preference on init
+    await setLanguage(preferred, false, false);
   }
 
   // expose
@@ -190,7 +217,19 @@
     init,
     setLanguage,
     getLanguage,
-    t: (key) => safeGet(translations, key),
+    t: (key, params) => {
+      const raw = safeGet(translations, key);
+      if (raw == null) return null;
+      let txt = String(raw);
+      if (params && typeof params === 'object') {
+        for (const k of Object.keys(params)) {
+          const v = params[k];
+          const re = new RegExp("\\{\\{\\s*" + k + "\\s*\\}\\}|\\{\\s*" + k + "\\s*\\}", "g");
+          txt = txt.replace(re, v);
+        }
+      }
+      return txt;
+    },
     _applyTranslations: applyTranslations,
   };
 

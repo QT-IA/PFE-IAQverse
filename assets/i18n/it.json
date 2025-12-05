@@ -6,7 +6,7 @@
         "settings": "Impostazioni"
     },
     "dashboard": {
-        "title": "Dashboard",
+        "title": "Cruscotto",
         "aboutTitle": "Informazioni su questa pagina",
         "aboutParagraph": "Questa dashboard consente di visualizzare le metriche principali della qualità dell'aria interna in tempo reale.",
         "co2": "Andamento CO₂",
@@ -57,6 +57,7 @@
         "aboutTitle": "Informazioni",
         "aboutParagraph": "Usa questo pannello per personalizzare le tue preferenze.",
         "languageLabel": "Lingua",
+        "importButton": "Importa",
         "summary": {
             "you": "Tu",
             "insurance": "La tua assicurazione",
@@ -160,11 +161,19 @@
                 "humidity_increase": "L'umidità aumenterà dal {current}% al {predicted}%"
             },
             "priorities": {
+                "urgent": "Urgente",
                 "high": "Urgente",
                 "medium": "Raccomandato",
                 "low": "Opzionale"
             },
-            "arrow": "→"
+            "arrow": "→",
+            "mlPrediction": "Predizione ML",
+            "forecast": "Previsione tra {minutes} minuti"
+        },
+        "trend": {
+            "increasing": "In aumento",
+            "decreasing": "In diminuzione",
+            "stable": "Stabile"
         },
         "table": {
             "state": "Stato",
@@ -179,8 +188,19 @@
             "allGood": "Tutti i parametri sono entro i limiti",
             "recommendedAction": "Azione raccomandata"
         },
+        "legend": {
+            "title": "Legenda delle Azioni",
+            "urgent": "Urgente",
+            "urgentDesc": "Azione critica richiesta immediatamente.",
+            "warning": "Avviso",
+            "warningDesc": "Azione raccomandata per evitare un peggioramento.",
+            "success": "Soddisfacente",
+            "successDesc": "Nessuna azione richiesta, parametri ottimali.",
+            "info": "Informazione",
+            "infoDesc": "Stato neutro o dati non disponibili."
+        },
         "details": {
-      "title": "Dettagli",
+        "title": "Dettagli",
             "low": "troppo basso",
             "high": "troppo alto",
             "out_of_range": "fuori intervallo",
@@ -195,14 +215,16 @@
             }
         },
         "alertCount": {
-            "zero": "Nessun avviso",
-            "one": "1 Avviso",
-            "multiple": "{{count}} Avvisi"
+              "zero": "Nessun Avviso",
+              "one": "1 Avviso",
+              "multiple": "{{count}} Avvisi",
+              "singular": "1 Avviso",
+              "plural": "{{count}} Avvisi"
         },
         "actionCount": {
-            "zero": "Nessuna azione",
-            "one": "1 azione",
-            "multiple": "{{count}} azioni"
+            "zero": "Nessuna Azione",
+            "one": "1 Azione",
+            "multiple": "{{count}} Azioni"
         },
     "sample": {
             "window": {
@@ -236,7 +258,19 @@
             "increase": "Aumentare",
             "decrease": "Diminuire",
             "turn_on": "Accendere",
-            "turn_off": "Spegnere"
+            "turn_off": "Spegnere",
+
+            "Augmenter la ventilation": "Aumentare la ventilazione",
+            "Ouvrir les fenêtres immédiatement": "Aprire le finestre immediatamente",
+            "Évacuer la pièce et aérer complètement": "Evacuare la stanza e ventilare completamente",
+            "Activer le purificateur d'air": "Attivare il purificatore d'aria",
+            "Purificateur à puissance maximale + ventilation": "Purificatore a massima potenza + ventilazione",
+            "Éviter la pièce, purification intensive requise": "Evitare la stanza, è necessaria una purificazione intensiva",
+            "Aérer la pièce pendant 15 minutes": "Arieggiare la stanza per 15 minuti",
+            "Ventilation intensive + identifier la source": "Ventilazione intensiva + identificare la fonte",
+            "Évacuer et ventiler complètement la zone": "Evacuare e ventilare completamente l'area",
+            "Situation critique actuelle en augmentation": "Situazione critica attuale in aumento",
+            "Situation critique avec amélioration prévue": "Situazione critica con miglioramento previsto"
         }
     },
     "buttons": {

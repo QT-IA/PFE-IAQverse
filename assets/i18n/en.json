@@ -57,6 +57,7 @@
     "aboutTitle": "About this page",
     "aboutParagraph": "Use this settings panel to adjust your preferences for a better experience.",
     "languageLabel": "Language",
+    "importButton": "Import",
     "summary": {
       "you": "You",
       "insurance": "Your insurance",
@@ -158,11 +159,19 @@
         "humidity_increase": "Humidity will increase from {current}% to {predicted}%"
       },
       "priorities": {
+        "urgent": "Urgent",
         "high": "Urgent",
         "medium": "Recommended",
         "low": "Optional"
       },
-      "arrow": "→"
+      "arrow": "→",
+      "mlPrediction": "ML Prediction",
+      "forecast": "Forecast in {minutes} minutes"
+    },
+    "trend": {
+      "increasing": "Increasing",
+      "decreasing": "Decreasing",
+      "stable": "Stable"
     },
     "table": {
       "state": "State",
@@ -204,14 +213,16 @@
       }
     },
     "alertCount": {
-      "zero": "No alerts",
+      "zero": "No Alerts",
       "one": "1 Alert",
-      "multiple": "{{count}} Alerts"
+      "multiple": "{{count}} Alerts",
+      "singular": "1 Alert",
+      "plural": "{{count}} Alerts"
     },
     "actionCount": {
-      "zero": "No actions",
-      "one": "1 action",
-      "multiple": "{{count}} actions"
+      "zero": "No Actions",
+      "one": "1 Action",
+      "multiple": "{{count}} Actions"
     },
   "sample": {
       "window": {
@@ -245,7 +256,19 @@
       "increase": "Increase",
       "decrease": "Decrease",
       "turn_on": "Turn on",
-      "turn_off": "Turn off"
+      "turn_off": "Turn off",
+
+      "Augmenter la ventilation": "Increase ventilation",
+      "Ouvrir les fenêtres immédiatement": "Open windows immediately",
+      "Évacuer la pièce et aérer complètement": "Evacuate the room and ventilate completely",
+      "Activer le purificateur d'air": "Turn on the air purifier",
+      "Purificateur à puissance maximale + ventilation": "Run purifier at max power + ventilation",
+      "Éviter la pièce, purification intensive requise": "Avoid the room, intensive purification required",
+      "Aérer la pièce pendant 15 minutes": "Air the room for 15 minutes",
+      "Ventilation intensive + identifier la source": "Intensive ventilation + identify source",
+      "Évacuer et ventiler complètement la zone": "Evacuate and ventilate the area completely",
+      "Situation critique actuelle en augmentation": "Current critical situation is increasing",
+      "Situation critique avec amélioration prévue": "Critical situation with expected improvement"
     }
   },
   "buttons": {
