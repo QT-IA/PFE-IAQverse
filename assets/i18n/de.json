@@ -1,5 +1,9 @@
 {
     "brand": "IAQverse",
+    "account": {
+        "switch": "Konto wechseln",
+        "logout": "Abmelden"
+    },
     "nav": {
         "home": "Panel",
         "digitalTwin": "Digitaler Zwilling",

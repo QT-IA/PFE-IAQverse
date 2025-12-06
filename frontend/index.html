@@ -37,6 +37,34 @@
       <button class="info-btn" onclick="openModal()">
         <img src="/assets/icons/info.png">
       </button>
+      <a href="#" onclick="toggleAccountModal(); return false;" class="header-avatar-link" title="Compte">
+        <img id="header-avatar" src="/assets/icons/profil.png" alt="Avatar" class="header-avatar-img">
+      </a>
+    </div>
+
+    <!-- Account Modal -->
+    <div id="accountModal" class="account-modal">
+      <div class="account-header">
+        <span data-i18n="account.switch">Changer de compte</span>
+        <span class="close-account" onclick="toggleAccountModal()">&times;</span>
+      </div>
+      <ul class="account-list">
+        <li class="account-item active">
+          <img src="/assets/icons/profil.png" class="account-avatar-small">
+          <span>Utilisateur Actuel</span>
+        </li>
+        <li class="account-item">
+          <img src="/assets/icons/profil.png" class="account-avatar-small" style="filter: grayscale(1);">
+          <span>Autre Compte</span>
+        </li>
+        <li class="account-divider"></li>
+        <li class="account-action" onclick="location.href='settings.html'">
+          <span data-i18n="settings.title">Paramètres</span>
+        </li>
+        <li class="account-action logout">
+          <span data-i18n="account.logout">Déconnexion</span>
+        </li>
+      </ul>
     </div>
 
     <div id="infoModal" class="modal">

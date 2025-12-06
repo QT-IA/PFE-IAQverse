@@ -30,7 +30,8 @@
   ],
   "trained_rooms": [
     "Bureau",
-    "Chambre"
+    "Chambre",
+    "Chambre Arthur"
   ],
   "trained_sensors": [
     "Bureau1",

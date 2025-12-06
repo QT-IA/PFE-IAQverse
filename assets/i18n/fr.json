@@ -1,5 +1,9 @@
 {
   "brand": "IAQverse",
+  "account": {
+    "switch": "Changer de compte",
+    "logout": "Déconnexion"
+  },
   "nav": {
     "home": "Accueil",
     "digitalTwin": "Digital Twin",

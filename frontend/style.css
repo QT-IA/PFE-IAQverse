@@ -1706,7 +1706,7 @@ a:hover img {
   height: auto;
   background-color: var(--bg-secondary);
   color: var(--text-primary);
-  padding: 20px;
+  padding: 40px 20px 20px 20px;
   border-radius: 10px;
   box-shadow: var(--shadow-md);
   transition: all 0.3s ease;
@@ -3533,5 +3533,121 @@ select.form-control {
   display: none;
 }
 
+/* Header Avatar */
+.header-avatar-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  margin-left: 5px;
+}
 
+.header-avatar-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #ccc;
+  transition: all 0.3s ease;
+  filter: none !important;
+  opacity: 1 !important; /* Override global a img opacity */
+  background-color: #fff; /* Ensure transparent images look good */
+}
+
+.header-avatar-link:hover .header-avatar-img {
+  border-color: #999;
+  transform: scale(1.05);
+}
+
+
+/* Account Modal */
+.account-modal {
+  position: absolute;
+  top: 60px;
+  right: 20px;
+  width: 280px;
+  background-color: var(--bg-secondary);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  z-index: 2000;
+  display: none;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.account-modal.visible {
+  display: block;
+}
+
+.account-header {
+  padding: 15px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  background-color: var(--bg-primary);
+}
+
+.close-account {
+  cursor: pointer;
+  font-size: 20px;
+  color: var(--text-secondary);
+}
+
+.account-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.account-item {
+  padding: 12px 15px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  color: var(--text-primary);
+}
+
+.account-item:hover {
+  background-color: var(--hover-bg);
+}
+
+.account-item.active {
+  background-color: rgba(var(--primary-rgb), 0.1);
+  border-left: 3px solid var(--primary-color);
+}
+
+.account-avatar-small {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.account-divider {
+  height: 1px;
+  background-color: var(--border-color);
+  margin: 5px 0;
+}
+
+.account-action {
+  padding: 12px 15px;
+  cursor: pointer;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.account-action:hover {
+  background-color: var(--hover-bg);
+}
+
+.account-action.logout {
+  color: #dc3545;
+}
 

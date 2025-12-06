@@ -1,5 +1,9 @@
 {
     "brand": "IAQverse",
+    "account": {
+        "switch": "Cambia account",
+        "logout": "Disconnetti"
+    },
     "nav": {
         "home": "Home",
         "digitalTwin": "Gemello Digitale",
