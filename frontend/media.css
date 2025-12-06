@@ -1,44 +1,168 @@
-/* Responsive header */
+/* Responsive header - Mobile App Style */
 @media (max-width: 768px) {
+  body {
+    padding-top: 60px; /* Espace pour la barre de titre en haut */
+    padding-bottom: 50px; /* Espace pour la barre de navigation en bas */
+  }
+
+  /* Hide desktop spacers on mobile */
+  .desktop-spacer {
+    display: none !important;
+  }
+
+  /* Override top margin for preventive panel on mobile */
+  .preventive-panel-global {
+    margin-top: 10px !important;
+  }
+
   header {
-    padding: 12px 10px;
+    top: auto;
+    bottom: 0;
+    height: 60px;
+    padding: 0;
+    border-top: 1px solid var(--border-color);
+    background-color: var(--bg-secondary);
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
   }
 
+  /* Titre déplacé dans une barre supérieure fixe */
   header h1 {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    margin: 0;
+    padding: 0 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Centrer le titre */
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    z-index: 2001;
     font-size: 18px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
   }
 
-  .header-nav {
-    left: 10px;
-    gap: 8px;
-  }
-
-  .header-nav a {
-    width: 36px;
-    height: 36px;
-  }
-
-  .header-nav img {
-    width: 20px;
-    height: 20px;
-  }
-
+  /* Boutons répartis dans la barre supérieure */
   .header-buttons {
-    right: 10px;
-    gap: 6px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    padding: 0 10px;
+    z-index: 2002;
+    gap: 2px;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    pointer-events: none; /* Permettre le clic sur le titre au milieu */
+  }
+
+  .header-buttons > * {
+    pointer-events: auto;
+  }
+
+  /* Ordre : Info, Thème à gauche, Avatar à droite */
+  .info-btn {
+    order: 1;
+  }
+
+  .theme-toggle-btn {
+    order: 2;
+  }
+
+  .header-avatar-link {
+    order: 3;
+    margin-left: auto; /* Pousse l'avatar à droite */
   }
 
   .theme-toggle-btn,
   .info-btn {
-    width: 36px;
-    height: 36px;
-    padding: 6px;
+    width: 34px;
+    height: 34px;
+    padding: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .header-avatar-link {
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto !important; /* Force l'avatar à droite */
+  }
+
+  .header-avatar-img {
+    width: 28px;
+    height: 28px;
+    border-width: 1px;
   }
 
   .theme-toggle-btn img,
   .info-btn img {
     width: 20px;
     height: 20px;
+  }
+
+  /* Navigation transformée en barre d'onglets inférieure */
+  .header-nav {
+    position: static;
+    width: 100%;
+    justify-content: space-around;
+    padding: 0;
+    gap: 0;
+    left: auto;
+  }
+
+  .header-nav a {
+    width: auto;
+    height: 100%;
+    flex: 1;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 0;
+  }
+
+  .header-nav a:hover {
+    background-color: rgba(0,0,0,0.05);
+    transform: none;
+    box-shadow: none;
+  }
+
+  .header-nav a.active-page {
+    background: transparent;
+    box-shadow: none;
+    color: var(--primary-color);
+    border-top: 3px solid var(--primary-color);
+  }
+
+  .header-nav img {
+    width: 24px;
+    height: 24px;
+    opacity: 0.6;
+  }
+
+  .header-nav a.active-page img {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+
+  /* Fixer le modal de compte en haut */
+  .account-modal {
+    position: fixed;
+    top: 55px;
+    right: 10px;
   }
 }
 
@@ -101,7 +225,8 @@
   .grid {
     padding: 10px;
     gap: 12px;
-    padding-bottom: 80px;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
   }
 }
 
@@ -249,36 +374,37 @@
 }
 
 /* Responsive pour Digital Twin */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .twin-layout {
-    padding: 10px;
-    gap: 10px;
+    display: flex; /* Important: switch from grid to flex */
+    padding: 10px 10px 0 10px;
+    gap: 15px;
     flex-direction: column;
     flex-wrap: nowrap;
     align-items: stretch;
-    min-height: auto; /* Permet au contenu de définir la hauteur */
+    min-height: auto;
   }
 
-  /* Room-panel (Visualisation) en PREMIER - TOUJOURS VISIBLE */
+  /* Room-panel (Visualisation) en PREMIER */
   .room-panel {
     order: -1;
     flex: 0 0 auto;
-    min-width: 0; /* Permet au contenu de se rétracter */
     width: 100%;
-    max-width: 100%; /* Évite le débordement */
-    padding: 15px;
+    max-width: 100%;
+    min-width: 0 !important; /* Override style.css 500px */
+    padding: 10px;
     margin-bottom: 10px;
     display: block !important;
   }
 
-  /* Actions-panel en SECOND - TOUJOURS VISIBLE */
+  /* Actions-panel en SECOND */
   .actions-panel {
     order: 1;
     flex: 0 0 auto;
-    min-width: 0; /* Permet au contenu de se rétracter */
     width: 100%;
-    max-width: 100%; /* Évite le débordement */
-    padding: 15px;
+    max-width: 100%;
+    min-width: 0 !important;
+    padding: 10px;
     margin-bottom: 10px;
     display: block !important;
   }
@@ -286,24 +412,55 @@
   .details-panel {
     order: 2;
     flex: 0 0 auto;
-    min-width: 0; /* Permet au contenu de se rétracter */
     width: 100%;
-    max-width: 100%; /* Évite le débordement */
-    padding: 15px;
+    max-width: 100%;
+    min-width: 0 !important;
+    padding: 10px;
     margin-bottom: 20px;
   }
 
-
-
   #blender-viewer {
-    height: 300px;
+    height: 35vh;
+    min-height: 250px;
+    max-height: 400px;
     width: 100%;
+    min-width: 0 !important; /* Override style.css 1000px */
+  }
+
+  /* Optimisation Overlay Mobile */
+  .iaq-overlay {
+    padding: 6px 8px;
+    font-size: 0.75rem;
+    gap: 2px;
+    top: 8px;
+    left: 8px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(2px);
+    min-width: auto;
+  }
+
+  .iaq-item {
+    gap: 8px;
+  }
+
+  .iaq-unit {
+    width: auto;
+    margin-left: 4px;
+  }
+
+  /* Optimisation Bouton Centrer */
+  #frame-btn {
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+    top: 8px !important;
+    right: 8px !important;
   }
 
   .actions-table {
     width: 100%;
+    border-radius: 6px;
     overflow-x: auto;
-    display: table !important; /* Force l'affichage du tableau */
+    display: table !important;
   }
 
   .actions-table th,
@@ -312,15 +469,14 @@
     font-size: 0.85em;
   }
 
-  /* Room-label TOUJOURS VISIBLE avec bon contraste */
   .room-label {
     position: absolute;
-    bottom: 15px;
-    right: 15px;
-    font-size: 0.95em;
+    bottom: 10px;
+    right: 10px;
+    font-size: 0.85em;
     font-weight: 600;
     background: rgba(255, 255, 255, 0.95);
-    padding: 6px 12px;
+    padding: 4px 10px;
     border-radius: 6px;
     color: #000;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
@@ -364,13 +520,50 @@
 }
 
 @media (max-width: 768px) {
-  /* Sur mobile/tablette : on cache la sidebar et on affiche tout le contenu */
+  /* Sur mobile/tablette : on transforme la sidebar en menu horizontal */
   .settings-layout {
     flex-direction: column;
   }
 
   .sidebar {
-    display: none; /* Cache complètement la sidebar pour éviter le bazar */
+    display: block; /* On réaffiche la sidebar */
+    width: 100%;
+    height: auto;
+    padding: 10px;
+    background: var(--bg-secondary);
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    overflow-x: auto; /* Permet le scroll horizontal */
+    white-space: nowrap;
+    position: sticky;
+    top: 60px; /* Juste sous le header */
+    z-index: 900;
+  }
+
+  .sidebar .section-title {
+    display: none; /* On cache le titre IAQverse dans le menu mobile */
+  }
+
+  .sidebar .menu {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    padding: 0;
+    margin: 0;
+  }
+
+  .sidebar .menu li {
+    padding: 8px 16px;
+    border-radius: 20px;
+    background: var(--bg-primary);
+    margin: 0;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .sidebar .menu li.active {
+    background: var(--accent-color);
+    color: white;
   }
 
   .settings-content {
@@ -379,6 +572,12 @@
     padding: 15px;
     overflow-x: hidden; /* Évite le scroll horizontal */
   }
+
+  /* Fix avatar spacing on mobile */
+  .avatar-preview {
+    margin-top: 20px !important; /* Override the 120px margin from style.css */
+  }
+
 
   .settings-content h1 {
     font-size: 20px;
