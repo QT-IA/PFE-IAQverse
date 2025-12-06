@@ -12,7 +12,10 @@
 
   /* Override top margin for preventive panel on mobile */
   .preventive-panel-global {
-    margin-top: 10px !important;
+    /* Make preventive panel horizontal spacing match other cards on mobile */
+    margin: 10px !important; /* 10px left/right like other responsive cards */
+    padding: 15px !important; /* ensure inner spacing matches other cards */
+    border-radius: 12px !important;
   }
 
   header {
@@ -404,8 +407,10 @@
     width: 100%;
     max-width: 100%;
     min-width: 0 !important;
-    padding: 10px;
-    margin-bottom: 10px;
+    padding: 8px !important;
+    margin-bottom: 8px !important;
+    min-height: auto !important; /* remove large desktop min-height on mobile */
+    height: auto !important;
     display: block !important;
   }
 
@@ -456,17 +461,64 @@
     right: 8px !important;
   }
 
+  .table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    /* Fix for height hole: ensure wrapper takes full height if needed or just fits content */
+    height: auto;
+    display: block;
+  }
+
   .actions-table {
     width: 100%;
-    border-radius: 6px;
-    overflow-x: auto;
-    display: table !important;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: none; /* Border is on wrapper */
+    border-radius: 0; /* Radius is on wrapper */
+    display: table; /* Restore table display */
+    margin-bottom: 0; /* Remove bottom margin to avoid hole */
+    table-layout: fixed; /* Ensure columns align */
+  }
+
+  /* Ensure header corners are rounded if they touch the wrapper corners */
+  .actions-table thead tr:first-child th:first-child {
+    border-top-left-radius: 12px;
+  }
+  .actions-table thead tr:first-child th:last-child {
+    border-top-right-radius: 12px;
+  }
+  
+  /* Ensure bottom corners are rounded */
+  .actions-table tbody tr:last-child td:first-child {
+    border-bottom-left-radius: 12px;
+  }
+  .actions-table tbody tr:last-child td:last-child {
+    border-bottom-right-radius: 12px;
   }
 
   .actions-table th,
   .actions-table td {
     padding: 8px 4px;
     font-size: 0.85em;
+    word-wrap: break-word; /* Prevent overflow */
+  }
+
+  /* Remove border-right on th in mobile to avoid misalignment/gaps */
+  .actions-table th {
+    border-right: none;
+  }
+
+  /* Set explicit column widths */
+  .actions-table th:nth-child(1),
+  .actions-table td:nth-child(1) {
+    width: 15%;
+  }
+
+  .actions-table th:nth-child(2),
+  .actions-table td:nth-child(2) {
+    width: 42.5%;
   }
 
   .room-label {
@@ -505,6 +557,24 @@
   .actions-table td:nth-child(2),
   .actions-table td:nth-child(3) {
     max-width: 120px;
+  }
+
+  /* Reduce text size in details panel on mobile */
+  .details-panel h3 {
+    font-size: 1rem;
+    margin-bottom: 10px;
+  }
+
+  .details-panel li {
+    font-size: 0.85rem;
+    padding: 8px;
+  }
+
+  .param-threshold {
+    font-size: 0.8em;
+    display: block; /* Stack threshold on new line if needed */
+    margin-left: 0;
+    margin-top: 2px;
   }
 }
 

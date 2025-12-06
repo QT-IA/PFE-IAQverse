@@ -137,6 +137,17 @@ function closeModal() {
     ModalManager.close('infoModal');
 }
 
+function closeDetailsPanel() {
+    const panel = document.getElementById("details-panel");
+    if (panel && !panel.classList.contains('hidden')) {
+        panel.classList.add('hidden');
+        const list = document.getElementById('details-list');
+        if (list) list.innerHTML = '';
+        currentDetailsSubject = null;
+    }
+}
+window.closeDetailsPanel = closeDetailsPanel;
+
 // Écouter les changements de pièce pour charger le modèle 3D
 document.addEventListener('roomChanged', (event) => {
     const { roomId } = event.detail;
@@ -146,26 +157,14 @@ document.addEventListener('roomChanged', (event) => {
     try { syncAlertPointsToTable(); } catch(e) {}
     
     // Fermer le panneau de détails lors du changement de pièce
-    const panel = document.getElementById('details-panel');
-    if (panel && !panel.classList.contains('hidden')) {
-        panel.classList.add('hidden');
-        const list = document.getElementById('details-list');
-        if (list) list.innerHTML = '';
-        currentDetailsSubject = null;
-    }
+    closeDetailsPanel();
 });
 
 document.addEventListener('enseigneChanged', () => {
     try { syncAlertPointsToTable(); } catch(e) {}
     
     // Fermer le panneau de détails lors du changement d'enseigne
-    const panel = document.getElementById('details-panel');
-    if (panel && !panel.classList.contains('hidden')) {
-        panel.classList.add('hidden');
-        const list = document.getElementById('details-list');
-        if (list) list.innerHTML = '';
-        currentDetailsSubject = null;
-    }
+    closeDetailsPanel();
 });
 
 // Export des fonctions
@@ -862,7 +861,7 @@ document.addEventListener('iaqDataUpdated', (event) => {
 function openLegendModal() {
     const modal = document.getElementById('legendModal');
     if (modal) {
-        modal.style.display = 'block';
+        modal.style.display = 'flex'; // Use flex to center
         // Close when clicking outside
         window.onclick = function(event) {
             if (event.target == modal) {
