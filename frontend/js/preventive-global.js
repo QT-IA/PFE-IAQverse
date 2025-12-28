@@ -261,7 +261,7 @@ function displayGlobalPreventiveActions(allRoomActions) {
                                 <span class="forecast-time">${((t && t('digitalTwin.preventive.forecast')) || 'Prévision à {minutes} minutes').replace('{minutes}', action.forecast_minutes)}</span>
                             </div>` : ''}
                             ${action.is_ml_action ? `<div class="preventive-ml-badge">
-                                <span class="ml-indicator">${(t && t('digitalTwin.preventive.mlPrediction')) || 'Prédiction ML'}</span>
+                                <span class="ml-indicator">${action.model_used === 'dl' ? 'Prédiction DL (LSTM)' : (t && t('digitalTwin.preventive.mlPrediction')) || 'Prédiction ML'}</span>
                             </div>` : ''}
                         </div>
                     </div>

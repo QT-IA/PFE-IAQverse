@@ -273,13 +273,15 @@ def get_preventive_actions(
             current_values = prediction_result.get("current_values", {})
             predicted_values = prediction_result.get("predicted_values", {})
             risk_analysis = prediction_result.get("risk_analysis", {})
+            model_used = prediction_result.get("model_used", "ml")
             
             # Générer les actions depuis l'analyse de risque ML
             actions = _generate_actions_from_ml_risk_analysis(
                 current_values=current_values,
                 predicted_values=predicted_values,
                 risk_analysis=risk_analysis,
-                forecast_minutes=prediction_result.get("forecast_minutes", 30)
+                forecast_minutes=prediction_result.get("forecast_minutes", 30),
+                model_used=model_used
             )
             
             logger.info(f"ML prediction generated {len(actions)} actions for {enseigne}/{salle}")
@@ -292,6 +294,7 @@ def get_preventive_actions(
                 "forecast_minutes": prediction_result.get("forecast_minutes", 30),
                 "timestamp": datetime.now().isoformat(),
                 "is_ml_prediction": True,
+                "model_used": model_used,
                 "method": "ml_risk_analysis",
                 "risk_analysis": risk_analysis
             }
@@ -313,7 +316,8 @@ def _generate_actions_from_ml_risk_analysis(
     current_values: dict, 
     predicted_values: dict, 
     risk_analysis: dict,
-    forecast_minutes: int = 30
+    forecast_minutes: int = 30,
+    model_used: str = "ml"
 ) -> list:
     """
     Génère des actions préventives à partir de l'analyse de risque ML.
@@ -387,7 +391,8 @@ def _generate_actions_from_ml_risk_analysis(
             "change_percent": metric_data.get("change_percent", 0),
             "reason": action_item.get("action", "Action recommandée"),
             "forecast_minutes": forecast_minutes,
-            "is_ml_action": True
+            "is_ml_action": True,
+            "model_used": model_used
         }
         
         actions.append(action)

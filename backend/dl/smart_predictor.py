@@ -130,6 +130,18 @@ class SmartPredictor:
                 # Use DL
                 final_pred["predicted_values"] = dl_pred_values
                 used_model = "dl"
+                
+                # Re-calculate risk analysis based on DL predictions
+                if "current_values" in ml_pred:
+                    try:
+                        new_risk_analysis = self.ml_predictor.analyze_risks(
+                            ml_pred["current_values"], 
+                            dl_pred_values
+                        )
+                        final_pred["risk_analysis"] = new_risk_analysis
+                        logger.info("Risk analysis updated with LSTM predictions")
+                    except Exception as e:
+                        logger.warning(f"Failed to update risk analysis for LSTM: {e}")
             else:
                 # Use ML but maybe blend slightly?
                 # Let's stick to "Selection" as requested.
