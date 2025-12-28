@@ -341,5 +341,39 @@
     "mode_updated": "Mode updated",
     "load_error": "Unable to load configuration",
     "load_failure": "Error loading configuration"
+  },
+  "modal_info": {
+    "co2": {
+      "title": "CO₂ (Carbon Dioxide)",
+      "desc": "CO₂ is an indicator of air confinement. High concentration can cause fatigue and headaches."
+    },
+    "pm25": {
+      "title": "PM2.5 (Fine Particles)",
+      "desc": "Fine particles (diameter < 2.5µm) can penetrate deep into the lungs and are harmful to health."
+    },
+    "tvoc": {
+      "title": "TVOC (Total Volatile Organic Compounds)",
+      "desc": "VOCs come from chemicals (paints, cleaning products). They can irritate the respiratory tract."
+    },
+    "comfort": {
+      "title": "Thermal Comfort",
+      "desc": "The combination of temperature and humidity determines thermal comfort and mold risk."
+    },
+    "thresholds": {
+      "excellent": "Excellent",
+      "medium": "Moderate",
+      "bad": "Poor",
+      "ideal_temp": "Ideal Temperature",
+      "ideal_hum": "Ideal Humidity"
+    },
+    "actuators": {
+      "window": "Window",
+      "ventilation": "Ventilation",
+      "purifier": "Purifier",
+      "heating": "Heating",
+      "ac": "Air Conditioning"
+    },
+    "recommended_thresholds": "Recommended Thresholds",
+    "impacting_actuators": "Impacting Actuators"
   }
 }

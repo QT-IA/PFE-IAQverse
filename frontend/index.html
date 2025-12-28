@@ -147,6 +147,21 @@
     <div class="chart-box" id="tvoc-chart"></div>
   </main>
 
+  <!-- Modal Info Paramètre -->
+  <div id="paramInfoModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeParamInfoModal()">&times;</span>
+      <h2 id="paramInfoTitle">Titre</h2>
+      <div id="paramInfoContent">
+        <p id="paramInfoDesc">Description...</p>
+        <h3 data-i18n="modal_info.recommended_thresholds">Seuils recommandés</h3>
+        <ul id="paramInfoThresholds"></ul>
+        <h3 data-i18n="modal_info.impacting_actuators">Actionneurs impactants</h3>
+        <div id="paramInfoActuators" class="actuators-list"></div>
+      </div>
+    </div>
+  </div>
+
   <footer class="nav-bar" style="display: none;">
   <div class="nav-left">
     <a href="#" onclick="return false;" class="active-page">
@@ -169,6 +184,7 @@
 </footer>
 
 <script src="js/charts.js"></script>
+<script src="js/chart-info.js"></script>
 <script>
   // Small helper to update the room score panel.
   (function(){

@@ -344,5 +344,39 @@
         "mode_updated": "Modo actualizado",
         "load_error": "No se puede cargar la configuración",
         "load_failure": "Error al cargar la configuración"
+    },
+    "modal_info": {
+        "co2": {
+            "title": "CO₂ (Dióxido de carbono)",
+            "desc": "El CO₂ es un indicador del confinamiento del aire. Una concentración alta puede causar fatiga y dolores de cabeza."
+        },
+        "pm25": {
+            "title": "PM2.5 (Partículas finas)",
+            "desc": "Las partículas finas (diámetro < 2.5µm) pueden penetrar profundamente en los pulmones y son nocivas para la salud."
+        },
+        "tvoc": {
+            "title": "TVOC (Compuestos Orgánicos Volátiles)",
+            "desc": "Los COV provienen de productos químicos (pinturas, productos de limpieza). Pueden irritar las vías respiratorias."
+        },
+        "comfort": {
+            "title": "Confort Térmico",
+            "desc": "La combinación de temperatura y humedad determina el confort térmico y el riesgo de moho."
+        },
+        "thresholds": {
+            "excellent": "Excelente",
+            "medium": "Medio",
+            "bad": "Malo",
+            "ideal_temp": "Temperatura ideal",
+            "ideal_hum": "Humedad ideal"
+        },
+        "actuators": {
+            "window": "Ventana",
+            "ventilation": "Ventilación",
+            "purifier": "Purificador",
+            "heating": "Calefacción",
+            "ac": "Aire Acondicionado"
+        },
+        "recommended_thresholds": "Umbrales recomendados",
+        "impacting_actuators": "Actuadores impactantes"
     }
 }

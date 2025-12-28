@@ -344,5 +344,39 @@
         "mode_updated": "Modus aktualisiert",
         "load_error": "Konfiguration kann nicht geladen werden",
         "load_failure": "Fehler beim Laden der Konfiguration"
+    },
+    "modal_info": {
+        "co2": {
+            "title": "CO₂ (Kohlendioxid)",
+            "desc": "CO₂ ist ein Indikator für die Luftqualität. Hohe Konzentrationen können Müdigkeit und Kopfschmerzen verursachen."
+        },
+        "pm25": {
+            "title": "PM2.5 (Feinstaub)",
+            "desc": "Feinstaub (Durchmesser < 2.5µm) kann tief in die Lunge eindringen und ist gesundheitsschädlich."
+        },
+        "tvoc": {
+            "title": "TVOC (Flüchtige Organische Verbindungen)",
+            "desc": "VOCs stammen aus Chemikalien (Farben, Reinigungsmittel). Sie können die Atemwege reizen."
+        },
+        "comfort": {
+            "title": "Thermischer Komfort",
+            "desc": "Die Kombination aus Temperatur und Feuchtigkeit bestimmt den thermischen Komfort und das Schimmelrisiko."
+        },
+        "thresholds": {
+            "excellent": "Ausgezeichnet",
+            "medium": "Mittel",
+            "bad": "Schlecht",
+            "ideal_temp": "Ideale Temperatur",
+            "ideal_hum": "Ideale Feuchtigkeit"
+        },
+        "actuators": {
+            "window": "Fenster",
+            "ventilation": "Lüftung",
+            "purifier": "Luftreiniger",
+            "heating": "Heizung",
+            "ac": "Klimaanlage"
+        },
+        "recommended_thresholds": "Empfohlene Schwellenwerte",
+        "impacting_actuators": "Beeinflussende Aktoren"
     }
 }
