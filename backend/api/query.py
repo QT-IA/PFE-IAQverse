@@ -135,6 +135,66 @@ def get_iaq_data(
             return []
     
     # Si InfluxDB n'est pas disponible ou retourne une erreur, on retourne vide
+    # Fallback: Utiliser DATA_DF en mémoire si disponible (pour le mode démo/dev sans InfluxDB)
+    try:
+        from ..core.data_store import get_dataset
+        DATA_DF = get_dataset()
+        
+        if DATA_DF is not None and not DATA_DF.empty:
+            logger.info("Using DATA_DF fallback for history")
+            # Filtrage simple
+            df = DATA_DF.copy()
+            if enseigne:
+                if not df[df["enseigne"] == enseigne].empty:
+                    df = df[df["enseigne"] == enseigne]
+            if salle:
+                if not df[df["salle"] == salle].empty:
+                    df = df[df["salle"] == salle]
+            if sensor_id:
+                # Note: DATA_DF a 'capteur_id' mais l'API utilise 'sensor_id'
+                if "capteur_id" in df.columns:
+                    # Check if filtering would empty the result
+                    if not df[df["capteur_id"] == sensor_id].empty:
+                        df = df[df["capteur_id"] == sensor_id]
+                    else:
+                        logger.warning(f"Fallback: Sensor {sensor_id} not found in DATA_DF, using available data")
+            
+            # Tri par timestamp
+            df = df.sort_values("timestamp")
+            
+            # Sélectionner les N dernières heures si demandé
+            if hours:
+                # Simulation: prendre les derniers points du dataset statique
+                # Supposons 1 point toutes les 5 min -> 12 points par heure
+                points_needed = hours * 12
+                df = df.tail(points_needed)
+            
+            # Conversion en liste de dicts
+            records = df.to_dict(orient="records")
+            
+            # Ajouter global_score
+            for record in records:
+                try:
+                    predictions = {
+                        "co2": record.get("co2"),
+                        "pm25": record.get("pm25"),
+                        "tvoc": record.get("tvoc"),
+                        "humidity": record.get("humidity")
+                    }
+                    clean_predictions = {k: (v if v is not None else 0) for k, v in predictions.items()}
+                    score_data = calculate_iaq_score(clean_predictions)
+                    record["global_score"] = score_data["global_score"]
+                    record["global_level"] = score_data["global_level"]
+                except Exception:
+                    pass
+            
+            logger.info(f"✅ Données récupérées depuis DATA_DF (Fallback): {len(records)} points")
+            return records
+    except ImportError:
+        pass
+    except Exception as e:
+        logger.warning(f"Erreur fallback DATA_DF: {e}")
+
     return []
     
 

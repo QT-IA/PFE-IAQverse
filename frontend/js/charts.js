@@ -994,6 +994,49 @@ function updatePredictedScoreUI(data) {
   const predictedScore = Math.round(data.predicted_score);
   valueEl.textContent = predictedScore;
 
+  // Afficher le modèle utilisé (ML ou DL)
+  let modelBadge = document.getElementById("model-badge");
+  
+  if (!modelBadge && predictedContainer) {
+      modelBadge = document.createElement("span");
+      modelBadge.id = "model-badge";
+      // Positionnement absolu en haut à droite
+      modelBadge.style.position = "absolute";
+      modelBadge.style.top = "-8px";
+      modelBadge.style.right = "-8px";
+      modelBadge.style.fontSize = "0.7em";
+      modelBadge.style.padding = "2px 6px";
+      modelBadge.style.borderRadius = "10px";
+      modelBadge.style.fontWeight = "bold";
+      modelBadge.style.boxShadow = "0 2px 4px rgba(0,0,0,0.2)";
+      modelBadge.style.zIndex = "10";
+      predictedContainer.appendChild(modelBadge);
+  }
+
+  if (modelBadge) {
+      if (data.model_used === "dl") {
+          modelBadge.textContent = "DL";
+          modelBadge.title = "Deep Learning (LSTM)";
+      } else {
+          modelBadge.textContent = "ML";
+          modelBadge.title = "Machine Learning (Voting Regressor)";
+      }
+
+      // Appliquer la couleur correspondant au score (A-E)
+      modelBadge.classList.remove("badge-a", "badge-b", "badge-c", "badge-d", "badge-e");
+      
+      if (predictedScore >= 81) modelBadge.classList.add("badge-a");
+      else if (predictedScore >= 61) modelBadge.classList.add("badge-b");
+      else if (predictedScore >= 41) modelBadge.classList.add("badge-c");
+      else if (predictedScore >= 21) modelBadge.classList.add("badge-d");
+      else modelBadge.classList.add("badge-e");
+      
+      // S'assurer que le texte est blanc (défini dans CSS mais forcé ici au cas où)
+      modelBadge.style.color = "white";
+      // Reset background inline style if it was set previously
+      modelBadge.style.backgroundColor = "";
+  }
+
   // Styliser selon le niveau prédit (A-E)
   if (predictedContainer) {
     predictedContainer.classList.remove(

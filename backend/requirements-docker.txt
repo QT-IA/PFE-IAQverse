@@ -6,7 +6,8 @@ influxdb-client==1.45.0
 python-multipart==0.0.18
 websockets==14.1
 pandas==2.3.3
-numpy==2.3.5
+numpy==1.26.4
 scikit-learn==1.7.2
 joblib==1.5.2
 requests==2.31.0
+tensorflow==2.15.0

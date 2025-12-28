@@ -51,7 +51,8 @@ app.include_router(query_router)
 app.include_router(config_router)
 
 # Chargement du dataset au démarrage
-DATA_DF = load_dataset_df()
+from .core.data_store import get_dataset
+DATA_DF = get_dataset()
 
 # Tâche de posting périodique
 posting_task: Optional[asyncio.Task] = None
@@ -66,9 +67,11 @@ def get_ml_predictor():
     global ml_predictor
     if ml_predictor is None:
         try:
-            from .ml.ml_predict_generic import RealtimeGenericPredictor
-            ml_predictor = RealtimeGenericPredictor(model_dir=settings.ML_MODELS_DIR)
-            logger.info("✅ ML Predictor initialized")
+            # Utilisation du SmartPredictor qui combine ML classique et LSTM
+            from .dl.smart_predictor import SmartPredictor
+            lstm_path = settings.ML_MODELS_DIR / "lstm_model.h5"
+            ml_predictor = SmartPredictor(model_dir=settings.ML_MODELS_DIR, lstm_model_path=lstm_path)
+            logger.info("✅ Smart Predictor (ML+DL) initialized")
         except Exception as e:
             logger.error(f"❌ Failed to load ML predictor: {e}")
             ml_predictor = False
@@ -119,7 +122,8 @@ def get_predicted_score(
                         "salle": prediction_result.get("salle"),
                         "sensor_id": prediction_result.get("sensor_id"),
                         "timestamp": prediction_result.get("timestamp"),
-                        "is_ml_prediction": True
+                        "is_ml_prediction": True,
+                        "model_used": prediction_result.get("model_used", "ml")
                     }
         
         # Fallback: calcul simple basé sur les tendances
