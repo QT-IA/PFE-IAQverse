@@ -918,7 +918,7 @@ a:hover img {
   }
 
   .score-predicted {
-    position: static;
+    position: relative;
     transform: none;
     order: 4;
     align-self: center;

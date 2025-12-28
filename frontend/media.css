@@ -320,11 +320,12 @@
   }
 
   .score-predicted {
-    position: static;
+    position: relative;
     transform: none;
     order: 4;
     align-self: center;
     padding: 6px 12px;
+    margin-top: 5px; /* Espacement pour éviter le chevauchement */
   }
 
   .predicted-value {
@@ -747,5 +748,30 @@
     max-width: calc(100% - 20px);
     padding: 10px 16px;
     font-size: 13px;
+  }
+}
+
+/* Responsive pour le badge ML/DL */
+@media (max-width: 768px) {
+  .preventive-action-details {
+    position: relative;
+    padding-top: 25px !important; /* Espace pour le badge en haut */
+  }
+
+  .preventive-ml-badge {
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    margin-top: 0;
+    width: auto;
+    z-index: 5;
+  }
+  
+  .ml-indicator {
+    font-size: 0.65em;
+    padding: 3px 8px;
+    text-align: center;
+    width: auto;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   }
 }

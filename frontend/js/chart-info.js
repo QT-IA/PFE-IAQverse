@@ -16,8 +16,8 @@ function getParamInfo(paramKey) {
                 { label: t("modal_info.thresholds.bad"), value: "> 1000 ppm", color: "#e74c3c" }
             ],
             actuators: [
-                { name: t("modal_info.actuators.window"), icon: "window.png" },
-                { name: t("modal_info.actuators.ventilation"), icon: "fan.png" }
+                { name: t("modal_info.actuators.window")},
+                { name: t("modal_info.actuators.ventilation")}
             ]
         },
         "pm25": {
@@ -29,8 +29,8 @@ function getParamInfo(paramKey) {
                 { label: t("modal_info.thresholds.bad"), value: "> 25 µg/m³", color: "#e74c3c" }
             ],
             actuators: [
-                { name: t("modal_info.actuators.window"), icon: "window.png" },
-                { name: t("modal_info.actuators.purifier"), icon: "purifier.png" }
+                { name: t("modal_info.actuators.window")},
+                { name: t("modal_info.actuators.purifier")}
             ]
         },
         "tvoc": {
@@ -42,8 +42,8 @@ function getParamInfo(paramKey) {
                 { label: t("modal_info.thresholds.bad"), value: "> 600 ppb", color: "#e74c3c" }
             ],
             actuators: [
-                { name: t("modal_info.actuators.ventilation"), icon: "fan.png" },
-                { name: t("modal_info.actuators.window"), icon: "window.png" }
+                { name: t("modal_info.actuators.ventilation") },
+                { name: t("modal_info.actuators.window") }
             ]
         },
         "comfort": {
@@ -54,9 +54,9 @@ function getParamInfo(paramKey) {
                 { label: t("modal_info.thresholds.ideal_hum"), value: "40% - 60%", color: "#27ae60" }
             ],
             actuators: [
-                { name: t("modal_info.actuators.heating"), icon: "radiator.png" },
-                { name: t("modal_info.actuators.ac"), icon: "ac.png" },
-                { name: t("modal_info.actuators.window"), icon: "window.png" }
+                { name: t("modal_info.actuators.heating") },
+                { name: t("modal_info.actuators.ac") },
+                { name: t("modal_info.actuators.window") }
             ]
         }
     };
@@ -123,7 +123,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const icon = document.createElement('img');
             icon.src = 'assets/icons/info.png';
             icon.className = 'chart-info-icon';
-            icon.title = 'Plus d\'infos';
             icon.onclick = (e) => {
                 e.stopPropagation(); // Éviter d'interférer avec Plotly
                 openParamInfo(key);
