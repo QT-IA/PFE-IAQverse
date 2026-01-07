@@ -21,7 +21,7 @@
         "adresse": "20 boulevard du Syndicat"
     },
     "affichage": {
-        "mode": "Sombre",
+        "mode": "Clair",
         "langue": "fr",
         "localisation": "Europe, Paris"
     },
@@ -51,16 +51,16 @@
                         "glbModel": "assets/rooms/ens_1762004765975_piece_1765147149555.glb",
                         "devices": {
                             "ventilation": {
-                                "state": "off",
-                                "last_update": "2026-01-07T16:12:20.494130"
+                                "state": "on",
+                                "last_update": "2026-01-07T16:42:13.067390"
                             },
                             "window": {
                                 "state": "closed",
-                                "last_update": "2026-01-07T16:12:16.796690"
+                                "last_update": "2026-01-07T16:50:10.598802"
                             },
                             "radiator": {
                                 "state": "off",
-                                "last_update": "2026-01-07T15:21:53.605705"
+                                "last_update": "2026-01-07T16:49:10.529631"
                             },
                             "door": {
                                 "state": "closed",

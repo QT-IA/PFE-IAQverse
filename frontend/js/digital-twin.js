@@ -504,6 +504,85 @@ function displayPreventiveActions(data) {
     container.innerHTML = html;
 }
 
+// Helper to execute action on backend
+async function executeDeviceAction(enseigneId, pieceId, type, targetName, targetState) {
+    const actionId = `${enseigneId}-${pieceId}-${targetName}-${targetState}`;
+    
+    // Prevent spamming the same action
+    if (window.pendingActions && window.pendingActions.has(actionId)) {
+        console.log(`[automation] Action ${actionId} already pending, skipping`);
+        return;
+    }
+    
+    if (!window.pendingActions) window.pendingActions = new Set();
+    window.pendingActions.add(actionId);
+    
+    console.log(`[automation] Requesting automatic action: ${targetName} (${type}) -> ${targetState}`);
+    
+    // DEBUG: Check values
+    if (!enseigneId || !pieceId) {
+        console.error('[automation] Missing context:', { enseigneId, pieceId });
+        return;
+    }
+    
+    try {
+        // 1. Update backend
+        const payload = {
+            piece_id: pieceId,
+            device: type, 
+            state: targetState
+        };
+        
+        const response = await fetch('/api/actions/execute', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        if (!response.ok) {
+            console.error('[automation] POST failed:', response.statusText);
+        } else {
+            console.log('[automation] POST success');
+            
+            // 2. Update 3D visualization immediately to reflect change
+            if (typeof window.updateObjectState === 'function') {
+                window.updateObjectState(targetName, targetState);
+            }
+        }
+    } catch (e) {
+        console.error('[automation] Error:', e);
+    } finally {
+        // Clear pending flag after a delay to allow system to stabilize
+        setTimeout(() => {
+            window.pendingActions.delete(actionId);
+        }, 2000);
+    }
+}
+
+// Map logical actions (open, turn_on, etc) to state values (open, closed, on, off)
+function mapActionToState(actionKey, typeKey) {
+    const map = {
+        'open': 'open',
+        'close': 'closed',
+        'turn_on': 'on',
+        'turn_off': 'off',
+        'increase': 'on', // For radiator/ventilation, increase implies turning ON or boosting
+        'decrease': 'off', // For radiator/ventilation, decrease implies turning OFF or lowering
+        'activate': 'on',
+        'deactivate': 'off'
+    };
+    
+    // Default fallback based on type if action not found
+    if (!map[actionKey]) {
+        if (typeKey === 'window' || typeKey === 'door') return 'closed'; // Safer default? Or 'open'?
+        return 'off';
+    }
+    
+    return map[actionKey];
+}
+
 // Sync alert-point elements into the actions table as rows
 window.syncAlertPointsToTable = function syncAlertPointsToTable() {
     const tbody = document.querySelector('.actions-table tbody');
@@ -527,6 +606,8 @@ window.syncAlertPointsToTable = function syncAlertPointsToTable() {
             const activeEnseigneId = (typeof window.getActiveEnseigne === 'function') 
                 ? window.getActiveEnseigne() 
                 : (cfg && cfg.lieux && cfg.lieux.active);
+            
+            console.log('[digital-twin] Active Context:', { activeEnseigneId, cfg });
             
             // Essayer de récupérer activeRoomId depuis le tab actif
             const tab = document.querySelector('#room-tabs .room-tab.active');
@@ -675,6 +756,11 @@ window.syncAlertPointsToTable = function syncAlertPointsToTable() {
             else if (currentState === 'on' && (actionKeyToCompare === 'turn_on' || actionKeyToCompare === 'activate' || actionKeyToCompare === 'increase')) isSatisfied = true;
             else if (currentState === 'off' && (actionKeyToCompare === 'turn_off' || actionKeyToCompare === 'deactivate' || actionKeyToCompare === 'decrease')) isSatisfied = true;
             
+            // DEBUG SATISFACTION
+            if (actionKeyToCompare === 'turn_on' || actionKeyToCompare === 'open') {
+                console.log(`[digital-twin] Satisfaction Check for ${typeKey}: State=${currentState}, Action=${actionKeyToCompare} -> Satisfied=${isSatisfied}`);
+            }
+
             if (isSatisfied) {
                 tr.className = `dynamic-alert alert-success`;
             }
@@ -738,6 +824,40 @@ window.syncAlertPointsToTable = function syncAlertPointsToTable() {
         }
 
         console.log(`[digital-twin] Adding grouped row for ${typeKey} with severity weight ${weight}, emoji: ${stateEmoji}`);
+        
+        // --- AUTOMATION BLOCK ---
+        // If the row is RED (alert-red), it means there is a problem AND it is not satisfied.
+        // We should automatically perform the recommended action to fix it.
+        if (tr.classList.contains('alert-red')) {
+            // Determine the action to take
+            // We use actionKeyToCompare which is what we used to check satisfaction (e.g. 'open', 'turn_on')
+            if (actionKeyToCompare) {
+                const targetState = mapActionToState(actionKeyToCompare, typeKey);
+                console.log(`[automation] Checking red row: ${targetName}, Action: ${actionKeyToCompare}, MappedState: ${targetState}`);
+                
+                // Only trigger if we have a valid state to switch to
+                if (targetState) {
+                    console.log(`[automation] Red row detected for ${targetName}. Triggering auto-fix: ${actionKeyToCompare} -> ${targetState}`);
+                    
+                    // Trigger the action
+                    // Use a small timeout to not block the rendering of the table
+                    setTimeout(() => {
+                        executeDeviceAction(activeEnseigneId, activeRoomId, typeKey, targetName, targetState);
+                    }, 100);
+                    
+                    // Optimistic update: change row to green immediately to show it's being handled?
+                    // Optional: tr.className = `dynamic-alert alert-success`;
+                    // But maybe better to wait for the real update loop.
+                    
+                    // Force row to show "Processing..." state or similar?
+                    // changing emoji to ⏳?
+                    const emojiCell = tr.querySelector('td:first-child');
+                    if (emojiCell) emojiCell.textContent = '⏳';
+                }
+            }
+        }
+        // ------------------------
+
         builtRows.push({ tr, weight });
     });
 
@@ -798,6 +918,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Écouter les mises à jour de configuration via WebSocket pour l'automatisation 3D
         if (window.wsManager) {
+            // Subscribe to 'all' topic to receive config updates and automation events
+            window.wsManager.subscribe(['all']);
+            
             window.wsManager.on('config_updated', (data) => {
                 console.log('[digital-twin] Config updated via WebSocket', data);
                 if (data && data.config) {
@@ -806,6 +929,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     // Synchroniser les objets 3D avec le nouvel état
                     sync3DWithConfig(data.config);
+                }
+            });
+            
+            // Listen for specific automation events (from backend automation manager)
+            window.wsManager.on('automation_event', (data) => {
+                console.log('[digital-twin] Automation event received:', data);
+                if (data && data.device && data.state) {
+                    // Notify user
+                    if (typeof window.showNotification === 'function') {
+                        const t = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t : k => k;
+                        const deviceName = t(`digitalTwin.sample.${data.device}.subject`) || data.device;
+                        const actionLabel = data.state === 'on' || data.state === 'open' ? 'activé/ouvert' : 'désactivé/fermé';
+                        
+                        window.showNotification(`🤖 Auto: ${deviceName} ${actionLabel}`, false); // info notification
+                    }
+                    
+                    // Also update 3D state if not done yet
+                    // Note: config_updated usually handles this, but this is a specific trigger
+                    // Only try to update if we can identify the specific object name, which might be tricky if data.device is generic "ventilation"
+                    // But sync3DWithConfig does a better job globally.
                 }
             });
         }
@@ -841,8 +984,10 @@ function sync3DWithConfig(config) {
     
     if (piece && piece.devices) {
         console.log('[sync3DWithConfig] Syncing devices:', piece.devices);
+        console.log('[sync3DWithConfig] Syncing devices:', piece.devices);
         Object.entries(piece.devices).forEach(([targetName, deviceData]) => {
             if (deviceData && deviceData.state) {
+                console.log(`[sync3DWithConfig] Device ${targetName} state in config: ${deviceData.state}`);
                 window.updateObjectState(targetName, deviceData.state);
             }
         });
