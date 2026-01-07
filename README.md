@@ -9,7 +9,7 @@ Plateforme complète de surveillance et prédiction de la qualité de l'air int�
 docker-compose up -d
 
 # Accéder aux interfaces
-- Frontend: http://localhost:3000
+- Frontend: http://localhost:8080
 - API: http://localhost:8000/docs
 - InfluxDB: http://localhost:8086
 ```
@@ -126,13 +126,13 @@ GET /health
 
 ## Seuils IAQ
 
-| Paramètre   | Bon         | Moyen             | Mauvais         |
-| ------------ | ----------- | ----------------- | --------------- |
-| CO₂         | < 800 ppm   | 800-1200 ppm      | > 1200 ppm      |
-| PM2.5        | < 5 µg/m³ | 5-35 µg/m³      | > 35 µg/m³    |
-| TVOC         | < 300 ppb   | 300-1000 ppb      | > 1000 ppb      |
-| Température | 18-22°C    | 16-18 ou 22-24°C | < 16 ou > 24°C |
-| Humidité    | 40-60%      | 30-40 ou 60-70%   | < 30 ou > 70%   |
+| Paramètre   | Bon       | Moyen            | Mauvais        |
+| ----------- | --------- | ---------------- | -------------- |
+| CO₂         | < 800 ppm | 800-1200 ppm     | > 1200 ppm     |
+| PM2.5       | < 5 µg/m³ | 5-35 µg/m³       | > 35 µg/m³     |
+| TVOC        | < 300 ppb | 300-1000 ppb     | > 1000 ppb     |
+| Température | 18-22°C   | 16-18 ou 22-24°C | < 16 ou > 24°C |
+| Humidité    | 40-60%    | 30-40 ou 60-70%  | < 30 ou > 70%  |
 
 ## Développement
 

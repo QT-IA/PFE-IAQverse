@@ -48,7 +48,33 @@
                         "id": "piece_1764858886827",
                         "nom": "Chambre",
                         "type": "chambre",
-                        "glbModel": "/assets/rooms/ens_1762004765975_piece_1764858886827.glb"
+                        "glbModel": "assets/rooms/ens_1762004765975_piece_1765147149555.glb",
+                        "devices": {
+                            "ventilation": {
+                                "state": "off",
+                                "last_update": "2026-01-07T16:12:20.494130"
+                            },
+                            "window": {
+                                "state": "closed",
+                                "last_update": "2026-01-07T16:12:16.796690"
+                            },
+                            "radiator": {
+                                "state": "off",
+                                "last_update": "2026-01-07T15:21:53.605705"
+                            },
+                            "door": {
+                                "state": "closed",
+                                "last_update": "2026-01-07T15:47:56.974306"
+                            },
+                            "air_purifier": {
+                                "state": "off",
+                                "last_update": "2026-01-07T16:05:51.428965"
+                            },
+                            "air_conditioning": {
+                                "state": "off",
+                                "last_update": "2026-01-07T16:05:51.454916"
+                            }
+                        }
                     }
                 ]
             },
@@ -61,7 +87,29 @@
                         "id": "piece_1764862007013",
                         "nom": "Chambre Arthur",
                         "type": "chambre",
-                        "glbModel": "/assets/rooms/ens_boutique1_piece_1764862007013.glb"
+                        "glbModel": "assets/rooms/ens_boutique1_piece_1763414279663.glb",
+                        "devices": {
+                            "window": {
+                                "state": "closed",
+                                "last_update": "2026-01-07T15:21:58.855915"
+                            },
+                            "ventilation": {
+                                "state": "on",
+                                "last_update": "2026-01-07T16:05:51.483265"
+                            },
+                            "air_purifier": {
+                                "state": "off",
+                                "last_update": "2026-01-07T16:05:51.504214"
+                            },
+                            "radiator": {
+                                "state": "off",
+                                "last_update": "2026-01-07T16:05:51.530550"
+                            },
+                            "air_conditioning": {
+                                "state": "off",
+                                "last_update": "2026-01-07T16:05:52.088354"
+                            }
+                        }
                     }
                 ]
             }

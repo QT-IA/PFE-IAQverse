@@ -655,8 +655,8 @@ window.syncAlertPointsToTable = function syncAlertPointsToTable() {
                 'door': 'close',
                 'ventilation': 'turn_on',
                 'radiator': 'decrease',
-                'air_conditioning': 'turn_on',
-                'air_purifier': 'turn_on'
+                'air_conditioning': 'turn_off',
+                'air_purifier': 'turn_off'
             };
             actionKeyToCompare = defaultActions[typeKey];
         }
@@ -795,10 +795,81 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchAndDisplayPreventiveActions();
         // Rafraîchir les actions préventives toutes les 30 secondes
         setInterval(fetchAndDisplayPreventiveActions, 30000);
+        
+        // Écouter les mises à jour de configuration via WebSocket pour l'automatisation 3D
+        if (window.wsManager) {
+            window.wsManager.on('config_updated', (data) => {
+                console.log('[digital-twin] Config updated via WebSocket', data);
+                if (data && data.config) {
+                    // Mettre à jour la config globale si nécessaire (normalement géré par config-loader mais on s'assure)
+                    window.config = data.config;
+                    
+                    // Synchroniser les objets 3D avec le nouvel état
+                    sync3DWithConfig(data.config);
+                }
+            });
+        }
     } catch(e){
         console.error('[digital-twin] Error in DOMContentLoaded:', e);
     } 
 });
+
+/**
+ * Synchronise l'état des objets 3D avec la configuration reçue
+ */
+function sync3DWithConfig(config) {
+    if (typeof window.updateObjectState !== 'function') return;
+    
+    // Récupérer le contexte actif
+    const activeEnseigneId = (typeof window.getActiveEnseigne === 'function') 
+            ? window.getActiveEnseigne() 
+            : (config && config.lieux && config.lieux.active);
+            
+    const tab = document.querySelector('#room-tabs .room-tab.active');
+    let activeRoomId = tab ? tab.getAttribute('data-room-id') : null;
+    
+    // Si pas de room active visible, on ne fait rien (ou on prend la première)
+    if (!activeRoomId && config.lieux.enseignes) {
+         const ens = config.lieux.enseignes.find(e => e.id === activeEnseigneId);
+         if (ens && ens.pieces.length > 0) activeRoomId = ens.pieces[0].id;
+    }
+    
+    if (!activeEnseigneId || !activeRoomId) return;
+    
+    const ens = config.lieux.enseignes.find(e => e.id === activeEnseigneId);
+    const piece = ens ? ens.pieces.find(p => p.id === activeRoomId) : null;
+    
+    if (piece && piece.devices) {
+        console.log('[sync3DWithConfig] Syncing devices:', piece.devices);
+        Object.entries(piece.devices).forEach(([targetName, deviceData]) => {
+            if (deviceData && deviceData.state) {
+                window.updateObjectState(targetName, deviceData.state);
+            }
+        });
+        
+        // Aussi gérer le cas où le device est stocké par TYPE (ex: "ventilation") 
+        // mais l'objet 3D s'appelle autrement (ex: "Clim_Salon")
+        // Pour l'instant, updateObjectState attend le nom exact de l'objet 3D (targetName).
+        // Si la config utilise des clés génériques (ventilation), on doit trouver l'objet correspondant.
+        // Mais comme on va écrire la config depuis le backend, on essaiera d'utiliser les noms précis si possible,
+        // ou alors on itère sur les alert-points pour voir qui match le type.
+        
+        const genericTypes = ['ventilation', 'radiator', 'air_conditioning', 'air_purifier'];
+        genericTypes.forEach(type => {
+            if (piece.devices[type] && piece.devices[type].state) {
+                const state = piece.devices[type].state;
+                // Trouver tous les alert-points de ce type affichés
+                const points = document.querySelectorAll(`.alert-point[data-i18n-key="${type}"]`);
+                points.forEach(pt => {
+                    const tName = pt.getAttribute('data-target-names');
+                    if (tName) {
+                         window.updateObjectState(tName, state);
+                    }
+                });
+            }
+        });
+    }
+}
 window.addEventListener('language-changed', () => { 
     try { 
         syncAlertPointsToTable();
