@@ -145,7 +145,12 @@ class AutomationManager:
                     reason = f"Automated: {metric} normal ({val:.1f})"
 
             if target_state:
-                await self._try_execute_action(piece, device_type, target_state, reason)
+                # Check activable flag
+                is_activable = piece.get("devices", {}).get(device_type, {}).get("activable", True)
+                if not is_activable:
+                    logger.info(f"🚫 Automation skipped for {piece.get('nom')} - {device_type}: Not Activable")
+                else:
+                    await self._try_execute_action(piece, device_type, target_state, reason)
 
     async def _try_execute_action(self, piece, device_type, target_state, reason):
         """Tente d'exécuter l'action en vérifiant le cooldown et l'état actuel"""

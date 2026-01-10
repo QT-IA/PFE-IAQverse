@@ -837,22 +837,51 @@ window.syncAlertPointsToTable = function syncAlertPointsToTable() {
                 
                 // Only trigger if we have a valid state to switch to
                 if (targetState) {
-                    console.log(`[automation] Red row detected for ${targetName}. Triggering auto-fix: ${actionKeyToCompare} -> ${targetState}`);
-                    
-                    // Trigger the action
-                    // Use a small timeout to not block the rendering of the table
-                    setTimeout(() => {
-                        executeDeviceAction(activeEnseigneId, activeRoomId, typeKey, targetName, targetState);
-                    }, 100);
-                    
-                    // Optimistic update: change row to green immediately to show it's being handled?
-                    // Optional: tr.className = `dynamic-alert alert-success`;
-                    // But maybe better to wait for the real update loop.
-                    
-                    // Force row to show "Processing..." state or similar?
-                    // changing emoji to ⏳?
-                    const emojiCell = tr.querySelector('td:first-child');
-                    if (emojiCell) emojiCell.textContent = '⏳';
+                    // CHECK ACTIVABLE FLAG from Global Config
+                    let isActivable = true;
+                    try {
+                        const cfg = (typeof window.getConfig === 'function') ? window.getConfig() : (window.config || null);
+                        if (cfg && cfg.lieux && cfg.lieux.enseignes) {
+                           // Find the device in config
+                           // We need to look through all pieces to find one that has this device
+                           // Since we don't have exact piece context variables easily here inside the loop over points (which are filtered by active room context earlier)
+                           // actually 'points' are filtered by activeEnseigneId and activeRoomId.
+                           // So we can use those.
+                           
+                           const ens = cfg.lieux.enseignes.find(e => e.id === activeEnseigneId);
+                           const piece = ens ? ens.pieces.find(p => p.id === activeRoomId) : null;
+                           
+                           if (piece && piece.devices) {
+                               // Check exact match (targetName) OR type match (typeKey)
+                               let devConfig = piece.devices[targetName];
+                               if (!devConfig && piece.devices[typeKey]) {
+                                   devConfig = piece.devices[typeKey];
+                               }
+                               
+                               if (devConfig && typeof devConfig.activable === 'boolean') {
+                                   isActivable = devConfig.activable;
+                               }
+                           }
+                        }
+                    } catch(e) {
+                        console.warn('[automation] Error checking activable flag:', e);
+                    }
+
+                    if (!isActivable) {
+                         console.log(`[automation] 🚫 Skipping auto-fix for ${targetName}: Not Activable`);
+                    } else {
+                        console.log(`[automation] Red row detected for ${targetName}. Triggering auto-fix: ${actionKeyToCompare} -> ${targetState}`);
+                        
+                        // Trigger the action
+                        // Use a small timeout to not block the rendering of the table
+                        setTimeout(() => {
+                            executeDeviceAction(activeEnseigneId, activeRoomId, typeKey, targetName, targetState);
+                        }, 100);
+                        
+                        // Force row to show "Processing..." state or similar?
+                        const emojiCell = tr.querySelector('td:first-child');
+                        if (emojiCell) emojiCell.textContent = '⏳';
+                    }
                 }
             }
         }

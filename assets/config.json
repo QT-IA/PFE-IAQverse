@@ -52,27 +52,33 @@
                         "devices": {
                             "ventilation": {
                                 "state": "on",
-                                "last_update": "2026-01-07T16:42:13.067390"
+                                "last_update": "2026-01-10T15:30:44.317588",
+                                "activable": true
                             },
                             "window": {
                                 "state": "closed",
-                                "last_update": "2026-01-07T16:50:10.598802"
+                                "last_update": "2026-01-10T15:30:43.256326",
+                                "activable": false
                             },
                             "radiator": {
                                 "state": "off",
-                                "last_update": "2026-01-07T16:49:10.529631"
+                                "last_update": "2026-01-10T15:30:48.716135",
+                                "activable": true
                             },
                             "door": {
                                 "state": "closed",
-                                "last_update": "2026-01-07T15:47:56.974306"
+                                "last_update": "2026-01-10T15:30:52.079281",
+                                "activable": false
                             },
                             "air_purifier": {
                                 "state": "off",
-                                "last_update": "2026-01-07T16:05:51.428965"
+                                "last_update": "2026-01-07T16:05:51.428965",
+                                "activable": true
                             },
                             "air_conditioning": {
                                 "state": "off",
-                                "last_update": "2026-01-07T16:05:51.454916"
+                                "last_update": "2026-01-07T16:05:51.454916",
+                                "activable": true
                             }
                         }
                     }
@@ -91,23 +97,28 @@
                         "devices": {
                             "window": {
                                 "state": "closed",
-                                "last_update": "2026-01-07T15:21:58.855915"
+                                "last_update": "2026-01-07T15:21:58.855915",
+                                "activable": false
                             },
                             "ventilation": {
                                 "state": "on",
-                                "last_update": "2026-01-07T16:05:51.483265"
+                                "last_update": "2026-01-07T16:05:51.483265",
+                                "activable": true
                             },
                             "air_purifier": {
                                 "state": "off",
-                                "last_update": "2026-01-07T16:05:51.504214"
+                                "last_update": "2026-01-07T16:05:51.504214",
+                                "activable": true
                             },
                             "radiator": {
                                 "state": "off",
-                                "last_update": "2026-01-07T16:05:51.530550"
+                                "last_update": "2026-01-07T16:05:51.530550",
+                                "activable": true
                             },
                             "air_conditioning": {
                                 "state": "off",
-                                "last_update": "2026-01-07T16:05:52.088354"
+                                "last_update": "2026-01-07T16:05:52.088354",
+                                "activable": true
                             }
                         }
                     }

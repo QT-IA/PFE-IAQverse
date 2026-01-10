@@ -34,9 +34,11 @@
     "Chambre Arthur"
   ],
   "trained_sensors": [
+    "Arthur1",
     "Bureau1",
     "Bureau2",
     "Bureau3",
-    "Bureau4"
+    "Bureau4",
+    "Chambre1"
   ]
 }
