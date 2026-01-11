@@ -7,6 +7,9 @@ venv/
 # Environment variables
 .env
 
+# Config
+assets/config.json
+
 # Database
 database/influx_data/
 database/mosquitto/

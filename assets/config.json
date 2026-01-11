@@ -1,22 +1,22 @@
 {
     "vous": {
-        "nom": "Dupont",
-        "prenom": "Pierre",
-        "date_naissance": "1990-01-01",
-        "email": "jean.dupont@example.com",
+        "nom": "Tajchner",
+        "prenom": "Quentin",
+        "date_naissance": "2003-12-29",
+        "email": "tajchnerquentin@gmail.com",
         "telephone": "+33 1 23 45 67 89",
         "adresse": "1 rue Exemple, 75000 Paris",
         "avatar": "/assets/icons/user_avatar.png"
     },
     "assurance": {
         "nom": "AssureCo",
-        "email": "contact@assureco.com",
+        "email": "arthur.parizot-de-laporterie@esme.fr",
         "telephone": "+33 1 11 11 11 11",
         "adresse": "10 avenue de l'Assurance"
     },
     "syndicat": {
         "nom": "Syndicat XY",
-        "email": "syndicat@example.com",
+        "email": "quentin.tajchner@esme.fr",
         "telephone": "+33 9 99 99 99 99",
         "adresse": "20 boulevard du Syndicat"
     },

@@ -19,7 +19,8 @@ from .core import settings, get_influx_client, get_websocket_manager
 from .api import (
     ingest_router,
     query_router,
-    config_router
+    config_router,
+    notifications_router
 )
 
 # Import des utilitaires
@@ -49,6 +50,7 @@ app.add_middleware(
 app.include_router(ingest_router)
 app.include_router(query_router)
 app.include_router(config_router)
+app.include_router(notifications_router)
 
 # Chargement du dataset au démarrage
 from .core.data_store import get_dataset
