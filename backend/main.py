@@ -2,8 +2,9 @@
 API FastAPI pour le système IAQverse - Version 2.0
 Architecture modulaire et microservices
 """
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from pathlib import Path
 from typing import Optional, List
 import asyncio
@@ -24,7 +25,13 @@ from .api import (
 )
 
 # Import des utilitaires
+
+# Import des utilitaires
 from .utils import load_dataset_df
+
+# Import de l'automatisation
+from .automation import automation_manager, execute_fictive_action_internal
+
 
 # Configuration du logging
 logging.basicConfig(level=logging.INFO)
@@ -314,7 +321,37 @@ def get_preventive_actions(
         return {"actions": [], "error": str(e)}
 
 
+
+class ActionRequest(BaseModel):
+    piece_id: str
+    device: str
+    state: str
+
+@app.post("/api/actions/execute")
+async def execute_action_endpoint(action: ActionRequest):
+    """
+    Exécute une action fictive (met à jour le config.json).
+    Utilisé par l'automatisation et potentiellement par le frontend dans le futur.
+    """
+    try:
+        success = await execute_fictive_action_internal(
+            piece_id=action.piece_id,
+            device_type=action.device,
+            state=action.state
+        )
+        
+        if success:
+            return {"status": "success", "message": f"Action {action.device}={action.state} executed"}
+        else:
+            raise HTTPException(status_code=404, detail="Room or device not found in config")
+            
+    except Exception as e:
+        logger.error(f"Error executing action: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 def _generate_actions_from_ml_risk_analysis(
+
     current_values: dict, 
     predicted_values: dict, 
     risk_analysis: dict,
@@ -828,6 +865,13 @@ async def startup_event():
         logger.info(f"✅ Tâche de simulation démarrée (interval={INTERVAL_SECONDS}s)")
     except Exception as e:
         logger.exception(f"Erreur lors du démarrage de la tâche périodique: {e}")
+
+    # Démarrer le gestionnaire d'automatisation
+    try:
+        await automation_manager.start()
+    except Exception as e:
+        logger.exception(f"Erreur démarrage automation manager: {e}")
+
     
     logger.info("="*60)
 
@@ -848,6 +892,11 @@ async def shutdown_event():
             logger.info("✅ Tâche de simulation arrêtée")
         except Exception as e:
             logger.exception(f"Erreur lors de l'arrêt de la tâche: {e}")
+
+    # Arrêter le gestionnaire d'automatisation
+    await automation_manager.stop()
+
+
     
     # Fermer InfluxDB
     influx = get_influx_client()

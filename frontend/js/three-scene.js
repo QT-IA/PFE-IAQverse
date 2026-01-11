@@ -912,6 +912,27 @@ function autoGenerateAlertPoints(modelRoot) {
           if (savedStates[targetName]) {
             objectStates[targetName].state = savedStates[targetName].state;
           }
+          
+          // SURCHARGE : Vérifier s'il y a un état dans la configuration globale (backend)
+          // Cela prime sur le sessionStorage pour la première synchro
+          try {
+              const cfg = typeof window.getConfig === 'function' ? window.getConfig() : window.config;
+              if (cfg && cfg.lieux && cfg.lieux.enseignes) {
+                  const ens = cfg.lieux.enseignes.find(e => e.id === currentEnseigneId);
+                  const p = ens && ens.pieces ? ens.pieces.find(p => p.id === currentPieceId) : null;
+                  
+                  if (p && p.devices) {
+                      // Chercher par nom exact ou par type
+                      const deviceState = p.devices[targetName]?.state || p.devices[type]?.state;
+                      if (deviceState) {
+                          console.log(`[autoGenerate] Loading config state for ${targetName}: ${deviceState}`);
+                          objectStates[targetName].state = deviceState;
+                      }
+                  }
+              }
+          } catch(e) {
+              console.warn('[autoGenerate] Error loading config state:', e);
+          }
         }
         
         let animationObj = objectStates[targetName].object;
@@ -1056,6 +1077,9 @@ function autoGenerateAlertPoints(modelRoot) {
             // Sauvegarder l'état dans sessionStorage
             saveObjectStates(currentEnseigneId, currentPieceId);
             
+            // DECLENCHER L'ACTION SUR LE BACKEND (POST)
+            triggerBackendAction(currentEnseigneId, currentPieceId, alertType, targetName, newState);
+            
             // Rafraîchir le tableau pour mettre à jour les emojis
             if (typeof window.syncAlertPointsToTable === 'function') {
               window.syncAlertPointsToTable();
@@ -1065,6 +1089,37 @@ function autoGenerateAlertPoints(modelRoot) {
             // Simplement mettre à jour l'état pour que le tableau affiche le bon emoji
           }
         });
+
+// Fonction pour envoyer l'action au backend
+async function triggerBackendAction(enseigneId, pieceId, type, deviceName, state) {
+    console.log(`[triggerBackendAction] Sending POST for ${deviceName} (${type}) -> ${state}`);
+    try {
+        const payload = {
+            piece_id: pieceId,
+            device: type, // On envoie le type (ventilation, radiator) car le backend utilise ça comme clé générique pour l'instant
+            state: state
+        };
+        
+        // Si le backend supporte les noms spécifiques, on pourrait envoyer deviceName
+        // Pour l'instant, automation.py utilise des clés comme 'ventilation', 'radiator'
+        
+        const response = await fetch('/api/actions/execute', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        if (!response.ok) {
+            console.error('[triggerBackendAction] POST failed:', response.statusText);
+        } else {
+            console.log('[triggerBackendAction] POST success');
+        }
+    } catch (e) {
+        console.error('[triggerBackendAction] Error:', e);
+    }
+}
         
         alertPointsContainer.appendChild(alertPoint);
         console.log('[autoGenerate] Added alert point:', targetName, 'with data-active:', alertPoint.getAttribute('data-active'), 'severity:', alertPoint.getAttribute('data-severity'), 'enseigne:', alertPoint.getAttribute('data-enseigne'), 'piece:', alertPoint.getAttribute('data-piece'), 'display:', alertPoint.style.display, 'z-index:', alertPoint.style.zIndex);
@@ -1395,6 +1450,89 @@ if (frameBtn) {
   });
 }
 
+
+// Nouvelle fonction pour mettre à jour l'état d'un objet programmatiquement
+function updateObjectState(targetName, newState) {
+  if (!objectStates[targetName]) {
+    console.warn(`[updateObjectState] Object not found: ${targetName}`);
+    return;
+  }
+  
+  const stateObj = objectStates[targetName];
+  const type = stateObj.type;
+  
+  // Utiliser la config sauvegardée ou celle par défaut
+  const config = stateObj.config || objectAnimations[type];
+  if (!config) return;
+  
+  // Vérifier si l'état a changé
+  if (stateObj.state === newState) return;
+  
+  console.log(`[updateObjectState] Updating ${targetName} to ${newState}`);
+  stateObj.state = newState;
+  animateObject(stateObj.object, config, newState);
+  
+  // Mettre à jour visuellement le point d'alerte correspondant
+  const alertPoint = document.querySelector(`.alert-point[data-target-names="${targetName}"]`);
+  if (alertPoint) {
+    let newBgColor = '';
+    if (type === 'door' || type === 'window') {
+      newBgColor = newState === 'closed' ? 'rgba(220, 20, 60, 0.9)' : 'rgba(34, 139, 34, 0.9)';
+    } else if (type === 'ventilation' || type === 'radiator') {
+      newBgColor = newState === 'off' ? 'rgba(220, 20, 60, 0.9)' : 'rgba(34, 139, 34, 0.9)';
+    }
+    alertPoint.style.background = newBgColor;
+    alertPoint.setAttribute('data-bg-color', newBgColor);
+    alertPoint.setAttribute('data-state', newState);
+  }
+  
+  // Sauvegarder l'état dans sessionStorage (backup local)
+  saveObjectStates(currentEnseigneId, currentPieceId);
+  
+  // Rafraîchir le tableau
+  if (typeof window.syncAlertPointsToTable === 'function') {
+    window.syncAlertPointsToTable();
+  }
+}
+
+// Fonction pour récupérer l'état initial depuis la configuration globale
+function getInitialStateFromConfig(enseigneId, pieceId, targetName, type) {
+    try {
+        const cfg = typeof getConfig === 'function' ? getConfig() : window.config;
+        if (!cfg || !cfg.lieux || !cfg.lieux.enseignes) return null;
+
+        const ens = cfg.lieux.enseignes.find(e => e.id === enseigneId);
+        if (!ens) return null;
+
+        const piece = ens.pieces.find(p => p.id === pieceId);
+        if (!piece || !piece.devices) return null;
+
+        // Chercher si un device correspond à ce targetName ou ce type
+        // La structure attendue dans config.devices est : { "ventilation": { "state": "on" } }
+        // Ou plus spécifique : { "Radiator_1": { "state": "on" } }
+        
+        // 1. Essai par nom exact
+        if (piece.devices[targetName] && piece.devices[targetName].state) {
+            return piece.devices[targetName].state;
+        }
+        
+        // 2. Essai par type (si unique ou défaut pour le type)
+        // Mais attention, s'il y a plusieurs fenêtres, elles partageraient le même état si on ne fait pas gaffe
+        if (piece.devices[type] && piece.devices[type].state) {
+             return piece.devices[type].state;
+        }
+        
+        return null;
+    } catch (e) {
+        console.warn('Error reading initial state from config:', e);
+        return null;
+    }
+}
+
 // Exporter vers le scope global pour usage par d'autres scripts
 window.loadPieceModel = loadPieceModel;
 window.frameModel = frameModel;
+window.updateObjectState = updateObjectState;
+
+
+

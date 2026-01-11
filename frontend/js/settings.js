@@ -303,7 +303,11 @@ function renderEnseignes() {
     const cancelLabel = (t && t('actions.cancel')) || 'Annuler';
 
     const roomsHtml = (enseigne.pieces || []).map(piece => {
-      return `<span class="room-tag">${escapeHtml(piece.nom)} <button class="remove-btn" title="${removeLabel}" onclick="removePiece('${enseigne.id}','${piece.id}')">×</button></span>`;
+      return `<span class="room-tag">
+        ${escapeHtml(piece.nom)} 
+        <button class="settings-btn" title="Configurer" onclick="configurePiece('${enseigne.id}','${piece.id}')" style="background:none;border:none;cursor:pointer;margin-left:5px;font-size:1.1em;">⚙️</button>
+        <button class="remove-btn" title="${removeLabel}" onclick="removePiece('${enseigne.id}','${piece.id}')">×</button>
+      </span>`;
     }).join('');
 
     card.innerHTML = `
@@ -669,6 +673,71 @@ async function removePiece(enseigneId, pieceId) {
   await saveConfigAll();
   showNotification((window.i18n && window.i18n.t) ? window.i18n.t('notifications.piece_deleted') || 'Pièce supprimée avec succès' : 'Pièce supprimée avec succès');
     renderEnseignes();
+  });
+}
+
+
+async function configurePiece(enseigneId, pieceId) {
+  const enseigne = (settingsConfig.lieux.enseignes || []).find(e => e.id === enseigneId);
+  if (!enseigne) return;
+  const piece = (enseigne.pieces || []).find(p => p.id === pieceId);
+  if (!piece) return;
+
+  const devices = piece.devices || {};
+  const deviceKeys = Object.keys(devices);
+  
+  if (deviceKeys.length === 0) {
+     showNotification("Aucun module détecté dans cette pièce", true);
+     return;
+  }
+
+  // Generate HTML for switches
+  let html = `<div class="device-config-list">`;
+  html += `<p style="margin-bottom:15px; font-style:italic;">Activez ou désactivez l'automatisation pour chaque module.</p>`;
+  
+  deviceKeys.forEach(key => {
+      const dev = devices[key];
+      const isActivable = (dev.activable !== false); // default to true if undefined
+      const label = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
+      
+      html += `
+      <div class="form-group" style="display:flex; justify-content:space-between; align-items:center;">
+        <label>${label}</label>
+        <label class="switch">
+            <input type="checkbox" name="device_${key}" ${isActivable ? 'checked' : ''}>
+            <span class="slider"></span>
+        </label>
+      </div>`;
+  });
+  html += `</div>`;
+
+  openEditModalWith(`Configuration : ${piece.nom}`, html, async (formData) => {
+      let changed = false;
+      const form = document.getElementById('editForm');
+      
+      deviceKeys.forEach(key => {
+          const input = form.querySelector(`input[name="device_${key}"]`);
+          if (input) {
+              const checked = input.checked;
+              if (devices[key].activable !== checked) {
+                  devices[key].activable = checked;
+                  changed = true;
+              }
+          }
+      });
+
+      if (changed) {
+          try {
+            await saveConfigAll();
+            showNotification("Configuration mise à jour");
+            document.getElementById('editModal').style.display = 'none';
+          } catch(e) {
+            console.error(e);
+            showNotification("Erreur lors de la sauvegarde", true);
+          }
+      } else {
+          document.getElementById('editModal').style.display = 'none';
+      }
   });
 }
 
