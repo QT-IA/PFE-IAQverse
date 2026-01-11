@@ -45,10 +45,14 @@ class SyndicAlerter:
     def send_alert(self, building_name, issue_details, duration_hours):
         """
         Envoie une alerte au syndic configuré dans config.json
+        Met en copie l'assurance si configurée.
         """
         # Récupérer l'email du syndic depuis la config
         syndic_email = self.config.get("syndicat", {}).get("email")
         
+        # Récupérer l'email de l'assurance pour mettre en copie (CC)
+        assurance_email = self.config.get("assurance", {}).get("email")
+
         if not syndic_email or "@" not in syndic_email:
             logger.warning("Email syndic introuvable dans config.json ou invalide.")
             return False
@@ -80,6 +84,13 @@ class SyndicAlerter:
         msg = MIMEMultipart()
         msg['From'] = self.sender_email
         msg['To'] = syndic_email
+        
+        # Gestion du CC Assurance
+        recipients = [syndic_email]
+        if assurance_email and "@" in assurance_email:
+            msg['Cc'] = assurance_email
+            recipients.append(assurance_email)
+            
         msg['Subject'] = subject
         msg.attach(MIMEText(body, 'plain'))
 
@@ -89,10 +100,14 @@ class SyndicAlerter:
                 logger.info("--- SIMULATION ENVOI EMAIL SYNDIC (Mode Simulation) ---")
                 logger.info(f"From: {self.sender_email}")
                 logger.info(f"To: {syndic_email}")
+                if assurance_email:
+                    logger.info(f"Cc (Assurance): {assurance_email}")
                 logger.info(f"Subject: {subject}")
                 logger.info(f"Body:\n{body}")
                 logger.info("-------------------------------------------------------------------")
-                print(f"SIMULATION EMAIL ENVOYÉ À {syndic_email}") # Print pour voir dans la console directement
+                print(f"SIMULATION EMAIL ENVOYÉ À {syndic_email}")
+                if assurance_email:
+                    print(f"EN COPIE: {assurance_email}")
                 print("-" * 20)
                 print(f"OBJET: {subject}")
                 print(f"CORPS:\n{body}")
@@ -104,9 +119,10 @@ class SyndicAlerter:
             # Authentification avec l'email de l'expéditeur et le mot de passe d'application
             server.login(self.sender_email, self.smtp_password)
             text = msg.as_string()
-            server.sendmail(self.sender_email, syndic_email, text)
+            # sendmail attend une liste de TOUS les destinataires (To + Cc + Bcc)
+            server.sendmail(self.sender_email, recipients, text)
             server.quit()
-            logger.info(f"✅ Email d'alerte envoyé avec succès de {self.sender_email} à {syndic_email}")
+            logger.info(f"✅ Email d'alerte envoyé avec succès de {self.sender_email} à {recipients}")
             return True
         except Exception as e:
             logger.error(f"❌ Erreur lors de l'envoi de l'email : {e}")
